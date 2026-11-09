@@ -12,3 +12,4 @@ Built from a Safari webarchive plus the runtime assets the page loads (3D models
 
 ## Run locally
     python3 -m http.server 8000   # then open http://localhost:8000/
+- The cannabis leaf on the front-page brain is reskinned with a cartoon leaf (`leaf-cartoon.png`). The leaf painted into the brain texture is replaced by a plain one (`brain-texture-plain.jpg`).

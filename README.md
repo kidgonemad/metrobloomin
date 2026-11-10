@@ -13,4 +13,4 @@ Built from a Safari webarchive plus the runtime assets the page loads (3D models
 ## Run locally
     python3 -m http.server 8000   # then open http://localhost:8000/
 - The "Se filmer" drawer shows Instagram embeds instead of the original YouTube episodes.
-- The cannabis leaf on the front-page brain is reskinned with a cartoon leaf (`leaf-cartoon.png`). The leaf painted into the brain texture is replaced by a plain one (`brain-texture-plain.jpg`).
+- The cannabis leaf on the front-page brain is replaced by a 3D cartoon leaf (`leaf-cartoon-3d.glb`, front art `leaf-cartoon-face.jpg`), extruded from the drawing's outline. The leaf painted into the brain texture is replaced by a plain one (`brain-texture-plain.jpg`).

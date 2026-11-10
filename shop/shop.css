@@ -177,3 +177,10 @@ body.dark #logo{color:#fff}
 body.mb-shop-open #logo{color:#111!important}
 /* solid white menu button + pill on the black page */
 body.dark:not(.mb-shop-open) .mb-burger,body.dark:not(.mb-shop-open) .menu.is-open ul.links{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+/* loading screen: black with white text; logo and menu only appear once the page has loaded */
+html,body{background:#000}
+.loader{color:#fff}
+.loader .progress{border-color:#fff!important}
+.loader .progress .bar{background:#fff!important}
+#logo,nav.menu{transition:opacity .4s ease}
+body:not(.mb-loaded) #logo,body:not(.mb-loaded) nav.menu{opacity:0!important;pointer-events:none}

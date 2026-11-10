@@ -184,3 +184,12 @@ html,body{background:#000}
 .loader .progress .bar{background:#fff!important}
 #logo,nav.menu{transition:opacity .4s ease}
 body:not(.mb-loaded) #logo,body:not(.mb-loaded) nav.menu{opacity:0!important;pointer-events:none}
+/* footer: white with black text */
+#links .accessibility{background:#fff!important;color:#000!important}
+#links .accessibility h3,#links .accessibility p,#links .accessibility a{color:#000!important}
+#links .accessibility:after{background:#fff!important}
+/* black fade behind the top header so scrolling text slides under it */
+body.mb-loaded:not(.mb-shop-open):before{content:"";position:fixed;left:0;right:0;top:0;height:120px;z-index:59;pointer-events:none;
+  background:linear-gradient(#000 0,#000 70%,rgba(0,0,0,0) 100%)}
+@media (min-width:768px){body.mb-loaded:not(.mb-shop-open):before{height:170px}}
+#logo{z-index:60}

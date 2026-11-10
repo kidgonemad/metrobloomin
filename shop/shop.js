@@ -125,7 +125,8 @@
     wireBurger();
     var link = document.getElementById('shopLink');
     if (link) link.addEventListener('click', open);
-    if (location.hash === '#shop') open();
+    // the site opens on the shop (unless a link asks for videos or about)
+    if (location.hash === '#shop' || location.hash === '') open();
     if (location.hash === '#about') history.replaceState(null, '', location.pathname + location.search);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();

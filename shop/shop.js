@@ -54,6 +54,7 @@
     el.classList.add('is-open');
     document.body.classList.add('mb-shop-open');
     var sl = document.getElementById('shopLink'); if (sl) sl.classList.add('is-current');
+    var ab0 = document.querySelector('.mb-about'); if (ab0) ab0.classList.remove('is-current');
     el.scrollTop = 0;
     if (location.hash !== '#shop') history.replaceState(null, '', '#shop');
     setTimeout(function () { var b = el.querySelector('.mbn__btn'); if (b) b.focus(); }, 50);
@@ -62,10 +63,12 @@
     el.classList.remove('is-open');
     document.body.classList.remove('mb-shop-open');
     var sl = document.getElementById('shopLink'); if (sl) sl.classList.remove('is-current');
+    var ab1 = document.querySelector('.mb-about'); if (ab1) ab1.classList.add('is-current');
     if (location.hash === '#shop') history.replaceState(null, '', location.pathname + location.search);
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   function isOpen() { return el.classList.contains('is-open'); }
+  window.__mbShopClose = function () { if (isOpen()) close(); };
 
   // The shop uses the site's own header (logo + menu) on top of it:
   // logo = back to the 3D page, about = close the shop and open About.
@@ -92,7 +95,13 @@
     b.innerHTML = '<span></span><span></span><span></span>';
     nav.insertBefore(b, nav.firstChild);
     var ul = nav.querySelector('ul.links');
-    var about = ul && ul.querySelector('#about'); if (about) ul.appendChild(about.parentNode);  // shop · videos · about
+    // shop · videos · about  (about = this interactive 3D page)
+    if (ul && !ul.querySelector('.mb-about')) {
+      var li = document.createElement('li');
+      li.innerHTML = '<a href="#" class="mb-about is-current" aria-current="page">about</a>';
+      ul.appendChild(li);
+      li.querySelector('a').addEventListener('click', function (e) { e.preventDefault(); set(false); if (window.__mbShopClose) window.__mbShopClose(); });
+    }
     function set(open) { nav.classList.toggle('is-open', open); document.body.classList.toggle('mb-menu-open', open); b.setAttribute('aria-expanded', String(open)); }
     b.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('is-open')); });
     nav.querySelectorAll('#shopLink,#about,#videos,.lang-list a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });

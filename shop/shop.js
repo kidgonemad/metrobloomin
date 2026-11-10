@@ -37,7 +37,7 @@
       '<nav class="mb-shop__nav" aria-label="Collections">' +
         collections.map(function (c) { return '<a href="#mb-' + c.id + '">' + esc(c.title) + '</a>'; }).join('') +
         '<a href="' + STORE + '/pages/contact" target="_blank" rel="noopener">Contact</a></nav>' +
-      '<a class="mb-shop__brand" href="' + STORE + '" target="_blank" rel="noopener">METRO<br>BLOOMIN<span>EST. 2016</span></a>' +
+      '<a class="mb-shop__brand" href="#" data-close>METRO<br>BLOOMIN<span>EST. 2016</span></a>' +
       '<div class="mb-shop__menu"></div>' +
     '</header>' +
     '<div class="mb-hero"><h2>Shop</h2><p>The Metro Bloomin signature logo collection: heavyweight hand-tufted rugs, molded soft PVC keychains and more. Checkout happens on metrobloomin.com.</p></div>' +
@@ -70,11 +70,12 @@
   }
   function isOpen() { return el.classList.contains('is-open'); }
 
+  el.querySelectorAll('[data-close]').forEach(function (x) { x.addEventListener('click', function (e) { e.preventDefault(); close(); }); });
   if (window.MBNav) {
     el.querySelector('.mb-shop__menu').appendChild(window.MBNav.create({ align: 'right', items: [
-      { label: 'home', onClick: close },
       { label: 'shop', current: true },
-      { label: 'videos', href: new URL('shop/vapp/', document.baseURI).href }
+      { label: 'videos', href: new URL('shop/vapp/', document.baseURI).href },
+      { label: 'about', onClick: function () { close(); var ab = document.getElementById('about'); if (ab) ab.click(); } }
     ] }));
   }
   el.querySelectorAll('.mb-shop__nav a[href^="#mb-"]').forEach(function (a) {
@@ -103,13 +104,7 @@
     b.innerHTML = '<span></span><span></span><span></span>';
     nav.insertBefore(b, nav.firstChild);
     var ul = nav.querySelector('ul.links');
-    if (ul && !ul.querySelector('.mb-home')) {
-      var li = document.createElement('li');
-      li.innerHTML = '<a href="#" class="mb-home is-current" aria-current="page">home</a>';
-      ul.insertBefore(li, ul.querySelector('#shopLink') ? ul.querySelector('#shopLink').parentNode : ul.firstChild);
-      li.querySelector('a').addEventListener('click', function (e) { e.preventDefault(); set(false); });
-      var about = ul.querySelector('#about'); if (about) ul.appendChild(about.parentNode);
-    }
+    var about = ul && ul.querySelector('#about'); if (about) ul.appendChild(about.parentNode);  // shop · videos · about
     function set(open) { nav.classList.toggle('is-open', open); document.body.classList.toggle('mb-menu-open', open); b.setAttribute('aria-expanded', String(open)); }
     b.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('is-open')); });
     nav.querySelectorAll('#shopLink,#about,#videos,.lang-list a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });
@@ -135,6 +130,7 @@
     var link = document.getElementById('shopLink');
     if (link) link.addEventListener('click', open);
     if (location.hash === '#shop') open();
+    if (location.hash === '#about') { history.replaceState(null, '', location.pathname + location.search); setTimeout(function () { var ab = document.getElementById('about'); if (ab) ab.click(); }, 300); }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();

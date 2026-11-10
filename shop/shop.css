@@ -193,3 +193,6 @@ body.mb-loaded:not(.mb-shop-open):before{content:"";position:fixed;left:0;right:
   background:linear-gradient(#000 0,#000 70%,rgba(0,0,0,0) 100%)}
 @media (min-width:768px){body.mb-loaded:not(.mb-shop-open):before{height:170px}}
 #logo{z-index:60}
+/* no About in the menu: the page itself is the about */
+body .menu ul.links>li:has(#about){display:none!important}
+#aboutView{display:none!important}

@@ -8,9 +8,30 @@
 #logo .mb-leaf{flex:none;width:30px;height:32px;background:currentColor;
   -webkit-mask:url("img/leaf-mark.png") center/contain no-repeat;mask:url("img/leaf-mark.png") center/contain no-repeat;transition:background-color .5s}
 #logo .mb-word{font:700 15px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}
-/* phones/tablets: the menu fills the top row, so the logo sits on its own row below it */
-@media (max-width:1023px){#logo{width:auto;top:calc(2rem + 46px)}#logo .mb-leaf{width:26px;height:28px}#logo .mb-word{font-size:13px}}
-@media (min-width:768px) and (max-width:1023px){#logo{top:calc(4rem + 46px)}}
+/* phones/tablets: logo top-left, menu collapses behind a 3-line button top-right */
+.mb-burger{display:none}
+@media (max-width:1023px){
+  #logo{width:auto}
+  #logo .mb-leaf{width:26px;height:28px}
+  #logo .mb-word{font-size:13px}
+  .menu{z-index:60}
+  .mb-burger{display:flex;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;margin:-10px -10px 0 0;padding:10px;
+    background:none;border:0;color:inherit;cursor:pointer}
+  .mb-burger span{display:block;height:2px;width:24px;background:currentColor;border-radius:2px;transition:transform .25s,opacity .25s}
+  .menu.is-open .mb-burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .menu.is-open .mb-burger span:nth-child(2){opacity:0}
+  .menu.is-open .mb-burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .menu ul.links{display:none;position:absolute;top:44px;right:-6px;min-width:220px;flex-direction:column;gap:2px;padding:10px 0;margin:0;
+    background:#fff;color:#025169;box-shadow:0 1rem 2rem rgba(2,81,105,.2);border-radius:4px}
+  .menu.is-open ul.links{display:flex}
+  .menu ul.links li{margin:0;flex-wrap:wrap;align-items:center}
+  .menu ul.links>li>a{display:block;flex:1;padding:12px 20px;border-bottom:0!important;color:#025169}
+  .menu ul.links li svg{display:none}
+  .dark .menu ul.links li a{color:#025169}
+  .menu ul.lang-list{position:static;width:100%;box-shadow:none;padding:0 0 6px 20px;background:none}
+  .menu ul.lang-list.visible{display:flex;flex-wrap:wrap}
+  .menu ul.lang-list li a{padding:6px 10px}
+}
 
 /* nav link */
 #shopLink{font-weight:700}

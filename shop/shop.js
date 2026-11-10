@@ -89,7 +89,21 @@
     e.stopImmediatePropagation();
   }, true);
 
+  // collapsible menu (3-line button) for phones/tablets
+  function wireBurger() {
+    var nav = document.querySelector('nav.menu'); if (!nav || nav.querySelector('.mb-burger')) return;
+    var b = document.createElement('button');
+    b.className = 'mb-burger'; b.type = 'button'; b.setAttribute('aria-label', 'Menu'); b.setAttribute('aria-expanded', 'false');
+    b.innerHTML = '<span></span><span></span><span></span>';
+    nav.insertBefore(b, nav.firstChild);
+    function set(open) { nav.classList.toggle('is-open', open); b.setAttribute('aria-expanded', String(open)); }
+    b.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('is-open')); });
+    nav.querySelectorAll('#shopLink,#about,#videos,.lang-list a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });
+    document.addEventListener('click', function (e) { if (!nav.contains(e.target)) set(false); });
+  }
+
   function wire() {
+    wireBurger();
     var link = document.getElementById('shopLink');
     if (link) link.addEventListener('click', open);
     if (location.hash === '#shop') open();

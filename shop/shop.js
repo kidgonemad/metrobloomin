@@ -74,7 +74,7 @@
   if (window.MBNav) {
     el.querySelector('.mb-shop__menu').appendChild(window.MBNav.create({ align: 'right', items: [
       { label: 'shop', current: true },
-      { label: 'videos', href: new URL('shop/vapp/', document.baseURI).href },
+      { label: 'videos', href: new URL('shop/vapp/', document.baseURI).href + '?t=' + Date.now() },
       { label: 'about', onClick: function () { close(); var ab = document.getElementById('about'); if (ab) ab.click(); } }
     ] }));
   }

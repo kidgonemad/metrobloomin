@@ -3,6 +3,6 @@
 (function () {
   var url = new URL('shop/vapp/', document.baseURI).href;
   window.addEventListener('click', function (e) {
-    if (e.target.closest && e.target.closest('#videos')) { e.preventDefault(); e.stopImmediatePropagation(); location.href = url; }
+    if (e.target.closest && e.target.closest('#videos')) { e.preventDefault(); e.stopImmediatePropagation(); location.href = url + '?t=' + Date.now(); }
   }, true);
 })();

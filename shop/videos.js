@@ -1,28 +1,21 @@
 // "Watch videos": liquid-metal blob scene (default) + index table.
 // Each video lives inside a soft metaball blob; blobs merge where they touch with a chrome seam.
-// Drop real clips at shop/videos/01.mp4 ... 10.mp4 and they play inside the blobs and in the player;
-// until then the blobs show product photos and clicking opens the Instagram post.
+// Clips live in shop/videos (full) and shop/videos/preview (small silent loops + posters for the blobs).
 (function () {
   var base = new URL('shop/', document.baseURI).href;
+  // clips in shop/videos/NN.mp4 (full, with sound) + preview/NN.mp4 (small, silent, for the blobs) + preview/NN.jpg (poster)
   var videos = [
-    { type: 'reel', code: 'DeFdXgESa9O', date: '2026-10-04', ph: 'lighter-1' },
-    { type: 'reel', code: 'Dc4I4QfB2sZ', date: '2026-09-04', ph: 'hat-1' },
-    { type: 'reel', code: 'Dcecl7HBbrY', date: '2026-08-25', ph: 'rug-1' },
-    { type: 'reel', code: 'DcMT4oDhNAd', date: '2026-08-18', ph: 'keychain-1' },
-    { type: 'reel', code: 'Cw8I51JRJMM', date: '2023-09-08', ph: 'hoodie-1' },
-    { type: 'p', code: 'B9XW5seh3DH', date: '2020-03-05', ph: 'tank-1' },
-    { type: 'p', code: 'BgW1ES_h8BD', date: '2018-03-15', ph: 'lighter-2' },
-    { type: 'p', code: 'Bdf6GRND79_', date: '2018-01-03', ph: 'hat-2' },
-    { type: 'p', code: 'Bc77fvIjaeH', date: '2017-12-20', ph: 'rug-2' },
-    { type: 'p', code: 'BYmganijBXE', date: '2017-09-04', ph: 'keychain-2' }
+    { len: 12, shape: 'Portrait' }, { len: 34, shape: 'Wide' }, { len: 20, shape: 'Vertical' },
+    { len: 46, shape: 'Wide' }, { len: 19, shape: 'Vertical' }, { len: 10, shape: 'Square' },
+    { len: 15, shape: 'Square' }, { len: 29, shape: 'Vertical' }, { len: 25, shape: 'Vertical' }
   ];
   var N = videos.length;
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function fmt(d) { var p = d.split('-'); return MONTHS[+p[1] - 1] + ' ' + p[0]; }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function igUrl(v) { return 'https://www.instagram.com/' + v.type + '/' + v.code + '/'; }
-  function kind(v) { return v.type === 'reel' ? 'Reel' : 'Post'; }
-  videos.forEach(function (v, i) { v.i = i; v.name = 'Metro Bloomin ' + pad(i + 1); v.mp4 = base + 'videos/' + pad(i + 1) + '.mp4'; v.hasMp4 = false; });
+  function kind(v) { return v.shape; }
+  function fmt(n) { return Math.floor(n / 60) + ':' + pad(n % 60); }
+  videos.forEach(function (v, i) { v.i = i; v.name = 'Metro Bloomin ' + pad(i + 1); v.mp4 = base + 'videos/' + pad(i + 1) + '.mp4'; v.prev = base + 'videos/preview/' + pad(i + 1); v.hasMp4 = true; });
 
   // ---------- DOM ----------
   var el = document.createElement('section');
@@ -41,13 +34,13 @@
     '<div class="mb-vid__stage"><canvas class="mb-vid__canvas" aria-hidden="true"></canvas>' +
       '<div class="mb-vid__label" aria-hidden="true"></div></div>' +
     '<div class="mb-vid__page"><div class="mb-vid__cols" role="row">' +
-      '<span>No.</span><span>Title</span><span class="mb-vid__col--format">Format</span><span>Date</span><span class="mb-vid__col--link">Source</span></div>' +
+      '<span>No.</span><span>Title</span><span class="mb-vid__col--format">Format</span><span>Length</span><span class="mb-vid__col--link">Sound</span></div>' +
       '<div class="mb-vid__list">' + videos.map(function (v) {
         return '<div class="mb-vid__row" data-i="' + v.i + '">' +
           '<button class="mb-vid__row-main" type="button">' +
             '<span class="mb-vid__num">' + pad(v.i + 1) + '</span><span class="mb-vid__name">' + v.name + '</span>' +
-            '<span class="mb-vid__col--format">' + kind(v) + '</span><span>' + fmt(v.date) + '</span>' +
-            '<span class="mb-vid__col--link">Instagram</span></button></div>';
+            '<span class="mb-vid__col--format">' + kind(v) + '</span><span>' + fmt(v.len) + '</span>' +
+            '<span class="mb-vid__col--link">On</span></button></div>';
       }).join('') + '</div></div>' +
     '<div class="mb-vid__player" aria-hidden="true"><div class="mb-vid__screen"></div>' +
       '<div class="mb-vid__controls"><div class="mb-vid__timeline"><div class="mb-vid__track"><div class="mb-vid__progress"></div><div class="mb-vid__knob"></div></div></div>' +
@@ -78,18 +71,13 @@
     atlasDirty = true;
   }
   videos.forEach(function (v) {
-    var img = new Image();
-    img.onload = function () { if (!v.vid) drawCover(img, img.naturalWidth, img.naturalHeight, v.i); };
-    img.src = base + 'img/' + v.ph + '.webp';
-    // use a real clip if one has been added
-    fetch(v.mp4, { method: 'HEAD' }).then(function (r) {
-      if (!r.ok || !/video|octet/.test(r.headers.get('content-type') || 'video')) return;
-      v.hasMp4 = true;
-      var vid = document.createElement('video');
-      vid.src = v.mp4; vid.muted = true; vid.loop = true; vid.playsInline = true; vid.preload = 'auto';
-      vid.setAttribute('playsinline', ''); vid.setAttribute('muted', '');
-      v.vid = vid;
-    }).catch(function () {});
+    var img = new Image();                         // poster until the preview clip has a frame
+    img.onload = function () { if (!(v.vid && v.vid.readyState >= 2)) drawCover(img, img.naturalWidth, img.naturalHeight, v.i); };
+    img.src = v.prev + '.jpg';
+    var vid = document.createElement('video');
+    vid.src = v.prev + '.mp4'; vid.muted = true; vid.loop = true; vid.playsInline = true; vid.preload = 'auto';
+    vid.setAttribute('playsinline', ''); vid.setAttribute('muted', '');
+    v.vid = vid;
   });
 
   // ---------- WebGL ----------
@@ -221,7 +209,7 @@
     var h = pick(mouse.x, mouse.y);
     if (h !== hover) {
       hover = h; stage.style.cursor = h >= 0 ? 'pointer' : 'default';
-      if (h >= 0) { var v = videos[h]; label.textContent = pad(h + 1) + '  ' + v.name + ', ' + kind(v) + ', ' + fmt(v.date); }
+      if (h >= 0) { var v = videos[h]; label.textContent = pad(h + 1) + '  ' + v.name + ', ' + fmt(v.len); }
       label.classList.toggle('is-on', h >= 0);
     }
   });
@@ -243,7 +231,7 @@
     var v = videos[i]; current = v;
     el.classList.add('mb-vid--playing'); player.classList.add('is-on'); player.setAttribute('aria-hidden', 'false');
     startPreviews(false);
-    caption.innerHTML = pad(i + 1) + '  ' + v.name + ', ' + kind(v) + ', ' + fmt(v.date) + ' &nbsp; <a href="' + igUrl(v) + '" target="_blank" rel="noopener">View on Instagram ↗</a>';
+    caption.textContent = pad(i + 1) + '  ' + v.name + ', ' + fmt(v.len);
     if (v.hasMp4) {
       player.classList.add('has-video');
       screen.innerHTML = '<video playsinline preload="auto" src="' + v.mp4 + '"></video>';
@@ -256,8 +244,7 @@
       vid.play().catch(function () {}); syncBtns();
     } else {
       player.classList.remove('has-video');
-      screen.innerHTML = '<div class="mb-vid__ig"><blockquote class="instagram-media" data-instgrm-permalink="' + igUrl(v) + '" data-instgrm-version="14"></blockquote></div>';
-      if (window.instgrm) window.instgrm.Embeds.process();
+      screen.innerHTML = '';
     }
   }
   function syncBtns() {

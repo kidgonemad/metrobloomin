@@ -96,14 +96,28 @@
     b.className = 'mb-burger'; b.type = 'button'; b.setAttribute('aria-label', 'Menu'); b.setAttribute('aria-expanded', 'false');
     b.innerHTML = '<span></span><span></span><span></span>';
     nav.insertBefore(b, nav.firstChild);
-    function set(open) { nav.classList.toggle('is-open', open); b.setAttribute('aria-expanded', String(open)); }
+    function set(open) { nav.classList.toggle('is-open', open); document.body.classList.toggle('mb-menu-open', open); b.setAttribute('aria-expanded', String(open)); }
     b.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('is-open')); });
     nav.querySelectorAll('#shopLink,#about,#videos,.lang-list a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });
     document.addEventListener('click', function (e) { if (!nav.contains(e.target)) set(false); });
   }
 
+  // section directory: on phones it opens from a round button at the bottom right
+  function wireDirectory() {
+    var dir = document.querySelector('nav.content-menu'); if (!dir || document.querySelector('.mb-dir-btn')) return;
+    var b = document.createElement('button');
+    b.className = 'mb-dir-btn'; b.type = 'button'; b.setAttribute('aria-label', 'Sections'); b.setAttribute('aria-expanded', 'false');
+    b.innerHTML = '<i></i><i></i><i></i><i></i>';
+    document.body.appendChild(b);
+    function set(open) { dir.classList.toggle('is-open', open); b.setAttribute('aria-expanded', String(open)); }
+    b.addEventListener('click', function (e) { e.stopPropagation(); set(!dir.classList.contains('is-open')); });
+    dir.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setTimeout(function () { set(false); }, 150); }); });
+    document.addEventListener('click', function (e) { if (!dir.contains(e.target) && e.target !== b) set(false); });
+  }
+
   function wire() {
     wireBurger();
+    wireDirectory();
     var link = document.getElementById('shopLink');
     if (link) link.addEventListener('click', open);
     if (location.hash === '#shop') open();

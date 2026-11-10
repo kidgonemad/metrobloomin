@@ -112,3 +112,56 @@
 /* fill any space below the footer with the footer colour (last section scrolls a little past the end) */
 #links .accessibility{position:relative}
 #links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#025169}
+
+/* ===== yungbld-style menus ===== */
+:root{--mb-glass:rgba(255,255,255,.62);--mb-glass-line:rgba(255,255,255,.85);--mb-ink:#272727}
+/* top menu: round "•••" button that opens a frosted pill of links */
+body .mb-burger{display:flex!important;flex-direction:row;align-items:center;justify-content:center;gap:3px;width:44px;height:44px;margin:-10px -6px 0 0;padding:0;
+  border-radius:50%;background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1px solid var(--mb-glass-line);box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px 0 #fff;color:var(--mb-ink);cursor:pointer;position:relative;z-index:2}
+body .mb-burger span{width:5px;height:5px;border-radius:50%;background:currentColor;transition:transform .3s,width .3s,height .3s,border-radius .3s,opacity .2s}
+body .menu.is-open .mb-burger span:nth-child(1){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(45deg)}
+body .menu.is-open .mb-burger span:nth-child(2){opacity:0}
+body .menu.is-open .mb-burger span:nth-child(3){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(-45deg)}
+body .menu{z-index:60}
+body .menu ul.links{display:flex!important;flex-direction:row;align-items:center;gap:0;position:absolute;top:-10px;right:46px;height:44px;min-width:0;margin:0;padding:0 10px;
+  border-radius:999px;background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mb-glass-line);
+  box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px 0 #fff;color:var(--mb-ink);
+  opacity:0;transform:scaleX(.4);transform-origin:right center;pointer-events:none;transition:opacity .25s ease,transform .35s cubic-bezier(.2,.9,.3,1.1)}
+body .menu.is-open ul.links{opacity:1;transform:none;pointer-events:auto}
+body .menu ul.links>li{margin:0;display:flex;align-items:center}
+body .menu ul.links>li>a{display:block;padding:0 14px;line-height:44px;border-bottom:0!important;white-space:nowrap;
+  font:700 15px/44px "Helvetica Neue",Helvetica,Arial,sans-serif;text-transform:lowercase;color:var(--mb-ink)!important;text-decoration:none}
+body .menu ul.links>li>a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+body .menu ul.links li svg{display:none}
+#shopLink{font-weight:700}
+#logo{transition:opacity .25s}
+body.mb-menu-open #logo{opacity:0;pointer-events:none}
+@media (max-width:767px){body .menu ul.links>li>a{padding:0 10px;font-size:14px}}
+
+/* section directory: text list, current dark + underlined, others grey */
+body .content-menu ul li a{width:auto;height:auto;border:0!important;border-radius:0;display:block;text-align:right;text-decoration:none}
+body .content-menu ul li a:before,body .content-menu ul li a svg{display:none}
+body .content-menu ul li{margin:6px 0}
+body .content-menu ul li a span{display:inline;visibility:visible;opacity:1;position:static;transform:none;
+  font:700 15px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;text-transform:lowercase;color:rgba(39,39,39,.42);
+  text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;transition:color .3s}
+body .content-menu ul li a:hover span{color:rgba(39,39,39,.75)}
+body .content-menu ul li a.active span{color:var(--mb-ink)}
+.dark .content-menu ul li a span{color:rgba(255,255,255,.45)}
+.dark .content-menu ul li a.active span{color:#fff}
+.mb-dir-btn{display:none}
+@media (max-width:767px){
+  body .content-menu{top:auto;bottom:80px;right:16px;transform:none;display:none;padding:12px 18px;border-radius:18px;
+    background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mb-glass-line);
+    box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 1px 0 #fff;z-index:61}
+  body .content-menu.is-open{display:block}
+  body .content-menu ul li{margin:10px 0}
+  body .content-menu ul li a span,.dark .content-menu ul li a span{font-size:16px;color:rgba(39,39,39,.45)}
+  body .content-menu ul li a.active span,.dark .content-menu ul li a.active span{color:var(--mb-ink)}
+  .mb-dir-btn{display:grid;grid-template-columns:repeat(2,6px);gap:4px;place-content:center;position:fixed;right:16px;bottom:24px;z-index:62;
+    width:44px;height:44px;border-radius:50%;padding:0;cursor:pointer;color:var(--mb-ink);
+    background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mb-glass-line);
+    box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 1px 0 #fff}
+  .mb-dir-btn i{width:6px;height:6px;border-radius:50%;background:currentColor}
+}

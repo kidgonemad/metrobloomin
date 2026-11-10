@@ -164,3 +164,10 @@ body .content-menu{display:none!important}
 @media (min-width:768px){.mb-shop__menu .mbn{top:calc(4rem - 10px);right:calc(4rem - 6px)}}
 .mb-shop__brand{cursor:pointer}
 body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+
+/* one header for the whole site: the site's logo + menu sit on top of the shop */
+body.mb-shop-open #logo,body.mb-shop-open nav.menu{z-index:1001!important}
+body.mb-shop-open #logo{color:#025169}
+.mb-shop .mb-hero{padding-top:130px}
+@media (min-width:768px){.mb-shop .mb-hero{padding-top:170px}}
+body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}

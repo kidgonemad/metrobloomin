@@ -33,13 +33,6 @@
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-label', 'Metro Bloomin shop');
   el.innerHTML =
-    '<header class="mb-shop__bar">' +
-      '<nav class="mb-shop__nav" aria-label="Collections">' +
-        collections.map(function (c) { return '<a href="#mb-' + c.id + '">' + esc(c.title) + '</a>'; }).join('') +
-        '<a href="' + STORE + '/pages/contact" target="_blank" rel="noopener">Contact</a></nav>' +
-      '<a class="mb-shop__brand" href="#" data-close>METRO<br>BLOOMIN<span>EST. 2016</span></a>' +
-      '<div class="mb-shop__menu"></div>' +
-    '</header>' +
     '<div class="mb-hero"><h2>Shop</h2><p>The Metro Bloomin signature logo collection: heavyweight hand-tufted rugs, molded soft PVC keychains and more. Checkout happens on metrobloomin.com.</p></div>' +
     collections.map(function (c) {
       return '<section class="mb-collection" id="mb-' + c.id + '"><div class="mb-collection__head"><h3>' + esc(c.title) + '</h3>' +
@@ -59,32 +52,27 @@
     if (e) e.preventDefault();
     lastFocus = document.activeElement;
     el.classList.add('is-open');
+    document.body.classList.add('mb-shop-open');
+    var sl = document.getElementById('shopLink'); if (sl) sl.classList.add('is-current');
     el.scrollTop = 0;
     if (location.hash !== '#shop') history.replaceState(null, '', '#shop');
     setTimeout(function () { var b = el.querySelector('.mbn__btn'); if (b) b.focus(); }, 50);
   }
   function close() {
     el.classList.remove('is-open');
+    document.body.classList.remove('mb-shop-open');
+    var sl = document.getElementById('shopLink'); if (sl) sl.classList.remove('is-current');
     if (location.hash === '#shop') history.replaceState(null, '', location.pathname + location.search);
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   function isOpen() { return el.classList.contains('is-open'); }
 
-  el.querySelectorAll('[data-close]').forEach(function (x) { x.addEventListener('click', function (e) { e.preventDefault(); close(); }); });
-  if (window.MBNav) {
-    el.querySelector('.mb-shop__menu').appendChild(window.MBNav.create({ align: 'right', items: [
-      { label: 'shop', current: true },
-      { label: 'videos', href: new URL('shop/vapp/', document.baseURI).href + '?t=' + Date.now() },
-      { label: 'about', onClick: function () { close(); var ab = document.getElementById('about'); if (ab) ab.click(); } }
-    ] }));
-  }
-  el.querySelectorAll('.mb-shop__nav a[href^="#mb-"]').forEach(function (a) {
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
-      var t = el.querySelector(a.getAttribute('href'));
-      if (t) el.scrollTo({ top: t.offsetTop - 70, behavior: 'smooth' });
-    });
-  });
+  // The shop uses the site's own header (logo + menu) on top of it:
+  // logo = back to the 3D page, about = close the shop and open About.
+  var logoEl = document.getElementById('logo');
+  if (logoEl) logoEl.addEventListener('click', function () { if (isOpen()) close(); });
+  var aboutEl = document.getElementById('about');
+  if (aboutEl) aboutEl.addEventListener('click', function () { if (isOpen()) close(); }, true);
 
   // Keep wheel/touch/keys inside the overlay from driving the 3D page behind it.
   ['wheel', 'touchstart', 'touchmove', 'pointerdown', 'pointermove', 'mousedown', 'mousemove'].forEach(function (t) {

@@ -9,7 +9,7 @@ rebranded for Metro Bloomin with a shop section built from metrobloomin.com.
 - **Shop**: "Shop" in the top menu (or `#shop` in the URL) opens the shop: Classic and QRÖME collections.
   Each product links to its page on metrobloomin.com for checkout. Products and prices live in `shop/shop.js`; images are in `shop/img/`.
 - **Branding**: Metro Bloomin title, headline, leaf logo, favicon and About text. Helsedirektoratet branding, contact details and the cookie banner are removed.
-- **3D**: the front-page brain is pink (`brain-texture-pink.jpg`) with the original teal leaf.
+- **3D**: the front-page brain is pink, and its original-shaped leaf is painted in the cartoon style (green, outline, veins, winking face). Each brain half has its own texture (`brain-left-leaf.jpg`, `brain-right-leaf.jpg`) so the face is not mirrored.
 - **Videos**: "Watch videos" shows Instagram embeds.
 - **Language**: English by default; other languages via the menu or `/nb/`, `/ar/`, ...
 

@@ -22,12 +22,12 @@
   .menu.is-open .mb-burger span:nth-child(2){opacity:0}
   .menu.is-open .mb-burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
   .menu ul.links{display:none;position:absolute;top:44px;right:-6px;min-width:220px;flex-direction:column;gap:2px;padding:10px 0;margin:0;
-    background:#fff;color:#025169;box-shadow:0 1rem 2rem rgba(2,81,105,.2);border-radius:4px}
+    background:#fff;color:#111111;box-shadow:0 1rem 2rem rgba(2,81,105,.2);border-radius:4px}
   .menu.is-open ul.links{display:flex}
   .menu ul.links li{margin:0;flex-wrap:wrap;align-items:center}
-  .menu ul.links>li>a{display:block;flex:1;padding:12px 20px;border-bottom:0!important;color:#025169}
+  .menu ul.links>li>a{display:block;flex:1;padding:12px 20px;border-bottom:0!important;color:#111111}
   .menu ul.links li svg{display:none}
-  .dark .menu ul.links li a{color:#025169}
+  .dark .menu ul.links li a{color:#111111}
   .menu ul.lang-list{position:static;width:100%;box-shadow:none;padding:0 0 6px 20px;background:none}
   .menu ul.lang-list.visible{display:flex;flex-wrap:wrap}
   .menu ul.lang-list li a{padding:6px 10px}
@@ -111,7 +111,7 @@
 
 /* fill any space below the footer with the footer colour (last section scrolls a little past the end) */
 #links .accessibility{position:relative}
-#links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#025169}
+#links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#111111}
 
 /* ===== yungbld-style menus ===== */
 :root{--mb-glass:rgba(255,255,255,.62);--mb-glass-line:rgba(255,255,255,.85);--mb-ink:#272727}
@@ -167,7 +167,7 @@ body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-th
 
 /* one header for the whole site: the site's logo + menu sit on top of the shop */
 body.mb-shop-open #logo,body.mb-shop-open nav.menu{z-index:1001!important}
-body.mb-shop-open #logo{color:#025169}
+body.mb-shop-open #logo{color:#111111}
 .mb-shop .mb-hero{padding-top:130px}
 @media (min-width:768px){.mb-shop .mb-hero{padding-top:170px}}
 body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}

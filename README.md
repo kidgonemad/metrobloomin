@@ -1,18 +1,17 @@
-# Weedensenteret mirror
+# Metro Bloomin
 
-Static mirror of https://www.weedensenteret.no/ (Helsedirektoratet), published with the site owners' permission.
+Interactive cannabis guide + shop for Metro Bloomin (est. 2016).
 
-Built from a Safari webarchive plus the runtime assets the page loads (3D models, textures, Draco decoder).
+Based on Weedensenteret (https://www.weedensenteret.no/) by Helsedirektoratet, used with the owners' permission,
+rebranded for Metro Bloomin with a shop section built from metrobloomin.com.
 
-## Changes from the original
-- Asset paths are relative, so the site also works from a sub-path (e.g. GitHub Pages `/<repo>/`).
-- Language pages (`nb`, `nn`, `smi`, `en`, `ar`, `so`, `ur`) are folders so direct links work without server rewrites.
-- Google Tag Manager is removed, so the mirror doesn't send data to the owner's analytics.
-- The futura-pt regular and medium fonts are self-hosted from the archive. The bold weight still loads from Adobe Fonts.
+## What's here
+- **Shop**: "Shop" in the top menu (or `#shop` in the URL) opens the shop: Classic and QRÖME collections.
+  Each product links to its page on metrobloomin.com for checkout. Products and prices live in `shop/shop.js`; images are in `shop/img/`.
+- **Branding**: Metro Bloomin title, headline, leaf logo, favicon and About text. Helsedirektoratet branding, contact details and the cookie banner are removed.
+- **3D**: the front-page brain is pink, with a 3D cartoon leaf (`leaf-cartoon-3d.glb`, front art `leaf-cartoon-face.jpg`).
+- **Videos**: "Watch videos" shows Instagram embeds.
+- **Language**: English by default; other languages via the menu or `/nb/`, `/ar/`, ...
 
 ## Run locally
     python3 -m http.server 8000   # then open http://localhost:8000/
-- The "Se filmer" drawer shows Instagram embeds instead of the original YouTube episodes.
-- English is the default language (other languages via the menu or `/nb/`, `/ar/`, ...).
-- The front-page brain is tinted pink (#F2A0BC).
-- The cannabis leaf on the front-page brain is replaced by a 3D cartoon leaf (`leaf-cartoon-3d.glb`, front art `leaf-cartoon-face.jpg`), extruded from the drawing's outline. The leaf painted into the brain texture is replaced by a plain one (`brain-texture-plain.jpg`).

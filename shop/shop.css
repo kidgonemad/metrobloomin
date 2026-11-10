@@ -108,3 +108,7 @@
 
 /* single language for now: hide the language selector */
 .menu .lang-wrapper{display:none!important}
+
+/* fill any space below the footer with the footer colour (last section scrolls a little past the end) */
+#links .accessibility{position:relative}
+#links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#025169}

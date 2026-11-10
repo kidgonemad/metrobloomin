@@ -155,7 +155,8 @@ body .content-menu ul li a.active span{color:var(--mb-ink)}
 .dark .content-menu ul li a span{color:rgba(255,255,255,.45)}
 .dark .content-menu ul li a.active span{color:#fff}
 .mb-dir-btn{display:none!important}
-@media (max-width:767px){body .content-menu{display:none!important}}
+/* section list removed on all screen sizes */
+body .content-menu{display:none!important}
 
 /* shared menu: same spot as the main site menu (top right) */
 .mb-shop__menu{justify-self:end;width:44px;height:44px}

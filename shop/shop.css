@@ -138,8 +138,9 @@ body .menu ul.links>li>a{display:block;padding:0 14px;line-height:44px;border-bo
 body .menu ul.links>li>a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
 body .menu ul.links li svg{display:none}
 #shopLink{font-weight:700}
-#logo .mb-word{display:block;overflow:hidden;max-width:220px;transition:max-width .5s cubic-bezier(.65,0,.2,1),opacity .3s ease,transform .5s cubic-bezier(.65,0,.2,1)}
-body.mb-menu-open #logo .mb-word{max-width:0;opacity:0;transform:translateX(-24px)}
+#logo .mb-leaf{position:relative;z-index:2}
+#logo .mb-word{display:block;overflow:hidden;max-width:220px;clip-path:inset(0 0 0 0);transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1),clip-path .55s cubic-bezier(.65,0,.2,1)}
+body.mb-menu-open #logo .mb-word{max-width:0;opacity:0;transform:translateX(-40px);clip-path:inset(0 0 0 100%)}
 @media (max-width:767px){body .menu ul.links>li>a{padding:0 10px;font-size:14px}}
 
 /* section directory: text list, current dark + underlined, others grey */
@@ -153,21 +154,8 @@ body .content-menu ul li a:hover span{color:rgba(39,39,39,.75)}
 body .content-menu ul li a.active span{color:var(--mb-ink)}
 .dark .content-menu ul li a span{color:rgba(255,255,255,.45)}
 .dark .content-menu ul li a.active span{color:#fff}
-.mb-dir-btn{display:none}
-@media (max-width:767px){
-  body .content-menu{top:auto;bottom:80px;right:16px;transform:none;display:none;padding:12px 18px;border-radius:18px;
-    background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mb-glass-line);
-    box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 1px 0 #fff;z-index:61}
-  body .content-menu.is-open{display:block}
-  body .content-menu ul li{margin:10px 0}
-  body .content-menu ul li a span,.dark .content-menu ul li a span{font-size:16px;color:rgba(39,39,39,.45)}
-  body .content-menu ul li a.active span,.dark .content-menu ul li a.active span{color:var(--mb-ink)}
-  .mb-dir-btn{display:grid;grid-template-columns:repeat(2,6px);gap:4px;place-content:center;position:fixed;right:16px;bottom:24px;z-index:62;
-    width:44px;height:44px;border-radius:50%;padding:0;cursor:pointer;color:var(--mb-ink);
-    background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mb-glass-line);
-    box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 1px 0 #fff}
-  .mb-dir-btn i{width:6px;height:6px;border-radius:50%;background:currentColor}
-}
+.mb-dir-btn{display:none!important}
+@media (max-width:767px){body .content-menu{display:none!important}}
 
 /* shared menu: same spot as the main site menu (top right) */
 .mb-shop__menu{justify-self:end;width:44px;height:44px}

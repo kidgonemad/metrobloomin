@@ -126,7 +126,6 @@
 
   function wire() {
     wireBurger();
-    wireDirectory();
     var link = document.getElementById('shopLink');
     if (link) link.addEventListener('click', open);
     if (location.hash === '#shop') open();

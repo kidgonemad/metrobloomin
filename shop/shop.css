@@ -165,3 +165,7 @@ body .content-menu ul li a.active span{color:var(--mb-ink)}
     box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 1px 0 #fff}
   .mb-dir-btn i{width:6px;height:6px;border-radius:50%;background:currentColor}
 }
+
+/* shared menu inside the shop bar + current-page underline in the main menu */
+.mb-shop__menu{justify-self:end}
+body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}

@@ -1,0 +1,20 @@
+/* Shared Metro Bloomin menu (yungbld style): frosted round "•••" button + frosted pill of lowercase links */
+.mbn{--mbn-glass:rgba(255,255,255,.62);--mbn-line:rgba(255,255,255,.85);--mbn-ink:#272727;
+  display:flex;align-items:center;gap:6px;font:700 15px/1 "Helvetica Neue",Helvetica,Arial,sans-serif}
+.mbn__btn{flex:none;display:flex;align-items:center;justify-content:center;gap:3px;width:44px;height:44px;padding:0;border-radius:50%;
+  background:var(--mbn-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mbn-line);
+  box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px 0 #fff;color:var(--mbn-ink);cursor:pointer;position:relative}
+.mbn__btn span{width:5px;height:5px;border-radius:50%;background:currentColor;transition:transform .3s,width .3s,height .3s,border-radius .3s,opacity .2s}
+.mbn.is-open .mbn__btn span:nth-child(1){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(45deg)}
+.mbn.is-open .mbn__btn span:nth-child(2){opacity:0}
+.mbn.is-open .mbn__btn span:nth-child(3){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(-45deg)}
+.mbn__pill{display:flex;align-items:center;height:44px;padding:0 8px;border-radius:999px;white-space:nowrap;
+  background:var(--mbn-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--mbn-line);
+  box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px 0 #fff;
+  opacity:0;pointer-events:none;transition:opacity .25s ease,transform .35s cubic-bezier(.2,.9,.3,1.1)}
+.mbn--right .mbn__pill{transform:scaleX(.4);transform-origin:right center}
+.mbn--left .mbn__pill{transform:scaleX(.4);transform-origin:left center}
+.mbn.is-open .mbn__pill{opacity:1;transform:none;pointer-events:auto}
+.mbn__pill a{padding:0 12px;line-height:44px;color:var(--mbn-ink)!important;text-decoration:none;text-transform:lowercase;font:inherit}
+.mbn__pill a:hover,.mbn__pill a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+@media (max-width:767px){.mbn__pill a{padding:0 9px;font-size:14px}}

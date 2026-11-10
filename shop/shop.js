@@ -38,7 +38,7 @@
         collections.map(function (c) { return '<a href="#mb-' + c.id + '">' + esc(c.title) + '</a>'; }).join('') +
         '<a href="' + STORE + '/pages/contact" target="_blank" rel="noopener">Contact</a></nav>' +
       '<a class="mb-shop__brand" href="' + STORE + '" target="_blank" rel="noopener">METRO<br>BLOOMIN<span>EST. 2016</span></a>' +
-      '<button class="mb-shop__close" type="button" aria-label="Close shop">Close ✕</button>' +
+      '<div class="mb-shop__menu"></div>' +
     '</header>' +
     '<div class="mb-hero"><h2>Shop</h2><p>The Metro Bloomin signature logo collection: heavyweight hand-tufted rugs, molded soft PVC keychains and more. Checkout happens on metrobloomin.com.</p></div>' +
     collections.map(function (c) {
@@ -61,7 +61,7 @@
     el.classList.add('is-open');
     el.scrollTop = 0;
     if (location.hash !== '#shop') history.replaceState(null, '', '#shop');
-    setTimeout(function () { el.querySelector('.mb-shop__close').focus(); }, 50);
+    setTimeout(function () { var b = el.querySelector('.mbn__btn'); if (b) b.focus(); }, 50);
   }
   function close() {
     el.classList.remove('is-open');
@@ -70,7 +70,13 @@
   }
   function isOpen() { return el.classList.contains('is-open'); }
 
-  el.querySelector('.mb-shop__close').addEventListener('click', close);
+  if (window.MBNav) {
+    el.querySelector('.mb-shop__menu').appendChild(window.MBNav.create({ align: 'right', items: [
+      { label: 'home', onClick: close },
+      { label: 'shop', current: true },
+      { label: 'videos', href: new URL('shop/vapp/', document.baseURI).href }
+    ] }));
+  }
   el.querySelectorAll('.mb-shop__nav a[href^="#mb-"]').forEach(function (a) {
     a.addEventListener('click', function (e) {
       e.preventDefault();
@@ -96,6 +102,14 @@
     b.className = 'mb-burger'; b.type = 'button'; b.setAttribute('aria-label', 'Menu'); b.setAttribute('aria-expanded', 'false');
     b.innerHTML = '<span></span><span></span><span></span>';
     nav.insertBefore(b, nav.firstChild);
+    var ul = nav.querySelector('ul.links');
+    if (ul && !ul.querySelector('.mb-home')) {
+      var li = document.createElement('li');
+      li.innerHTML = '<a href="#" class="mb-home is-current" aria-current="page">home</a>';
+      ul.insertBefore(li, ul.querySelector('#shopLink') ? ul.querySelector('#shopLink').parentNode : ul.firstChild);
+      li.querySelector('a').addEventListener('click', function (e) { e.preventDefault(); set(false); });
+      var about = ul.querySelector('#about'); if (about) ul.appendChild(about.parentNode);
+    }
     function set(open) { nav.classList.toggle('is-open', open); document.body.classList.toggle('mb-menu-open', open); b.setAttribute('aria-expanded', String(open)); }
     b.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('is-open')); });
     nav.querySelectorAll('#shopLink,#about,#videos,.lang-list a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });

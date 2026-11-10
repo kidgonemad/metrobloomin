@@ -11,7 +11,7 @@ rebranded for Metro Bloomin with a shop section built from metrobloomin.com.
 - **Branding**: Metro Bloomin title, headline, leaf logo, favicon and About text. Helsedirektoratet branding, contact details and the cookie banner are removed.
 - **3D**: the front-page brain is pink with a 3D cartoon leaf (`leaf-cartoon-3d.glb`, front art `leaf-cartoon-face.jpg`).
 - **Videos**: "Watch videos" shows Instagram embeds.
-- **Language**: English by default; other languages via the menu or `/nb/`, `/ar/`, ...
+- **Language**: English only for now (language selector hidden).
 
 ## Run locally
     python3 -m http.server 8000   # then open http://localhost:8000/

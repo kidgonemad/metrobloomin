@@ -105,3 +105,6 @@
 
 /* no tracking cookies on this site, so no cookie banner */
 #cookieView{display:none!important}
+
+/* single language for now: hide the language selector */
+.menu .lang-wrapper{display:none!important}

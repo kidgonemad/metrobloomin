@@ -57,17 +57,20 @@
   var screen = el.querySelector('.mb-vid__screen');
   var caption = el.querySelector('.mb-vid__caption');
 
-  // ---------- media atlas (one texture holding every blob's picture/video frame) ----------
+  // ---------- media atlas (one texture holding every blob's current frame, pre-cropped to the blob's shape) ----------
+  function rand(i, k) { var x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); }
+  videos.forEach(function (v, i) {                 // blob proportions: organic pebbles, mostly wider than tall
+    v.aspect = v.shape === 'Vertical' || v.shape === 'Portrait' ? 1.05 + rand(i, 7) * 0.35 : 1.35 + rand(i, 7) * 0.45;
+  });
   var CELL = 384, GC = 5, GR = 2;
   var atlas = document.createElement('canvas'); atlas.width = CELL * GC; atlas.height = CELL * GR;
   var actx = atlas.getContext('2d');
-  actx.fillStyle = '#d9d9d9'; actx.fillRect(0, 0, atlas.width, atlas.height);
+  actx.fillStyle = '#b3b3b3'; actx.fillRect(0, 0, atlas.width, atlas.height);   // grey until a frame arrives
   var atlasDirty = true;
   function drawCover(src, sw, sh, i) {
-    var x = (i % GC) * CELL, y = Math.floor(i / GC) * CELL, s = Math.max(CELL / sw, CELL / sh);
-    var w = sw * s, h = sh * s;
-    actx.save(); actx.beginPath(); actx.rect(x, y, CELL, CELL); actx.clip();
-    actx.drawImage(src, x + (CELL - w) / 2, y + (CELL - h) / 2, w, h); actx.restore();
+    var a = videos[i].aspect, cw = sw, ch = sh;
+    if (sw / sh > a) cw = sh * a; else ch = sw / a;
+    actx.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, (i % GC) * CELL, Math.floor(i / GC) * CELL, CELL, CELL);
     atlasDirty = true;
   }
   videos.forEach(function (v) {
@@ -80,41 +83,24 @@
     v.vid = vid;
   });
 
-  // ---------- WebGL ----------
+  // ---------- WebGL: one metaball field; each pixel shows the video of the blob that owns it ----------
   var gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
-  var MAXC = N * 3;
+  var CPB = 5, MAXC = N * CPB;
   var VS = '#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   var FS = '#version 300 es\nprecision highp float;\n' +
     '#define NB ' + N + '\n#define NC ' + MAXC + '\n' +
-    'uniform vec2 uRes;uniform float uTime;uniform float uDpr;uniform vec4 uC[NC];uniform vec4 uB[NB];' +
+    'uniform vec2 uRes;uniform vec4 uC[NC];uniform vec4 uB[NB];uniform float uH[NB];' +
     'uniform sampler2D uAtlas;uniform vec2 uGrid;out vec4 o;\n' +
-    // per-blob field at a point
-    'void fieldAt(vec2 p,out float tot,out vec2 g,out int best,out float b1,out float b2,out float own[NB]){' +
-    ' for(int b=0;b<NB;b++)own[b]=0.;tot=0.;g=vec2(0.);' +
-    ' for(int i=0;i<NC;i++){vec4 c=uC[i];vec2 d=p-c.xy;float dd=max(dot(d,d),1.);float r2=c.z*c.z;float f=r2/dd;' +
-    '  tot+=f;g+=-2.*r2*d/(dd*dd);int bi=int(c.w+.5);for(int b=0;b<NB;b++){if(b==bi)own[b]+=f;}}' +
-    ' best=0;b1=0.;b2=0.;for(int b=0;b<NB;b++){float v=own[b];if(v>b1){b2=b1;b1=v;best=b;}else if(v>b2){b2=v;}}}\n' +
     'void main(){vec2 p=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y);' +
-    ' float tot;vec2 g;int best;float b1,b2;float own[NB];fieldAt(p,tot,g,best,b1,b2,own);' +
-    ' vec3 bg=vec3(.961);float w=fwidth(tot)*1.2+1e-4;float a=smoothstep(1.-w,1.+w,tot);' +
+    ' float own[NB];for(int b=0;b<NB;b++)own[b]=0.;float tot=0.;' +
+    ' for(int i=0;i<NC;i++){vec4 c=uC[i];vec2 d=p-c.xy;float f=c.z*c.z/max(dot(d,d),1.);f=f*f;tot+=f;' +
+    '  int bi=int(c.w+.5);for(int b=0;b<NB;b++){if(b==bi)own[b]+=f;}}' +
+    ' int ob=0;float best=0.;for(int b=0;b<NB;b++){if(own[b]>best){best=own[b];ob=b;}}' +
+    ' vec3 bg=vec3(.961);float w=fwidth(tot)*.75+1e-5;float a=smoothstep(1.-w,1.+w,tot);' +
     ' if(a<=0.){o=vec4(bg,1.);return;}' +
-    // slow flow warps which blob owns the inside (silhouette stays clean)
-    ' vec2 q=p+uDpr*22.*vec2(sin(p.y*.010+uTime*.35)+.5*sin(p.x*.017-uTime*.5),cos(p.x*.009-uTime*.3)+.5*cos(p.y*.015+uTime*.45));' +
-    ' float t2;vec2 g2;int ob;float o1,o2;float own2[NB];fieldAt(q,t2,g2,ob,o1,o2,own2);' +
-    ' vec4 B=uB[ob];' +
-    // fake height from the field: steep near the silhouette and along seams between videos
-    ' float s=tot-1.;float edge=1.-smoothstep(0.,.32,s);float seam=smoothstep(.72,.98,o2/max(o1,1e-4));' +
-    ' float m=clamp(max(edge*sqrt(edge),seam*.9),0.,1.);' +
-    ' vec2 gn=length(g)>0.?normalize(g):vec2(0.);vec3 n=normalize(vec3(-gn*m*1.6,1.));' +
-    // video / image inside the blob, slightly refracted by the surface
-    ' vec2 lc=(q-B.xy)/(B.z*2.3)+.5+n.xy*.06;lc=clamp(lc,.01,.99);' +
-    ' float cx=mod(float(ob),uGrid.x),cy=floor(float(ob)/uGrid.x);vec3 vid=texture(uAtlas,(vec2(cx,cy)+lc)/uGrid).rgb;' +
-    ' vid=mix(vid,vid*1.08+.03,B.w);' +
-    // liquid-metal shading: reflected fake studio environment + specular
-    ' vec3 r=reflect(vec3(0.,0.,-1.),n);float e=.5+.5*r.y;' +
-    ' vec3 env=mix(vec3(.10),vec3(.97),smoothstep(.15,.85,e));env=mix(env,vec3(.55),.25*sin(r.x*6.+uTime*.6)*.5+.12);' +
-    ' float spec=pow(max(dot(r,normalize(vec3(-.4,.6,.7))),0.),48.)*1.4;vec3 metal=env+spec;' +
-    ' vec3 col=mix(vid,metal,m);' +
+    ' vec4 B=uB[ob];vec2 lc=clamp((p-B.xy)/(2.*B.zw)+.5,.002,.998);' +
+    ' float cx=mod(float(ob),uGrid.x),cy=floor(float(ob)/uGrid.x);' +
+    ' vec3 col=texture(uAtlas,(vec2(cx,cy)+lc)/uGrid).rgb;col=mix(col,col*1.06+.02,uH[ob]);' +
     ' o=vec4(mix(bg,col,a),1.);}';
   var prog = null, U = {};
   function compile(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; } return s; }
@@ -130,7 +116,7 @@
     var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     var loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    ['uRes', 'uTime', 'uDpr', 'uC', 'uB', 'uAtlas', 'uGrid'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
+    ['uRes', 'uC', 'uB', 'uH', 'uAtlas', 'uGrid'].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
     var tex = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -140,43 +126,51 @@
     el.querySelector('.mb-vid__mode').hidden = true;
   }
 
-  // ---------- layout + motion ----------
+  // ---------- layout: packed columns of pebbles that sometimes touch and merge ----------
   var W = 0, H = 0, DPR = 1, blobs = [], scrollY = 0, scrollT = 0, maxScroll = 0, hover = -1, mouse = { x: -1e4, y: -1e4 };
-  function rand(i, k) { var x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); }
   function layout() {
     W = el.clientWidth; H = el.clientHeight; DPR = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-    var cols = W > 1100 ? 4 : W > 700 ? 3 : 2, cell = (W - 40) / cols, R = cell * (cols === 2 ? 0.25 : 0.2);
-    var rows = Math.ceil(N / cols), rowH = cell * (cols === 2 ? 1.0 : 0.82), top = 90 + R;
+    var cols = W > 1100 ? 4 : W > 700 ? 3 : 2, gut = 18, colW = (W - gut * 2) / cols;
+    var bottoms = []; for (var c = 0; c < cols; c++) bottoms.push(78 + (c % 2) * colW * 0.22);
     blobs = videos.map(function (v, i) {
-      var c = i % cols, r = Math.floor(i / cols), stagger = (r % 2) * cell * 0.33;
-      return { x: 20 + cell * (c + 0.5) + (rand(i, 1) - 0.5) * cell * 0.22 + (cols > 2 ? stagger - cell * 0.16 : 0),
-               y: top + r * rowH + (rand(i, 2) - 0.5) * rowH * 0.25, R: R * (0.85 + rand(i, 3) * 0.3), h: 0,
-               ph: rand(i, 4) * 6.28, sp: 0.18 + rand(i, 5) * 0.2 };
+      var c = 0; for (var k = 1; k < cols; k++) if (bottoms[k] < bottoms[c]) c = k;
+      var bw = colW * (0.78 + rand(i, 1) * 0.16), bh = bw / v.aspect;
+      var gap = (rand(i, 2) - 0.2) * bh * 0.2;                 // slightly negative now and then: neighbours touch
+      var x = gut + colW * (c + 0.5) + (rand(i, 3) - 0.5) * colW * 0.12, y = bottoms[c] + gap + bh / 2;
+      bottoms[c] = y + bh / 2;
+      // a pebble = 5 soft circles along its long axis with irregular sizes
+      var parts = [];
+      for (var k = 0; k < CPB; k++) {
+        var u = (k / (CPB - 1)) * 2 - 1;
+        parts.push({ ox: u * bw * 0.3 + (rand(i, 10 + k) - 0.5) * bw * 0.07, oy: (rand(i, 20 + k) - 0.5) * bh * 0.2,
+                     r: bh * (0.3 + rand(i, 30 + k) * 0.09) * (1 - Math.abs(u) * 0.2), ph: rand(i, 40 + k) * 6.28 });
+      }
+      return { x: x, y: y, hw: bw / 2, hh: bh / 2, h: 0, parts: parts, ph: rand(i, 4) * 6.28 };
     });
-    maxScroll = Math.max(0, top + (rows - 1) * rowH + R * 1.6 + 60 - H);
+    maxScroll = Math.max(0, Math.max.apply(null, bottoms) + 60 - H);
     scrollT = Math.min(scrollT, maxScroll);
   }
-  var cdata = new Float32Array(MAXC * 4), bdata = new Float32Array(N * 4);
+  var cdata = new Float32Array(MAXC * 4), bdata = new Float32Array(N * 4), hdata = new Float32Array(N);
   function step(t) {
     scrollY += (scrollT - scrollY) * 0.12;
     for (var i = 0; i < N; i++) {
-      var b = blobs[i], target = i === hover ? 1 : 0; b.h += (target - b.h) * 0.12;
-      var cx = b.x + Math.sin(t * b.sp + b.ph) * b.R * 0.12, cy = b.y - scrollY + Math.cos(t * b.sp * 0.8 + b.ph) * b.R * 0.12;
-      var R = b.R * (1 + 0.12 * b.h);
-      b.cx = cx; b.cy = cy; b.cr = R;
-      bdata.set([cx * DPR, cy * DPR, R * DPR, b.h], i * 4);
-      for (var k = 0; k < 3; k++) {
-        var ang = t * (0.35 + k * 0.17) * (k % 2 ? -1 : 1) + b.ph + k * 2.1, off = R * (0.22 + 0.06 * Math.sin(t * 0.7 + k));
-        var r = R * (k === 0 ? 0.78 : 0.6 + 0.05 * Math.sin(t * 0.9 + k * 1.7 + b.ph));
-        cdata.set([(cx + Math.cos(ang) * off) * DPR, (cy + Math.sin(ang) * off) * DPR, r * DPR, i], (i * 3 + k) * 4);
+      var b = blobs[i], target = i === hover ? 1 : 0; b.h += (target - b.h) * 0.14;
+      var s = 1 + 0.035 * b.h, cx = b.x, cy = b.y - scrollY;
+      b.cx = cx; b.cy = cy;
+      bdata.set([cx * DPR, cy * DPR, b.hw * 1.12 * s * DPR, b.hh * 1.12 * s * DPR], i * 4); hdata[i] = b.h;
+      for (var k = 0; k < CPB; k++) {
+        var q = b.parts[k], wob = 1 + 0.035 * Math.sin(t * 0.6 + q.ph);   // gentle breathing
+        cdata.set([(cx + q.ox * s + Math.sin(t * 0.4 + q.ph) * b.hh * 0.03) * DPR, (cy + q.oy * s + Math.cos(t * 0.5 + q.ph) * b.hh * 0.03) * DPR,
+                   q.r * s * wob * DPR, i], (i * CPB + k) * 4);
       }
     }
   }
   function pick(x, y) {
     var best = -1, bd = 1e9;
-    for (var i = 0; i < N; i++) { var b = blobs[i]; if (!b.cx) continue; var d = Math.hypot(x - b.cx, y - b.cy) / b.cr; if (d < 1.15 && d < bd) { bd = d; best = i; } }
+    for (var i = 0; i < N; i++) { var b = blobs[i]; if (b.cx == null) continue;
+      var d = Math.pow((x - b.cx) / b.hw, 2) + Math.pow((y - b.cy) / b.hh, 2); if (d < 1.1 && d < bd) { bd = d; best = i; } }
     return best;
   }
   var raf = 0, t0 = performance.now();
@@ -188,12 +182,12 @@
     videos.forEach(function (v) { if (v.vid && v.vid.readyState >= 2) { drawCover(v.vid, v.vid.videoWidth, v.vid.videoHeight, v.i); anyVid = true; } });
     if (atlasDirty) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, atlas); atlasDirty = false; }
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.uniform2f(U.uRes, canvas.width, canvas.height); gl.uniform1f(U.uTime, t); gl.uniform1f(U.uDpr, DPR);
-    gl.uniform4fv(U.uC, cdata); gl.uniform4fv(U.uB, bdata);
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform4fv(U.uC, cdata); gl.uniform4fv(U.uB, bdata); gl.uniform1fv(U.uH, hdata);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (hover >= 0) {
       var b = blobs[hover], v = videos[hover];
-      label.style.transform = 'translate(' + Math.round(b.cx) + 'px,' + Math.round(b.cy + b.cr + 14) + 'px)';
+      label.style.transform = 'translate(' + Math.round(b.cx) + 'px,' + Math.round(b.cy + b.hh + 14) + 'px)';
     }
   }
   function startPreviews(on) { videos.forEach(function (v) { if (v.vid) { if (on) v.vid.play().catch(function () {}); else v.vid.pause(); } }); }

@@ -8,7 +8,9 @@
 #logo .mb-leaf{flex:none;width:30px;height:32px;background:currentColor;
   -webkit-mask:url("img/leaf-mark.png") center/contain no-repeat;mask:url("img/leaf-mark.png") center/contain no-repeat;transition:background-color .5s}
 #logo .mb-word{font:700 15px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}
-@media (max-width:767px){#logo .mb-word{display:none}}
+/* phones/tablets: the menu fills the top row, so the logo sits on its own row below it */
+@media (max-width:1023px){#logo{width:auto;top:calc(2rem + 46px)}#logo .mb-leaf{width:26px;height:28px}#logo .mb-word{font-size:13px}}
+@media (min-width:768px) and (max-width:1023px){#logo{top:calc(4rem + 46px)}}
 
 /* nav link */
 #shopLink{font-weight:700}

@@ -7,4 +7,4 @@ Only the data source and branding are changed:
 - `index.json`: the Index page.
 - `info.json` and `contact.json`: the Info and Contact pages.
 
-The app's menu has a Close item (route `/close`), which the site uses to close the overlay.
+The app's behaviour is unchanged. "Watch videos" on the main site opens it as a page, and browser Back returns.

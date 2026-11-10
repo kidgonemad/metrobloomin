@@ -171,3 +171,9 @@ body.mb-shop-open #logo{color:#025169}
 .mb-shop .mb-hero{padding-top:130px}
 @media (min-width:768px){.mb-shop .mb-hero{padding-top:170px}}
 body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+
+/* black site: white logo + text on the 3D page; black logo on shop (light background) */
+body.dark #logo{color:#fff}
+body.mb-shop-open #logo{color:#111!important}
+/* solid white menu button + pill on the black page */
+body.dark:not(.mb-shop-open) .mb-burger,body.dark:not(.mb-shop-open) .menu.is-open ul.links{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none}

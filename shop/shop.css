@@ -79,7 +79,11 @@
 #links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#111111}
 
 #logo .mb-leaf{position:relative;z-index:2}
-#logo .mb-word{display:block;overflow:hidden;max-width:220px;transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1)}
+#logo .mb-word{display:block;overflow:hidden;max-width:220px;transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1);
+  animation:mbWordIn .8s cubic-bezier(.65,0,.2,1) .5s backwards}
+/* appear: the wordmark slides out from behind the leaf as the page opens (reverse of the hide) */
+@keyframes mbWordIn{from{max-width:0;opacity:0;transform:translateX(-40px)}}
+@media (prefers-reduced-motion:reduce){#logo .mb-word{animation:none}}
 body.mb-menu-open #logo .mb-word,#logo.mb-word-done .mb-word{max-width:0;opacity:0;transform:translateX(-40px)}
 
 /* original top menu is hidden (the site uses mbnav.css); the side section dots stay, styled in index.7d544b17.css */

@@ -98,9 +98,9 @@
     function layout() {
       dpr = Math.min(1.5, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      var r = rnd(7), S = Math.max(78, Math.min(170, W / 4.6));      // smaller pieces stay sharp (the videos are 224px a piece)
+      var r = rnd(7), S = Math.max(56, Math.min(110, W / 6));      // smaller pieces stay sharp (the videos are 224px a piece)
       Rv = Math.max(W, H * .6) * .75; D = Rv * 3; Y0 = -H * .75; Hv = H * 2.2;
-      var N = Math.min(750, Math.ceil(Rv * 2 * Hv / (S * S * .2)));
+      var N = Math.min(1100, Math.ceil(Rv * 2 * Hv / (S * S * .22)));
       pieces = []; trails = [];
       for (var i = 0; i < N; i++) {
         var a = r() * 6.2832, rr = Rv * Math.sqrt(.35 + r() * .65),   // most pieces on the outer layer, the one facing you
@@ -187,7 +187,7 @@
       var loc = gl.getAttribLocation(sprite, 'c'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(sprite.u('res'), W, H);
       function project(o, X, Y, Z, size) { var x = X * ca - Z * sa, z = X * sa + Z * ca, depth = D - z, k = D / depth;
-        o.sx = W / 2 + x * k; o.sy = H / 2 + (Y - camY) * k; o.ss = Math.min(size * k, 240) /* never drawn bigger than the video's own detail */; o.depth = depth; o.sh = .45 + .55 * (z + Rv) / (2 * Rv); }
+        o.sx = W / 2 + x * k; o.sy = H / 2 + (Y - camY) * k; o.ss = Math.min(size * k, 150) /* never drawn bigger than the video's own detail */; o.depth = depth; o.sh = .45 + .55 * (z + Rv) / (2 * Rv); }
       order = [];
       for (var i = 0; i < pieces.length; i++) { var p = pieces[i];
         p.vs += -p.s * .18; p.vs *= .82; p.s += p.vs * .12; p.vw += -p.w * .12; p.vw *= .85; p.w += p.vw * .2;      // tap springs

@@ -5,7 +5,7 @@
 
 /* brand mark (replaces the old header logo; colour follows the page theme via currentColor) */
 #logo{display:flex;align-items:center;gap:12px;text-decoration:none;width:auto!important;overflow:visible}
-#logo .mb-leaf{flex:none;display:block;width:36px;height:36px;color:inherit}
+#logo .mb-leaf{flex:none;display:block;width:64px;height:64px;color:inherit}
 #logo .mb-leaf svg{display:block;width:100%;height:100%;overflow:visible}
 #logo .mb-leaf path{fill:currentColor}
 #logo .mb-word{font:700 15px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}
@@ -37,7 +37,6 @@
 .mb-hero h2{margin:0;font-size:clamp(40px,8vw,104px);font-weight:700;line-height:.9;letter-spacing:-.02em;text-transform:uppercase;color:var(--mb-fg)}
 
 .mb-collection{max-width:1320px;margin:0 auto;padding:40px 48px 64px;scroll-margin-top:90px}
-.mb-collection+.mb-collection{border-top:1px solid var(--mb-line)}
 .mb-collection__head{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:24px}
 .mb-collection__head h3{margin:0;font-size:28px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--mb-fg)}
 

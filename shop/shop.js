@@ -86,6 +86,7 @@
     // MP4s in shop/bg/ (colour on top, alpha mask below) and drawn into canvases, so they are transparent on every
     // browser, iPhone included. Each plays once; a still of its last frame is the fallback.
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var CLIP_V = '2';   // bump when a video in shop/bg/ changes, so phones fetch the new one
     function alphaClip(box, name, w, h) {
       var cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.setAttribute('aria-hidden', 'true'); box.appendChild(cv);
       var out = cv.getContext('2d'), tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h * 2;
@@ -96,10 +97,10 @@
         for (var k = 3; k < d.length; k += 4) d[k] = m[k - 3];
         out.putImageData(c, 0, 0);
       };
-      var still = new Image(); still.src = base + 'bg/' + name + '.webp';
+      var still = new Image(); still.src = base + 'bg/' + name + '.webp?v=' + CLIP_V;
       var v = document.createElement('video');
       v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-      v.preload = 'auto'; v.src = base + 'bg/' + name + '.mp4';
+      v.preload = 'auto'; v.src = base + 'bg/' + name + '.mp4?v=' + CLIP_V;
       // plays once; onTime(seconds) runs every frame, done() when it ends (or when it cannot play: the still shows)
       return { video: v, play: function (onTime, done) {
         var over = false, fin = function () { if (!over) { over = true; done(); } };
@@ -116,10 +117,10 @@
       var wordClip = alphaClip(wordEl, 'word-sm', 480, 260), leafClip = alphaClip(leafEl, 'leaf', 384, 384);
       window.__mbWordVideo = wordClip.video; window.__mbLeafVideo = leafClip.video;   // read by the site tests
       var word = function (on) { logoEl.classList.toggle('mb-word-show', on); };
-      // the lettering appears as the leaf pops in (~0.9s), plays its reveal, holds 1.5s, then tucks back into the leaf
+      // the lettering appears as the leaf pops in (~0.9s): the video plays the reveal, holds 1.5s, then plays it backwards to vanish
       var wordStarted = false;
       var startWord = function () { if (wordStarted) return; wordStarted = true; word(true);
-        wordClip.play(function () {}, function () { setTimeout(function () { word(false); }, 1500); }); };
+        wordClip.play(function () {}, function () { word(false); }); };
       var play = function () { leafClip.play(function (t) { if (t >= .9) startWord(); }, startWord); };
       // the falling-buds loading screen (loader.js) covers the header: start once it lifts
       if (window.__mbLoading) document.addEventListener('mb:loaded-in', play, { once: true }); else play();

@@ -79,9 +79,9 @@
 
 #logo .mb-leaf{position:relative;z-index:2}
 #logo .mb-word{display:block}
-#logo .mb-word canvas{display:block;width:100%;height:100%;transform-origin:0 50%;transition:transform .7s cubic-bezier(.7,0,.2,1),opacity .5s ease}
-/* tucked into the leaf unless the leaf animation is showing it (shop.js), and while the menu is open */
-body.mb-menu-open #logo .mb-word canvas,#logo:not(.mb-word-show) .mb-word canvas{transform:translateX(-35%) scale(.2);opacity:0}
+#logo .mb-word canvas{display:block;width:100%;height:100%;transition:opacity .4s ease}
+/* hidden unless the leaf animation is showing it (shop.js; the video itself reverses the reveal to vanish), and while the menu is open */
+body.mb-menu-open #logo .mb-word canvas,#logo:not(.mb-word-show) .mb-word canvas{opacity:0}
 body.mb-menu-open #logo .mb-word,#logo:not(.mb-word-show) .mb-word{pointer-events:none}
 @media (prefers-reduced-motion:reduce){#logo .mb-word canvas{transition:opacity .3s ease}}
 

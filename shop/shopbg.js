@@ -54,11 +54,12 @@
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0])); return t; }
     function upload(t, src) { gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); }
     function source(name, loop) {
-      var s = { tex: texture(), ready: false, video: null };
-      var im = new Image(); im.onload = function () { if (!s.live) { upload(s.tex, im); s.ready = true; } }; im.src = base + name + '.webp';
+      // stillTex = first frame (pieces at rest); tex = the playing video (only the few pieces animating right now)
+      var s = { tex: texture(), stillTex: texture(), ready: false, video: null, prevT: 0 };
+      var im = new Image(); im.onload = function () { upload(s.stillTex, im); s.ready = true; }; im.src = base + name + '.webp?v=2';
       if (still) return s;
       var v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true; v.loop = loop;
-      v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = base + name + '.mp4';
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = base + name + '.mp4?v=2';
       s.video = v; return s;
     }
     var SRC = { a: source('skulls-a', true), b: source('skulls-b', true), l: source('leaves', true) };
@@ -121,7 +122,19 @@
 
     // ---------- playback: only while the shop is open ----------
     var running = false;
-    function playAll() { ['a', 'b', 'l'].forEach(function (k) { var v = SRC[k].video; if (v && v.paused) v.play().catch(function () {}); }); }
+    // only a few pieces animate at a time: each loop of an atlas video (which starts and ends on its first frame,
+    // the same picture as the still) picks a fresh random handful; the rest show the still. Swaps happen on that
+    // matching frame, so nothing jumps. The three videos start out of step, so the swaps don't all happen together.
+    function shuffle(k) { var mine = pieces.filter(function (p) { return p.src === k; }), n = Math.max(1, Math.round(mine.length * .2));
+      mine.forEach(function (p) { p.active = false; });
+      for (var j = 0; j < n && mine.length; j++) mine.splice(Math.floor(Math.random() * mine.length), 1)[0].active = true; }
+    var delay = { a: 0, b: 3300, l: 6600 }, begun = false;                // the first time, the three videos start out of step
+    function playAll() {
+      ['a', 'b', 'l'].forEach(function (k) { var v = SRC[k].video; if (!v || !v.paused) return;
+        if (begun) v.play().catch(function () {});
+        else setTimeout(function () { if (running && v.paused) v.play().catch(function () {}); }, delay[k]); });
+      begun = true;
+    }
     function pauseAll() { ['a', 'b', 'l'].forEach(function (k) { var v = SRC[k].video; if (v && !v.paused) v.pause(); }); }
     function sync() {
       var on = shop.classList.contains('is-open') && !document.hidden;
@@ -142,6 +155,7 @@
       if (!running) return;
       var t = (ms - t0) / 1000;
       ['a', 'b', 'l'].forEach(function (k) { var s = SRC[k], v = s.video;
+        if (v && v.readyState >= 2) { if ((!s.live && v.currentTime < .3) || v.currentTime < s.prevT - .5) shuffle(k); s.prevT = v.currentTime; }   // new loop -> new handful
         if (v && v.readyState >= 2 && (!v.paused || !s.live)) { upload(s.tex, v); s.live = s.ready = true; } });
       ptr.x += (aim.x - ptr.x) * .06; ptr.y += (aim.y - ptr.y) * .06; touchT *= .97; touch += (touchT - touch) * .1;
       gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(.043, .043, .043, 1); gl.clear(gl.COLOR_BUFFER_BIT);
@@ -161,7 +175,7 @@
         }
         p.vy -= Math.max(-40, Math.min(40, dS)) * .3 * p.d;                                            // scrolling jiggles the pile, nearer pieces more
         p.vx += -p.ox * .035; p.vy += -p.oy * .035; p.vx *= .88; p.vy *= .88; p.ox += p.vx; p.oy += p.vy;   // spring home
-        drawSprite(s.tex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
+        drawSprite(p.active && s.live ? s.tex : s.stillTex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
           px + p.ox, py + p.oy, p.size, p.size,
           p.rot + p.w + ptr.x * p.d * .08, 1 + p.s * .22, 1 - p.s * .18, .4 + p.d * .6);
       }

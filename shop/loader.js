@@ -1,6 +1,6 @@
 // Loading screen for the shop: weed buds (shop/drop/bud*.svg) drop and stack until the screen is full to the
 // very top, then the whole pile falls off the bottom and the shop products, stacked above it, fall right behind
-// it into their places (shop.css .mb-drop-in). Only on a fresh visit that opens on the shop (not #videos/#about).
+// it, their blobs grow and the products pop in (shop.css .mb-drop-in). Only on a fresh visit that opens on the shop (not #videos/#about).
 // Runs before shop.js (script order). html.mb-intro (inline script in <head>) keeps the page white until now.
 (function () {
   var html = document.documentElement;
@@ -27,7 +27,7 @@
     prepShop();
     if (shop) {
       shop.classList.add('mb-drop-in');
-      setTimeout(function () { shop.classList.remove('mb-drop-in'); }, 2600);
+      setTimeout(function () { shop.classList.remove('mb-drop-in'); }, 2400);
     }
     root.classList.add('is-falling');          // white lifts; only the falling buds stay on top
   }

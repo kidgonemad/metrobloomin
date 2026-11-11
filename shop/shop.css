@@ -153,10 +153,8 @@ html.mb-intro:after{content:"";position:fixed;inset:0;z-index:1300;background:#f
 .mb-loader{position:fixed;inset:0;z-index:1300;background:#fff;pointer-events:none;transition:background-color .15s linear}
 .mb-loader canvas{display:block;width:100%;height:100%}
 .mb-loader.is-falling{background-color:transparent}
-/* products fall straight down behind the pile like a stack: gravity in, a small settle on landing, row after row */
-.mb-shop.mb-drop-in .mb-card{animation:mbCardDrop .9s linear calc(.12s + var(--k) * 70ms) backwards}
-@keyframes mbCardDrop{
-  0%{transform:translateY(-105vh);animation-timing-function:cubic-bezier(.45,0,.9,.6)}
-  72%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.6,.4,1)}
-  84%{transform:translateY(-14px);animation-timing-function:cubic-bezier(.6,0,.8,.4)}
-  100%{transform:translateY(0)}}
+/* entrance after the loading screen lifts: each blob grows out of nothing, then its product pops onto it (one card after another) */
+.mb-shop.mb-drop-in .mb-card__blob{transform-origin:50% 50%;animation:mbBlobGrow .6s cubic-bezier(.2,.9,.3,1.15) calc(var(--k) * 110ms) backwards}
+.mb-shop.mb-drop-in .mb-card__media img:first-child{animation:mbProdPop .5s cubic-bezier(.3,1.6,.5,1) calc(.4s + var(--k) * 110ms) backwards}
+@keyframes mbBlobGrow{from{transform:scale(0)}}
+@keyframes mbProdPop{0%{transform:scale(0);opacity:0}60%{opacity:1}100%{transform:scale(1)}}

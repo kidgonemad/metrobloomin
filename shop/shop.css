@@ -48,8 +48,11 @@
 
 .mb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;list-style:none;margin:0;padding:0}
 .mb-card a{display:block;text-decoration:none}
-.mb-card__media{position:relative;aspect-ratio:1/1;background:var(--mb-tile);overflow:hidden}
-.mb-card__media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .35s ease,transform .6s ease;}
+.mb-card__media{position:relative;aspect-ratio:1/1;background:var(--mb-tile);overflow:visible}
+/* soft breathing blob behind each product, in the style of the videos page blobs (shape animated by shop.js) */
+.mb-card__blob{position:absolute;left:-10%;top:-12%;width:120%;height:124%;z-index:0;pointer-events:none;overflow:visible}
+.mb-card__blob path{fill:#f4f4f4}
+.mb-card__media img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:contain;transition:opacity .35s ease,transform .6s ease}
 .mb-card__media img+img{opacity:0}
 .mb-card a:hover .mb-card__media img:first-child,.mb-card a:focus-visible .mb-card__media img:first-child{opacity:0}
 .mb-card a:hover .mb-card__media img+img,.mb-card a:focus-visible .mb-card__media img+img{opacity:1;transform:scale(1.03)}

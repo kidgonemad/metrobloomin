@@ -86,7 +86,7 @@
     // animated leaf logo: traced frames from shop/leaf-frames.js, played once, then holds the wink
     var leaf = logoEl && logoEl.querySelector('.mb-leaf'), F = window.MB_LEAF_FRAMES;
     if (leaf && F && F.length) {
-      leaf.innerHTML = '<svg viewBox="0 0 160 160" aria-hidden="true"><path fill-rule="evenodd"></path></svg>';
+      leaf.innerHTML = '<svg viewBox="0 0 640 640" aria-hidden="true"><path fill-rule="evenodd"></path></svg>';
       var path = leaf.querySelector('path'), i = 0, last = 0;
       var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (still) path.setAttribute('d', F[F.length - 1]);

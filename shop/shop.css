@@ -207,3 +207,9 @@ body.mb-videos-open:before{display:none!important}
 
 /* shop is the landing view: show the header right away while the 3D page loads behind it */
 body.mb-shop-open #logo,body.mb-shop-open nav.menu,body.mb-videos-open #logo,body.mb-videos-open nav.menu{opacity:1!important;pointer-events:auto!important}
+
+/* videos view: white page, black menu circle with white dots (pill matches) */
+.mb-vlayer{background:#fff}
+body.mb-videos-open .mb-burger{background:#111!important;color:#fff!important;border-color:#111!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.mb-videos-open .menu.is-open ul.links{background:#111!important;border-color:#111!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.mb-videos-open .menu ul.links>li>a{color:#fff!important}

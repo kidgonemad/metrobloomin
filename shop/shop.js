@@ -37,7 +37,6 @@
         '<ul class="mb-grid">' + c.products.map(card).join('') + '</ul></section>';
     }).join('');
   document.body.appendChild(el);
-  if (window.MBShopBg) window.MBShopBg.mount(el);   // animated scene behind the products (shopbg.js)
   // the blobs behind the products: a lumpy round shape (8 points, each its own slow wobble) that breathes,
   // like the video blobs on the videos page. Runs only while the shop is open.
   (function () {

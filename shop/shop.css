@@ -8,30 +8,6 @@
 #logo .mb-leaf{flex:none;width:30px;height:32px;background:currentColor;
   -webkit-mask:url("img/leaf-mark.png") center/contain no-repeat;mask:url("img/leaf-mark.png") center/contain no-repeat;transition:background-color .5s}
 #logo .mb-word{font:700 15px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}
-/* phones/tablets: logo top-left, menu collapses behind a 3-line button top-right */
-.mb-burger{display:none}
-@media (max-width:1023px){
-  #logo{width:auto}
-  #logo .mb-leaf{width:26px;height:28px}
-  #logo .mb-word{font-size:13px}
-  .menu{z-index:60}
-  .mb-burger{display:flex;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;margin:-10px -10px 0 0;padding:10px;
-    background:none;border:0;color:inherit;cursor:pointer}
-  .mb-burger span{display:block;height:2px;width:24px;background:currentColor;border-radius:2px;transition:transform .25s,opacity .25s}
-  .menu.is-open .mb-burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-  .menu.is-open .mb-burger span:nth-child(2){opacity:0}
-  .menu.is-open .mb-burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-  .menu ul.links{display:none;position:absolute;top:44px;right:-6px;min-width:220px;flex-direction:column;gap:2px;padding:10px 0;margin:0;
-    background:#fff;color:#111111;box-shadow:0 1rem 2rem rgba(2,81,105,.2);border-radius:4px}
-  .menu.is-open ul.links{display:flex}
-  .menu ul.links li{margin:0;flex-wrap:wrap;align-items:center}
-  .menu ul.links>li>a{display:block;flex:1;padding:12px 20px;border-bottom:0!important;color:#111111}
-  .menu ul.links li svg{display:none}
-  .dark .menu ul.links li a{color:#111111}
-  .menu ul.lang-list{position:static;width:100%;box-shadow:none;padding:0 0 6px 20px;background:none}
-  .menu ul.lang-list.visible{display:flex;flex-wrap:wrap}
-  .menu ul.lang-list li a{padding:6px 10px}
-}
 
 /* nav link */
 #shopLink{font-weight:700}
@@ -107,76 +83,34 @@
 #cookieView{display:none!important}
 
 /* single language for now: hide the language selector */
-.menu .lang-wrapper{display:none!important}
 
 /* fill any space below the footer with the footer colour (last section scrolls a little past the end) */
 #links .accessibility{position:relative}
 #links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#111111}
 
-/* ===== yungbld-style menus ===== */
-:root{--mb-glass:rgba(255,255,255,.62);--mb-glass-line:rgba(255,255,255,.85);--mb-ink:#272727}
-/* top menu: round "•••" button that opens a frosted pill of links */
-body .mb-burger{display:flex!important;flex-direction:row;align-items:center;justify-content:center;gap:3px;width:44px;height:44px;margin:-10px -6px 0 0;padding:0;
-  border-radius:50%;background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-  border:1px solid var(--mb-glass-line);box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px 0 #fff;color:var(--mb-ink);cursor:pointer;position:relative;z-index:2}
-body .mb-burger span{width:5px;height:5px;border-radius:50%;background:currentColor;transition:transform .3s,width .3s,height .3s,border-radius .3s,opacity .2s}
-body .menu.is-open .mb-burger span:nth-child(1){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(45deg)}
-body .menu.is-open .mb-burger span:nth-child(2){opacity:0}
-body .menu.is-open .mb-burger span:nth-child(3){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(-45deg)}
-body .menu{z-index:60}
-body .menu ul.links{display:flex!important;flex-direction:row;align-items:center;gap:0;position:absolute;top:-10px;right:46px;height:44px;min-width:0;margin:0;padding:0;
-  border-radius:999px;background:var(--mb-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid transparent;
-  box-shadow:0 6px 20px rgba(0,0,0,0);color:var(--mb-ink);white-space:nowrap;overflow:hidden;
-  max-width:0;opacity:0;pointer-events:none;
-  transition:max-width .5s cubic-bezier(.65,0,.2,1),padding .5s cubic-bezier(.65,0,.2,1),opacity .2s ease,box-shadow .3s,border-color .3s}
-body .menu.is-open ul.links{max-width:420px;padding:0 8px;opacity:1;pointer-events:auto;border-color:var(--mb-glass-line);box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px 0 #fff}
-body .menu ul.links>li>a{opacity:0;transition:opacity .25s ease .1s}
-body .menu.is-open ul.links>li>a{opacity:1}
-body .menu ul.links>li{margin:0;display:flex;align-items:center}
-body .menu ul.links>li>a{display:block;padding:0 14px;line-height:44px;border-bottom:0!important;white-space:nowrap;
-  font:700 15px/44px "Helvetica Neue",Helvetica,Arial,sans-serif;text-transform:lowercase;color:var(--mb-ink)!important;text-decoration:none}
-body .menu ul.links>li>a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
-body .menu ul.links li svg{display:none}
-#shopLink{font-weight:700}
 #logo .mb-leaf{position:relative;z-index:2}
-#logo .mb-word{display:block;overflow:hidden;max-width:220px;clip-path:inset(0 0 0 0);transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1),clip-path .55s cubic-bezier(.65,0,.2,1)}
-body.mb-menu-open #logo .mb-word{max-width:0;opacity:0;transform:translateX(-40px);clip-path:inset(0 0 0 100%)}
-@media (max-width:767px){body .menu ul.links>li>a{padding:0 10px;font-size:14px}}
+#logo .mb-word{display:block;overflow:hidden;max-width:220px;transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1)}
+body.mb-menu-open #logo .mb-word{max-width:0;opacity:0;transform:translateX(-40px)}
 
-/* section directory: text list, current dark + underlined, others grey */
-body .content-menu ul li a{width:auto;height:auto;border:0!important;border-radius:0;display:block;text-align:right;text-decoration:none}
-body .content-menu ul li a:before,body .content-menu ul li a svg{display:none}
-body .content-menu ul li{margin:6px 0}
-body .content-menu ul li a span{display:inline;visibility:visible;opacity:1;position:static;transform:none;
-  font:700 15px/1.2 "Helvetica Neue",Helvetica,Arial,sans-serif;text-transform:lowercase;color:rgba(39,39,39,.42);
-  text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;transition:color .3s}
-body .content-menu ul li a:hover span{color:rgba(39,39,39,.75)}
-body .content-menu ul li a.active span{color:var(--mb-ink)}
-.dark .content-menu ul li a span{color:rgba(255,255,255,.45)}
-.dark .content-menu ul li a.active span{color:#fff}
-.mb-dir-btn{display:none!important}
-/* section list removed on all screen sizes */
-body .content-menu{display:none!important}
+/* original side section list and original menu are hidden; the site uses the one menu in mbnav.css */
+body .content-menu,nav.menu,.mb-dir-btn,#aboutView{display:none!important}
 
 /* shared menu: same spot as the main site menu (top right) */
 .mb-shop__menu{justify-self:end;width:44px;height:44px}
 .mb-shop__menu .mbn{position:fixed;top:calc(2rem - 10px);right:calc(2rem - 6px);z-index:5}
 @media (min-width:768px){.mb-shop__menu .mbn{top:calc(4rem - 10px);right:calc(4rem - 6px)}}
 .mb-shop__brand{cursor:pointer}
-body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
 
 /* one header for the whole site: the site's logo + menu sit on top of the shop */
-body.mb-shop-open #logo,body.mb-shop-open nav.menu{z-index:1001!important}
+body.mb-shop-open #logo{z-index:1001!important}
 body.mb-shop-open #logo{color:#111111}
 .mb-shop .mb-hero{padding-top:130px}
 @media (min-width:768px){.mb-shop .mb-hero{padding-top:170px}}
-body .menu ul.links>li>a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
 
 /* black site: white logo + text on the 3D page; black logo on shop (light background) */
 body.dark #logo{color:#fff}
 body.mb-shop-open #logo{color:#111!important}
 /* solid white menu button + pill on the black page */
-body.dark:not(.mb-shop-open):not(.mb-videos-open) .mb-burger,body.dark:not(.mb-shop-open):not(.mb-videos-open) .menu.is-open ul.links{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none}
 /* loading screen: black with white text; logo and menu only appear once the page has loaded */
 html,body{background:#000}
 .loader{color:#fff}
@@ -194,22 +128,22 @@ body.mb-loaded:not(.mb-shop-open):before{content:"";position:fixed;left:0;right:
 @media (min-width:768px){body.mb-loaded:not(.mb-shop-open):before{height:170px}}
 #logo{z-index:60}
 /* no About in the menu: the page itself is the about */
-body .menu ul.links>li:has(#about){display:none!important}
 #aboutView{display:none!important}
 
 /* one page: videos layer (iframe of the video app) under the site's header */
 .mb-vlayer{position:fixed;inset:0;z-index:1000;background:#f5f5f5;visibility:hidden;opacity:0;transition:opacity .3s ease,visibility 0s linear .3s}
 .mb-vlayer.is-open{visibility:visible;opacity:1;transition:opacity .3s ease}
 .mb-vlayer iframe{display:block;width:100%;height:100%;border:0}
-body.mb-videos-open #logo,body.mb-videos-open nav.menu{z-index:1001!important}
+body.mb-videos-open #logo{z-index:1001!important}
 body.mb-videos-open #logo{color:#111!important}
 body.mb-videos-open:before{display:none!important}
 
 /* shop is the landing view: show the header right away while the 3D page loads behind it */
-body.mb-shop-open #logo,body.mb-shop-open nav.menu,body.mb-videos-open #logo,body.mb-videos-open nav.menu{opacity:1!important;pointer-events:auto!important}
+body.mb-shop-open #logo,body.mb-videos-open #logo{opacity:1!important;pointer-events:auto!important}
 
 /* videos view: white page, black menu circle with white dots (pill matches) */
 .mb-vlayer{background:#fff}
-html body.mb-videos-open .mb-burger,html body.mb-videos-open.dark .mb-burger{background:#111!important;color:#fff!important;border-color:#111!important;-webkit-backdrop-filter:none;backdrop-filter:none}
-html body.mb-videos-open .menu.is-open ul.links,html body.mb-videos-open.dark .menu.is-open ul.links{background:#111!important;border-color:#111!important;-webkit-backdrop-filter:none;backdrop-filter:none}
-html body.mb-videos-open .menu ul.links>li>a{color:#fff!important}
+
+/* the one menu: hidden until the 3D page has loaded, except on the shop/videos views (shown right away) */
+body:not(.mb-loaded) .mbn--site{opacity:0;pointer-events:none}
+body[data-view="shop"] .mbn--site,body[data-view="videos"] .mbn--site{opacity:1;pointer-events:auto}

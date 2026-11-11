@@ -47,87 +47,54 @@
     '</nav></footer>';
   document.body.appendChild(el);
 
-  var lastFocus = null;
-  function open(e) {
-    if (e) e.preventDefault();
-    lastFocus = document.activeElement;
-    el.classList.add('is-open');
-    document.body.classList.add('mb-shop-open');
-    var sl = document.getElementById('shopLink'); if (sl) sl.classList.add('is-current');
-    var ab0 = document.querySelector('.mb-about'); if (ab0) ab0.classList.remove('is-current');
-    el.scrollTop = 0;
-    if (location.hash !== '#shop') history.replaceState(null, '', '#shop');
-    setTimeout(function () { var b = el.querySelector('.mbn__btn'); if (b) b.focus(); }, 50);
+  // ---- one controller for the three views: about (the 3D page), shop, videos ----
+  var nav = null, view = 'about';
+  function setShop(on) {
+    el.classList.toggle('is-open', on);
+    document.body.classList.toggle('mb-shop-open', on);
+    if (on) el.scrollTop = 0;
   }
-  function close() {
-    el.classList.remove('is-open');
-    document.body.classList.remove('mb-shop-open');
-    var sl = document.getElementById('shopLink'); if (sl) sl.classList.remove('is-current');
-    var ab1 = document.querySelector('.mb-about'); if (ab1) ab1.classList.add('is-current');
-    if (location.hash === '#shop') history.replaceState(null, '', location.pathname + location.search);
-    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  function show(next) {
+    if (next === view) return;
+    view = next;
+    setShop(next === 'shop');
+    if (window.__mbVideos) { if (next === 'videos') window.__mbVideos.open(); else window.__mbVideos.close(); }
+    document.body.setAttribute('data-view', next);
+    if (nav) { nav.setCurrent(next); nav.setTone(next === 'videos' ? 'dark' : 'light'); }
+    var h = next === 'about' ? '' : '#' + next;
+    if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search);
   }
-  function isOpen() { return el.classList.contains('is-open'); }
-  window.__mbShopClose = function () { if (isOpen()) close(); };
+  window.MBView = { show: show, get: function () { return view; } };
 
-  // The shop uses the site's own header (logo + menu) on top of it:
-  // logo = back to the 3D page, about = close the shop and open About.
-  var logoEl = document.getElementById('logo');
-  if (logoEl) logoEl.addEventListener('click', function () { if (isOpen()) close(); });
-  var aboutEl = document.getElementById('about');
-  if (aboutEl) aboutEl.addEventListener('click', function () { if (isOpen()) close(); }, true);
-
-  // Keep wheel/touch/keys inside the overlay from driving the 3D page behind it.
+  // Keep wheel/touch/keys inside the shop from driving the 3D page behind it.
   ['wheel', 'touchstart', 'touchmove', 'pointerdown', 'pointermove', 'mousedown', 'mousemove'].forEach(function (t) {
     el.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true });
   });
   window.addEventListener('keydown', function (e) {
-    if (!isOpen()) return;
-    if (e.key === 'Escape') { close(); }
+    if (view === 'about') return;
+    if (e.key === 'Escape') show('about');
     e.stopImmediatePropagation();
   }, true);
 
-  // collapsible menu (3-line button) for phones/tablets
-  function wireBurger() {
-    var nav = document.querySelector('nav.menu'); if (!nav || nav.querySelector('.mb-burger')) return;
-    var b = document.createElement('button');
-    b.className = 'mb-burger'; b.type = 'button'; b.setAttribute('aria-label', 'Menu'); b.setAttribute('aria-expanded', 'false');
-    b.innerHTML = '<span></span><span></span><span></span>';
-    nav.insertBefore(b, nav.firstChild);
-    var ul = nav.querySelector('ul.links');
-    // shop · videos · about  (about = this interactive 3D page)
-    if (ul && !ul.querySelector('.mb-about')) {
-      var li = document.createElement('li');
-      li.innerHTML = '<a href="#" class="mb-about is-current" aria-current="page">about</a>';
-      ul.appendChild(li);
-      li.querySelector('a').addEventListener('click', function (e) { e.preventDefault(); set(false); if (window.__mbShopClose) window.__mbShopClose(); });
-    }
-    function set(open) { nav.classList.toggle('is-open', open); document.body.classList.toggle('mb-menu-open', open); b.setAttribute('aria-expanded', String(open)); }
-    b.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('is-open')); });
-    nav.querySelectorAll('#shopLink,#about,#videos,.lang-list a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });
-    document.addEventListener('click', function (e) { if (!nav.contains(e.target)) set(false); });
-  }
-
-  // section directory: on phones it opens from a round button at the bottom right
-  function wireDirectory() {
-    var dir = document.querySelector('nav.content-menu'); if (!dir || document.querySelector('.mb-dir-btn')) return;
-    var b = document.createElement('button');
-    b.className = 'mb-dir-btn'; b.type = 'button'; b.setAttribute('aria-label', 'Sections'); b.setAttribute('aria-expanded', 'false');
-    b.innerHTML = '<i></i><i></i><i></i><i></i>';
-    document.body.appendChild(b);
-    function set(open) { dir.classList.toggle('is-open', open); b.setAttribute('aria-expanded', String(open)); }
-    b.addEventListener('click', function (e) { e.stopPropagation(); set(!dir.classList.contains('is-open')); });
-    dir.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setTimeout(function () { set(false); }, 150); }); });
-    document.addEventListener('click', function (e) { if (!dir.contains(e.target) && e.target !== b) set(false); });
-  }
-
   function wire() {
-    wireBurger();
-    var link = document.getElementById('shopLink');
-    if (link) link.addEventListener('click', open);
-    // the site opens on the shop (unless a link asks for videos or about)
-    if (location.hash === '#shop' || location.hash === '') open();
-    if (location.hash === '#about') history.replaceState(null, '', location.pathname + location.search);
+    nav = window.MBNav.create({
+      items: [
+        { label: 'shop', onClick: function () { show('shop'); } },
+        { label: 'videos', onClick: function () { show('videos'); } },
+        { label: 'about', onClick: function () { show('about'); } }
+      ],
+      current: 'about', tone: 'light',
+      onToggle: function (o) { document.body.classList.toggle('mb-menu-open', o); }
+    });
+    nav.classList.add('mbn--site');
+    document.body.appendChild(nav);
+    var logoEl = document.getElementById('logo');
+    if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
+    document.body.setAttribute('data-view', 'about');
+    // the site opens on the shop, unless a link asks for videos or about
+    var h = location.hash;
+    if (h === '#videos') show('videos'); else if (h === '#about') show('about'); else show('shop');
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+  // wait for DOMContentLoaded so videos.js (loaded after this file) is ready
+  if (document.readyState === 'complete') wire(); else document.addEventListener('DOMContentLoaded', wire);
 })();

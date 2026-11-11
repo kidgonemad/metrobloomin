@@ -2,7 +2,8 @@
 // and a smoke layer, all drawn in one WebGL canvas behind the products.
 // Animated pieces come from "stacked alpha" MP4 atlases in shop/bg/ (colour on top, alpha mask below),
 // because transparent WebM does not play on iPhone. Each atlas is a 3x3 grid of pieces.
-// Interaction: tilt / drag / mouse moves the layers (depth parallax); tapping a skull or leaf wobbles it
+// The pile is 3D: drag sideways (or tilt) to orbit the camera up to 90 degrees each way; pieces always face the camera.
+// Tapping a skull or leaf wobbles it
 // and puffs smoke. Runs only while the shop is open. Mounted by shop.js: MBShopBg.mount(shopEl).
 (function () {
   var base = new URL('shop/bg/', document.baseURI).href;
@@ -88,43 +89,44 @@
     var W = 0, H = 0, dpr = 1, pieces = [], trails = [];
     function rnd(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
       t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    // world units are screen px at the axis. The pile fills a cylinder around the vertical axis; the camera sits in
+    // front of it and orbits sideways (yaw) up to 90 degrees each way. Every piece is a flat picture that always turns
+    // to face the camera, so orbiting shows the pile in depth without ever showing a piece edge-on.
+    var Rv = 0, Hv = 0, D = 0, Y0 = 0;
     function layout() {
       dpr = Math.min(1.5, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      var r = rnd(7), S = Math.max(150, Math.min(300, W / 2.2)), step = S * .42;
+      var r = rnd(7), S = Math.max(120, Math.min(260, W / 3.1));
+      Rv = Math.max(W, H * .6) * .75; D = Rv * 2.2; Y0 = -H * .75; Hv = H * 2.2;
+      var N = Math.min(420, Math.ceil(Rv * 2 * Hv / (S * S * .16)));
       pieces = []; trails = [];
-      for (var y = -step * .3; y < H + step; y += step)
-        for (var x = -step * .3; x < W + step; x += step) {
-          var d = r(), kind = r() < .66 ? (r() < .5 ? 'a' : 'b') : 'l';
-          pieces.push({ src: kind, cell: Math.floor(r() * 9), x: x + (r() - .5) * step * .7, y: y + (r() - .5) * step * .7,
-            size: S * (.75 + d * .5) * (kind === 'l' ? 1.05 : 1), rot: (r() - .5) * .9, d: d, s: 0, vs: 0, w: 0, vw: 0, ox: 0, oy: 0, vx: 0, vy: 0 });
-        }
-      pieces.sort(function (p, q) { return p.d - q.d; });              // far ones first, near ones on top
-      for (var i = 0; i < Math.round(W * H / (S * S) * 1.1) + 4; i++) trails.push({ cell: i % 8, x: r() * W, y0: r() * H, size: S * (.8 + r() * .5), d: .6 + r() * .4, ph: r() * 6.28, sp: 14 + r() * 16 });
+      for (var i = 0; i < N; i++) {
+        var a = r() * 6.2832, rr = Rv * Math.sqrt(.35 + r() * .65),   // most pieces on the outer layer, the one facing you
+            kind = r() < .66 ? (r() < .5 ? 'a' : 'b') : 'l';
+        pieces.push({ src: kind, cell: Math.floor(r() * 9), X: Math.cos(a) * rr, Y: Y0 + r() * Hv, Z: Math.sin(a) * rr,
+          size: S * (.8 + r() * .45) * (kind === 'l' ? 1.05 : 1), rot: (r() - .5) * .9, s: 0, vs: 0, w: 0, vw: 0 });
+      }
+      for (i = 0; i < Math.round(N / 9) + 4; i++) { var b = r() * 6.2832, br = Rv * Math.sqrt(.2 + r() * .8);
+        trails.push({ cell: i % 8, X: Math.cos(b) * br, Z: Math.sin(b) * br, y0: r() * Hv, size: S * (.9 + r() * .5), ph: r() * 6.28, sp: 18 + r() * 16 }); }
     }
     layout(); addEventListener('resize', layout);
 
     // ---------- input ----------
-    var aim = { x: 0, y: 0 }, ptr = { x: 0, y: 0 }, finger = { x: .5, y: .5 }, touch = 0, touchT = 0, tilt = false;
+    var finger = { x: .5, y: .5 }, touch = 0, touchT = 0, order = [];
     var bursts = [[0, 0, -1], [0, 0, -1], [0, 0, -1]], bi = 0, t0 = performance.now();
-    // the finger (or mouse) pushes the pile around: pieces near it are shoved away and dragged along, then spring back.
-    // touch events keep firing while the page scrolls under the finger, so this works during a scroll-drag too.
-    var hand = { x: -1e4, y: -1e4, vx: 0, vy: 0, on: 0, last: 0 };
-    function handAt(x, y, down) {
-      var now = performance.now(), dt = Math.max(8, now - hand.last);
-      if (hand.on && now - hand.last < 120) { hand.vx = (x - hand.x) / dt * 16; hand.vy = (y - hand.y) / dt * 16; } else { hand.vx = hand.vy = 0; }
-      hand.x = x; hand.y = y; hand.last = now; hand.on = down ? 1 : hand.on;
-      finger = { x: x / W, y: 1 - y / H }; touchT = 1;
-      if (!tilt) aim = { x: x / W * 2 - 1, y: y / H * 2 - 1 };
-    }
-    shop.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') { hand.on = 1; handAt(e.clientX, e.clientY); } });
-    shop.addEventListener('touchstart', function (e) { var t = e.touches[0]; hand.last = 0; handAt(t.clientX, t.clientY, true); }, { passive: true });
-    shop.addEventListener('touchmove', function (e) { var t = e.touches[0]; handAt(t.clientX, t.clientY, true); }, { passive: true });
-    shop.addEventListener('touchend', function () { hand.on = 0; }, { passive: true });
-    shop.addEventListener('mouseleave', function () { hand.on = 0; });
-    var lastScroll = 0;
-    addEventListener('deviceorientation', function (e) { if (e.gamma == null) return; tilt = true;
-      aim = { x: Math.max(-1, Math.min(1, e.gamma / 25)), y: Math.max(-1, Math.min(1, (e.beta - 45) / 25)) }; });
+    var yaw = 0, yawV = 0, drag = null, tiltYaw = 0, LIM = Math.PI / 2;
+    function dragTo(x, y) { if (!drag) return; var now = performance.now(), dx = x - drag.x;
+      if (!drag.h && Math.abs(dx) < 6 && Math.abs(y - drag.y0) < 6) return;
+      if (drag.h == null) drag.h = Math.abs(dx) >= Math.abs(y - drag.y0);              // sideways = orbit, up/down = scroll
+      if (drag.h) { var k = Math.abs(yaw) > LIM ? .35 : 1; yaw += dx * .006 * k; yawV = dx * .006 / Math.max(8, now - drag.t) * 16; }
+      drag.x = x; drag.t = now; finger = { x: x / W, y: 1 - y / H }; touchT = 1; }
+    shop.addEventListener('touchstart', function (e) { var t = e.touches[0]; drag = { x: t.clientX, y0: t.clientY, t: performance.now(), h: null }; yawV = 0; }, { passive: true });
+    shop.addEventListener('touchmove', function (e) { var t = e.touches[0]; dragTo(t.clientX, t.clientY); }, { passive: true });
+    shop.addEventListener('touchend', function () { drag = null; }, { passive: true });
+    shop.addEventListener('mousedown', function (e) { if (e.target.closest && e.target.closest('a,button')) return; drag = { x: e.clientX, y0: e.clientY, t: performance.now(), h: true }; yawV = 0; });
+    addEventListener('mousemove', function (e) { if (drag) dragTo(e.clientX, e.clientY); else { finger = { x: e.clientX / W, y: 1 - e.clientY / H }; touchT = 1; } });
+    addEventListener('mouseup', function () { drag = null; });
+    addEventListener('deviceorientation', function (e) { if (e.gamma == null) return; tiltYaw = Math.max(-1, Math.min(1, e.gamma / 30)) * .25; });
     var asked = false;
     shop.addEventListener('pointerdown', function (e) {
       if (!asked) { asked = true; var D = window.DeviceOrientationEvent;                     // iOS asks once, on a tap
@@ -132,8 +134,8 @@
       playAll();
       if (e.target.closest && e.target.closest('a,button')) return;                         // product links keep working
       bursts[bi++ % 3] = [e.clientX / W, 1 - e.clientY / H, (performance.now() - t0) / 1000];
-      for (var i = pieces.length - 1; i >= 0; i--) { var p = pieces[i], px = p.x + ptr.x * p.d * 45 + p.ox, py = p.y + ptr.y * p.d * 45 - shop.scrollTop * .25 * p.d + p.oy;
-        if (Math.hypot(e.clientX - px, e.clientY - py) < p.size * .38) { p.vs += .9; p.vw += (Math.random() - .5) * .8; solo(p); break; } }
+      for (var i = order.length - 1; i >= 0; i--) { var p = order[i]; if (!p.src) continue;              // front-most first
+        if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < p.ss * .38) { p.vs += .9; p.vw += (Math.random() - .5) * .8; solo(p); break; } }
     });
 
     // ---------- playback: only while the shop is open ----------
@@ -174,32 +176,30 @@
         if (v && v.readyState >= 2) { if ((!s.live && v.currentTime < .3) || v.currentTime < s.prevT - .5) shuffle(k); s.prevT = v.currentTime; }   // new loop -> new handful
         if (v && v.readyState >= 2 && (!v.paused || !s.live)) { upload(s.tex, v); s.live = s.ready = true; } });
       solos.forEach(function (o) { if (o.v.readyState >= 2) { upload(o.tex, o.v); o.ready = true; } });
-      ptr.x += (aim.x - ptr.x) * .06; ptr.y += (aim.y - ptr.y) * .06; touchT *= .97; touch += (touchT - touch) * .1;
+      touchT *= .97; touch += (touchT - touch) * .1;
+      if (!drag) { yaw += yawV; yawV *= .94;                                          // glide after a flick
+        if (yaw > LIM) yaw += (LIM - yaw) * .12; if (yaw < -LIM) yaw += (-LIM - yaw) * .12; }   // soft stop at 90 degrees
+      var ang = yaw + tiltYaw + Math.sin(t * .15) * .04, ca = Math.cos(ang), sa = Math.sin(ang), camY = Y0 + H * .75 + shop.scrollTop * .3;
       gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(.043, .043, .043, 1); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(sprite); gl.bindBuffer(gl.ARRAY_BUFFER, quad);
       var loc = gl.getAttribLocation(sprite, 'c'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(sprite.u('res'), W, H);
-      var scroll = shop.scrollTop, dS = scroll - lastScroll; lastScroll = scroll;
-      if (Math.abs(dS) > 200) dS = 0;                                     // a jump (e.g. view switch), not a scroll
-      for (var i = 0; i < pieces.length; i++) { var p = pieces[i], s = SRC[p.src]; if (!s.ready) continue;
+      function project(o, X, Y, Z, size) { var x = X * ca - Z * sa, z = X * sa + Z * ca, depth = D - z, k = D / depth;
+        o.sx = W / 2 + x * k; o.sy = H / 2 + (Y - camY) * k; o.ss = size * k; o.depth = depth; o.sh = .45 + .55 * (z + Rv) / (2 * Rv); }
+      order = [];
+      for (var i = 0; i < pieces.length; i++) { var p = pieces[i];
         p.vs += -p.s * .18; p.vs *= .82; p.s += p.vs * .12; p.vw += -p.w * .12; p.vw *= .85; p.w += p.vw * .2;      // tap springs
-        var bob = Math.sin(t * .8 + i) * 3 * p.d;
-        var px = p.x + ptr.x * p.d * 45, py = p.y + ptr.y * p.d * 45 - scroll * .25 * p.d + bob;
-        if (hand.on) {                                                     // push away from the finger and drag along with it
-          var dx = px + p.ox - hand.x, dy = py + p.oy - hand.y, d = Math.hypot(dx, dy) || 1, R = p.size * 1.5;
-          if (d < R) { var k = (1 - d / R) * (.6 + p.d * .6);
-            p.vx += dx / d * k * 5 + hand.vx * k * .8; p.vy += dy / d * k * 5 + hand.vy * k * .8; p.vw += (hand.vx * dy - hand.vy * dx) / d * k * .0025; }
-        }
-        p.vy -= Math.max(-40, Math.min(40, dS)) * .3 * p.d;                                            // scrolling jiggles the pile, nearer pieces more
-        p.vx += -p.ox * .035; p.vy += -p.oy * .035; p.vx *= .88; p.vy *= .88; p.ox += p.vx; p.oy += p.vy;   // spring home
-        drawSprite(p.solo && p.solo.ready ? p.solo.tex : p.active && s.live ? s.tex : s.stillTex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
-          px + p.ox, py + p.oy, p.size, p.size,
-          p.rot + p.w + ptr.x * p.d * .08, 1 + p.s * .22, 1 - p.s * .18, 1, .5 + p.d * .5);
-      }
-      if (smokeReady) for (i = 0; i < trails.length; i++) { var q = trails[i];                 // drawn smoke trails drift up
-        var y = ((q.y0 - t * q.sp) % (H + q.size * 2) + H + q.size * 2) % (H + q.size * 2) - q.size;
-        drawSprite(smokeTex, 0, [(q.cell % 4) / 4, Math.floor(q.cell / 4) / 2, .25, .5], q.x + Math.sin(t * .6 + q.ph) * 14 + ptr.x * q.d * 34,
-          y + ptr.y * q.d * 34, q.size, q.size, Math.sin(t * .4 + q.ph) * .12, 1, 1, .95);
+        project(p, p.X, p.Y + Math.sin(t * .8 + i) * 4, p.Z, p.size);
+        if (p.sy + p.ss < 0 || p.sy - p.ss > H || p.sx + p.ss < 0 || p.sx - p.ss > W) continue; order.push(p); }
+      if (smokeReady) for (i = 0; i < trails.length; i++) { var q = trails[i];             // drawn smoke trails rise through the pile
+        var y = Y0 + ((q.y0 - t * q.sp) % Hv + Hv) % Hv; project(q, q.X + Math.sin(t * .6 + q.ph) * 14, y, q.Z, q.size);
+        if (q.sy + q.ss > 0 && q.sy - q.ss < H) order.push(q); }
+      order.sort(function (a, b) { return b.depth - a.depth; });                          // far ones first
+      for (i = 0; i < order.length; i++) { var o = order[i];
+        if (o.src) { var s = SRC[o.src]; if (!s.ready) continue;
+          drawSprite(o.solo && o.solo.ready ? o.solo.tex : o.active && s.live ? s.tex : s.stillTex, 1, [(o.cell % 3) / 3, Math.floor(o.cell / 3) / 3, 1 / 3, 1 / 3],
+            o.sx, o.sy, o.ss, o.ss, o.rot + o.w, 1 + o.s * .22, 1 - o.s * .18, 1, o.sh);
+        } else drawSprite(smokeTex, 0, [(o.cell % 4) / 4, Math.floor(o.cell / 4) / 2, .25, .5], o.sx, o.sy, o.ss, o.ss, Math.sin(t * .4 + o.ph) * .12, 1, 1, .92, Math.min(1, o.sh + .25));
       }
       gl.useProgram(smoke); loc = gl.getAttribLocation(smoke, 'c'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(smoke.u('res'), W, H); gl.uniform2f(smoke.u('ptr'), finger.x, finger.y); gl.uniform1f(smoke.u('t'), t); gl.uniform1f(smoke.u('touch'), touch);

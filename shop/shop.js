@@ -86,7 +86,7 @@
     // MP4s in shop/bg/ (colour on top, alpha mask below) and drawn into canvases, so they are transparent on every
     // browser, iPhone included. Each plays once; a still of its last frame is the fallback.
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var CLIP_V = '2';   // bump when a video in shop/bg/ changes, so phones fetch the new one
+    var CLIP_V = '3';   // bump when a video in shop/bg/ changes, so phones fetch the new one
     function alphaClip(box, name, w, h) {
       var cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.setAttribute('aria-hidden', 'true'); box.appendChild(cv);
       var out = cv.getContext('2d'), tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h * 2;
@@ -117,10 +117,10 @@
       var wordClip = alphaClip(wordEl, 'word-sm', 480, 260), leafClip = alphaClip(leafEl, 'leaf', 384, 384);
       window.__mbWordVideo = wordClip.video; window.__mbLeafVideo = leafClip.video;   // read by the site tests
       var word = function (on) { logoEl.classList.toggle('mb-word-show', on); };
-      // the lettering appears as the leaf pops in (~0.9s): the video plays the reveal, holds 1.5s, then plays it backwards to vanish
+      // the lettering appears as the leaf pops in (~0.9s), plays its reveal and then stays on
       var wordStarted = false;
       var startWord = function () { if (wordStarted) return; wordStarted = true; word(true);
-        wordClip.play(function () {}, function () { word(false); }); };
+        wordClip.play(function () {}, function () {}); };
       var play = function () { leafClip.play(function (t) { if (t >= .9) startWord(); }, startWord); };
       // the falling-buds loading screen (loader.js) covers the header: start once it lifts
       if (window.__mbLoading) document.addEventListener('mb:loaded-in', play, { once: true }); else play();

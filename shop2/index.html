@@ -18,7 +18,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* header */
 .top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line)}
 .top__row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px}
-.top__brand{font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase}
+/* the animated green METRO BLOOMIN lettering (drawn into a canvas by the script below) */
+.top__brand{display:block;width:120px;aspect-ratio:480/260}
+.top__brand canvas{display:block;width:100%;height:100%}
+@media (min-width:761px){.top__brand{width:150px}}
 .top__back{justify-self:start;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
 .top__cart{justify-self:end;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
 .tabs{display:flex;gap:6px;padding:0 16px 10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;overflow-x:auto}
@@ -80,7 +83,7 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 <header class="top">
   <div class="top__row">
     <a class="top__back" href="../">← Site</a>
-    <a class="top__brand" href="#/">Metro Bloomin</a>
+    <a class="top__brand" href="#/" aria-label="Metro Bloomin"></a>
     <a class="top__cart" href="https://metrobloomin.com/cart" target="_blank" rel="noopener">Cart</a>
   </div>
   <nav class="tabs" aria-label="Collections"></nav>
@@ -96,6 +99,27 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 <main class="look" aria-live="polite"></main>
 
 <script src="products.js"></script>
+<script>
+// header lettering: the site's "stacked alpha" video (colour on top, alpha mask below, ../shop/bg/word-sm.mp4)
+// painted into a transparent canvas; plays the reveal once and stays. A still of the full lettering is the fallback.
+(function () {
+  var box = document.querySelector('.top__brand'), W = 480, H = 260, base = '../shop/bg/word-sm';
+  var cv = document.createElement('canvas'); cv.width = W; cv.height = H; box.appendChild(cv);
+  var out = cv.getContext('2d'), tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H * 2;
+  var tx = tmp.getContext('2d', { willReadFrequently: true });
+  function paint(src) { tx.clearRect(0, 0, W, H * 2); tx.drawImage(src, 0, 0, W, H * 2);
+    var c = tx.getImageData(0, 0, W, H), m = tx.getImageData(0, H, W, H).data, d = c.data;
+    for (var k = 3; k < d.length; k += 4) d[k] = m[k - 3]; out.putImageData(c, 0, 0); }
+  var still = new Image(); still.src = base + '.webp?v=3';
+  function showStill() { if (still.complete && still.naturalWidth) paint(still); else still.onload = function () { paint(still); }; }
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { showStill(); return; }
+  var v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true;
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = base + '.mp4?v=3';
+  var pr = v.play(); if (pr && pr.catch) pr.catch(showStill);
+  (function loop() { if (v.readyState >= 2) paint(v); if (!v.ended) requestAnimationFrame(loop); })();
+  window.__shop2Word = v;   // read by the site tests
+})();
+</script>
 <script>
 (function () {
   var P = window.MB_PRODUCTS, STORE = 'https://metrobloomin.com';

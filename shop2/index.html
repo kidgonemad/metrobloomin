@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro Bloomin — Shop (test version)</title>
+<link rel="icon" href="../favicon.png">
+<style>
+@font-face{font-family:"MB Inter";src:url("../shop/fonts/inter-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"MB Inter";src:url("../shop/fonts/inter-500.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"MB Inter";src:url("../shop/fonts/inter-700.woff2") format("woff2");font-weight:700;font-display:swap}
+:root{--ink:#141414;--line:#bcbcbc;--tile:#ebebe8;--green:#2ee05a;--leaf:#79b84a;--leaf-dark:#4f8a2b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff;color:var(--ink);font-family:"MB Inter",Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+/* header */
+.top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line)}
+.top__row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px}
+.top__brand{font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase}
+.top__back{justify-self:start;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.top__cart{justify-self:end;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.tabs{display:flex;gap:6px;padding:0 16px 10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;overflow-x:auto}
+.tabs button{padding:5px 8px;border:1px solid transparent;white-space:nowrap}
+.tabs button.on{border-color:var(--ink)}
+
+/* green leaf band (placeholder pattern until the real artwork arrives) */
+.band{height:120px;background-color:var(--leaf);background-image:url("../shop/img/leaf-mark.png");background-size:90px auto;background-blend-mode:multiply;opacity:.95}
+.band--bottom{height:220px}
+
+/* grid */
+.bar{display:flex;justify-content:space-between;padding:8px 16px;font-size:10px;letter-spacing:.06em;border-bottom:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);border-left:1px solid var(--line)}
+.cell{position:relative;aspect-ratio:3/4;border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--tile) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.cell a{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:14% 12% 10%}
+.cell img{width:100%;height:70%;object-fit:contain;mix-blend-mode:multiply;transition:transform .4s ease}
+.cell a:hover img{transform:scale(1.04)}
+.cell span{font-size:12px;letter-spacing:.32em;text-transform:uppercase}
+@media (max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.cell span{font-size:10px;letter-spacing:.25em}.band{height:80px}.band--bottom{height:140px}}
+
+/* product page (look layout) */
+.look{display:none}
+body.is-look .shop{display:none}
+body.is-look .look{display:block}
+.crumb{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;letter-spacing:.02em;text-transform:uppercase}
+.crumb b{font-weight:400;margin:0 6px}
+.look__wrap{display:grid;grid-template-columns:3fr 2fr;border-bottom:1px solid var(--line)}
+.look__media{border-right:1px solid var(--line);background:var(--tile);position:relative}
+.look__main{display:block;width:100%;aspect-ratio:4/5;object-fit:contain;mix-blend-mode:multiply}
+.look__thumbs{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);overflow-x:auto;background:#fff}
+.look__thumbs button{flex:none;width:64px;height:64px;border:1px solid var(--line);background:var(--tile)}
+.look__thumbs button.on{border-color:var(--ink)}
+.look__thumbs img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.look__head{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.look__head div{padding:20px 12px;text-align:center;font-size:16px;text-transform:uppercase}
+.look__head div+div{background:var(--green)}
+.row{padding:16px 18px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5}
+.row h1{font:700 14px/1.2 "MB Inter",Arial,sans-serif;letter-spacing:.02em;text-transform:uppercase;margin-bottom:10px}
+.row .sw{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px;border:1px solid #0003}
+.row ul{list-style:none;margin-top:4px}
+.row li:before{content:"•";margin-right:8px}
+.row h2{font:700 11px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.price{font-size:16px;font-weight:500}
+.sizes{display:flex;flex-wrap:wrap;gap:6px}
+.sizes button{min-width:44px;padding:9px 10px;border:1px solid var(--line);font-size:12px}
+.sizes button.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.sizes button:disabled{opacity:.35;text-decoration:line-through}
+table{border-collapse:collapse;width:100%;font-size:12px}
+td,th{border-bottom:1px solid #e3e3e3;padding:6px 4px;text-align:left;font-weight:400}
+th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.buy{display:block;width:100%;padding:16px;background:var(--ink);color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.buy[aria-disabled="true"]{opacity:.4;pointer-events:none}
+.note{font-size:11px;color:#666;margin-top:8px}
+@media (max-width:760px){.look__wrap{grid-template-columns:1fr}.look__media{border-right:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top__row">
+    <a class="top__back" href="../">← Site</a>
+    <a class="top__brand" href="#/">Metro Bloomin</a>
+    <a class="top__cart" href="https://metrobloomin.com/cart" target="_blank" rel="noopener">Cart</a>
+  </div>
+  <nav class="tabs" aria-label="Collections"></nav>
+</header>
+
+<main class="shop">
+  <div class="band" aria-hidden="true"></div>
+  <div class="bar"><span class="count"></span><span>Views ▦</span></div>
+  <div class="grid"></div>
+  <div class="band band--bottom" aria-hidden="true"></div>
+</main>
+
+<main class="look" aria-live="polite"></main>
+
+<script src="products.js"></script>
+<script>
+(function () {
+  var P = window.MB_PRODUCTS, STORE = 'https://metrobloomin.com';
+  var COLS = { all: 'All', classic: 'Classic', qrome: 'QRÖME' }, filter = 'all';
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function img(u, w) { return u + '?width=' + w; }
+  function money(n) { return '$' + n.toFixed(2); }
+
+  // ---- collection tabs + grid ----
+  var tabs = document.querySelector('.tabs'), grid = document.querySelector('.grid');
+  tabs.innerHTML = Object.keys(COLS).map(function (k) { return '<button data-c="' + k + '">' + COLS[k] + '</button>'; }).join('');
+  tabs.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; filter = b.dataset.c; location.hash = '#/'; renderGrid(); });
+  function renderGrid() {
+    [].forEach.call(tabs.children, function (b) { b.classList.toggle('on', b.dataset.c === filter); });
+    var list = P.filter(function (p) { return filter === 'all' || p.collection === filter; });
+    var cols = innerWidth <= 760 ? 2 : 4, cells = Math.max(list.length, cols * 3);   // empty tiles complete the grid, like the mockup
+    cells = Math.ceil(cells / cols) * cols;
+    var html = '';
+    for (var i = 0; i < cells; i++) { var p = list[i];
+      html += p ? '<div class="cell"><a href="#/p/' + p.handle + '"><img src="' + img(p.images[0], 600) + '" alt="' + esc(p.title) + '" loading="lazy"><span>' + esc(p.short) + '</span></a></div>'
+                : '<div class="cell" aria-hidden="true"></div>'; }
+    grid.innerHTML = html;
+    document.querySelector('.count').textContent = list.length + ' products';
+  }
+
+  // ---- product page ----
+  var look = document.querySelector('.look');
+  function renderLook(p) {
+    var idx = P.indexOf(p) + 1, sized = p.variants.length > 1, chosen = sized ? null : p.variants[0];
+    look.innerHTML =
+      '<div class="crumb">Shop<b>›</b>' + COLS[p.collection] + ' collection</div>' +
+      '<div class="look__wrap">' +
+        '<div class="look__media"><img class="look__main" src="' + img(p.images[0], 1200) + '" alt="' + esc(p.title) + '">' +
+          (p.images.length > 1 ? '<div class="look__thumbs">' + p.images.map(function (u, i) { return '<button data-i="' + i + '"' + (i ? '' : ' class="on"') + ' aria-label="Photo ' + (i + 1) + '"><img src="' + img(u, 160) + '" alt=""></button>'; }).join('') + '</div>' : '') +
+        '</div>' +
+        '<div class="look__info">' +
+          '<div class="look__head"><div>' + COLS[p.collection] + '</div><div>Item ' + (idx < 10 ? '0' : '') + idx + '</div></div>' +
+          '<div class="row"><h1>' + esc(p.title) + '</h1>' +
+            '<div><span class="sw" style="background:' + p.color[1] + '"></span>COLOR&nbsp; ' + esc(p.color[0]) + '</div>' +
+            '<ul>' + p.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul></div>' +
+          '<div class="row"><h2>Price</h2><div class="price">' + money(p.price) + '</div></div>' +
+          (sized ? '<div class="row"><h2>Size</h2><div class="sizes">' + p.variants.map(function (v) { return '<button data-v="' + v.id + '"' + (v.available ? '' : ' disabled') + '>' + esc(v.title) + '</button>'; }).join('') + '</div></div>' : '') +
+          (p.sizes ? '<div class="row"><h2>Size guide (inches)</h2><table><tr><th>Size</th><th>Body width</th><th>Body length</th></tr>' +
+            p.sizes.map(function (r) { return '<tr><td>' + r.join('</td><td>') + '</td></tr>'; }).join('') + '</table><p class="note">Measurements may vary by up to 1 inch.</p></div>' : '') +
+          '<div class="row"><a class="buy" target="_blank" rel="noopener">Buy now</a><p class="note">Checkout on metrobloomin.com</p></div>' +
+        '</div>' +
+      '</div>';
+    var buy = look.querySelector('.buy');
+    function setBuy() {   // Shopify cart permalink: goes straight to checkout with this item
+      if (chosen) { buy.href = STORE + '/cart/' + chosen.id + ':1'; buy.removeAttribute('aria-disabled'); buy.textContent = 'Buy now'; }
+      else { buy.removeAttribute('href'); buy.setAttribute('aria-disabled', 'true'); buy.textContent = 'Select a size'; }
+    }
+    setBuy();
+    look.addEventListener('click', function (e) {
+      var t = e.target.closest('.look__thumbs button');
+      if (t) { look.querySelector('.look__main').src = img(p.images[+t.dataset.i], 1200);
+        look.querySelectorAll('.look__thumbs button').forEach(function (b) { b.classList.toggle('on', b === t); }); }
+      var s = e.target.closest('.sizes button');
+      if (s) { chosen = p.variants.filter(function (v) { return String(v.id) === s.dataset.v; })[0];
+        look.querySelectorAll('.sizes button').forEach(function (b) { b.classList.toggle('on', b === s); }); setBuy(); }
+    });
+    document.title = p.title + ' — Metro Bloomin';
+  }
+
+  // ---- router: #/ = grid, #/p/<handle> = product page ----
+  function route() {
+    var m = location.hash.match(/^#\/p\/([\w-]+)/), p = m && P.filter(function (x) { return x.handle === m[1]; })[0];
+    document.body.classList.toggle('is-look', !!p);
+    if (p) renderLook(p); else { document.title = 'Metro Bloomin — Shop'; renderGrid(); }
+    scrollTo(0, 0);
+  }
+  addEventListener('hashchange', route);
+  var w = innerWidth; addEventListener('resize', function () { if ((w <= 760) !== (innerWidth <= 760)) { w = innerWidth; if (!document.body.classList.contains('is-look')) renderGrid(); } });
+  route();
+})();
+</script>
+</body>
+</html>

@@ -46,8 +46,6 @@ body.mb-shop-open .mb-shopbg{visibility:visible;opacity:1;transition:opacity .35
 .mb-shop>.mb-hero,.mb-shop>.mb-collection{position:relative;z-index:1}
 
 .mb-collection{max-width:1320px;margin:0 auto;padding:40px 48px 64px;scroll-margin-top:90px}
-.mb-collection__head{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:24px}
-.mb-collection__head h3{margin:0;font-size:28px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--mb-fg)}
 
 .mb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;list-style:none;margin:0;padding:0}
 .mb-card a{display:block;text-decoration:none}

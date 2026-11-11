@@ -33,8 +33,7 @@
   el.innerHTML =
     '<div class="mb-hero"></div>' +
     collections.map(function (c) {
-      return '<section class="mb-collection" id="mb-' + c.id + '"><div class="mb-collection__head"><h3>' + esc(c.title) + '</h3>' +
-        '</div>' +
+      return '<section class="mb-collection" id="mb-' + c.id + '" aria-label="' + esc(c.title) + '">' +
         '<ul class="mb-grid">' + c.products.map(card).join('') + '</ul></section>';
     }).join('');
   document.body.appendChild(el);

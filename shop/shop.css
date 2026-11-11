@@ -5,13 +5,13 @@
 
 /* brand mark (replaces the old header logo; colour follows the page theme via currentColor) */
 #logo{display:flex;align-items:flex-start;gap:10px;text-decoration:none;width:auto!important;overflow:visible}
-#logo .mb-leaf{flex:none;display:block;width:76px;height:76px;color:inherit}
+#logo .mb-leaf{flex:none;display:block;width:76px;height:76px}
 /* wordmark sits level with the menu button (centre 44px phone / 76px desktop) */
 /* animated green lettering (canvas, shop.js) sits level with the menu button (centre 44px phone / 76px desktop) */
 #logo .mb-word{width:150px;aspect-ratio:480/260}
 @media (min-width:768px){#logo .mb-leaf{width:192px;height:192px}#logo .mb-word{width:220px}}
-#logo .mb-leaf svg{display:block;width:100%;height:100%;overflow:visible}
-#logo .mb-leaf path{fill:currentColor}
+/* the leaf is a full-colour video drawn into a canvas (shop.js); its colour does not change per page */
+#logo .mb-leaf canvas{display:block;width:100%;height:100%}
 
 /* nav link */
 #shopLink{font-weight:700}
@@ -128,9 +128,6 @@ body.mb-loaded:not(.mb-shop-open):before{content:"";position:fixed;left:0;right:
 .mb-vlayer iframe{display:block;width:100%;height:100%;border:0}
 body.mb-videos-open #logo{z-index:1001!important}
 /* videos: the logo inverts against the video blobs moving under it (like the menu, tone "auto") */
-body.mb-videos-open #logo:not(.mb-word-show){color:#fff!important;mix-blend-mode:difference}
-/* while the green lettering shows on the white videos page, the logo stays normal (inverting would turn the lettering pink) */
-body.mb-videos-open #logo.mb-word-show{color:#111!important}
 body.mb-videos-open:before{display:none!important}
 
 /* shop is the landing view: show the header right away while the 3D page loads behind it */

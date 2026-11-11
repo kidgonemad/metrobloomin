@@ -82,56 +82,46 @@
     nav.classList.add('mbn--site');
     document.body.appendChild(nav);
     var logoEl = document.getElementById('logo');
-    // the METRO BLOOMIN wordmark is the animated green lettering (shop/bg/word-sm.mp4, a "stacked alpha" video:
-    // colour on top, alpha mask below), drawn into a canvas so it is transparent on every browser, iPhone included
-    var wordEl = logoEl && logoEl.querySelector('.mb-word');
-    var wordPlay = function (done) { setTimeout(done, 4000); };
-    if (wordEl) {
-      wordEl.setAttribute('aria-label', (wordEl.textContent || 'Metro Bloomin').trim());
-      wordEl.textContent = '';
-      var wc = document.createElement('canvas'); wc.width = 480; wc.height = 260; wc.setAttribute('aria-hidden', 'true'); wordEl.appendChild(wc);
-      var wx = wc.getContext('2d'), wt = document.createElement('canvas'); wt.width = 480; wt.height = 520;
-      var tx = wt.getContext('2d', { willReadFrequently: true });
+    // header leaf + METRO BLOOMIN lettering: colour videos with the background removed, stored as "stacked alpha"
+    // MP4s in shop/bg/ (colour on top, alpha mask below) and drawn into canvases, so they are transparent on every
+    // browser, iPhone included. Each plays once; a still of its last frame is the fallback.
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function alphaClip(box, name, w, h) {
+      var cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.setAttribute('aria-hidden', 'true'); box.appendChild(cv);
+      var out = cv.getContext('2d'), tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h * 2;
+      var tx = tmp.getContext('2d', { willReadFrequently: true });
       var paint = function (src) {
-        tx.clearRect(0, 0, 480, 520); tx.drawImage(src, 0, 0, 480, 520);
-        var c = tx.getImageData(0, 0, 480, 260), m = tx.getImageData(0, 260, 480, 260).data, d = c.data;
+        tx.clearRect(0, 0, w, h * 2); tx.drawImage(src, 0, 0, w, h * 2);
+        var c = tx.getImageData(0, 0, w, h), m = tx.getImageData(0, h, w, h).data, d = c.data;
         for (var k = 3; k < d.length; k += 4) d[k] = m[k - 3];
-        wx.putImageData(c, 0, 0);
+        out.putImageData(c, 0, 0);
       };
-      var wStill = new Image(), wv = document.createElement('video');
-      wStill.src = base + 'bg/word-sm.webp';
-      wv.muted = true; wv.defaultMuted = true; wv.playsInline = true; wv.setAttribute('muted', ''); wv.setAttribute('playsinline', '');
-      wv.preload = 'auto'; wv.src = base + 'bg/word-sm.mp4';
-      window.__mbWordVideo = wv;                                   // read by the site tests
-      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      // plays the reveal once (sparkles -> full lettering), holds it 1.5s, then calls done
-      wordPlay = function (done) {
-        var over = false, fin = function () { if (over) return; over = true; setTimeout(done, 1500); };
-        var fallback = function () { if (wStill.complete) paint(wStill); else wStill.onload = function () { paint(wStill); }; setTimeout(fin, 3000); };
-        if (reduce) { fallback(); return; }
-        wv.currentTime = 0;
-        var pr = wv.play(); if (pr && pr.catch) pr.catch(function () { if (!over) fallback(); });
-        (function loop() { if (wv.readyState >= 2) paint(wv); if (wv.ended) fin(); else if (!over) requestAnimationFrame(loop); })();
-      };
+      var still = new Image(); still.src = base + 'bg/' + name + '.webp';
+      var v = document.createElement('video');
+      v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+      v.preload = 'auto'; v.src = base + 'bg/' + name + '.mp4';
+      // plays once; onTime(seconds) runs every frame, done() when it ends (or when it cannot play: the still shows)
+      return { video: v, play: function (onTime, done) {
+        var over = false, fin = function () { if (!over) { over = true; done(); } };
+        var showStill = function () { if (still.complete) paint(still); else still.onload = function () { paint(still); }; onTime(99); setTimeout(fin, 2500); };
+        if (reduce) { showStill(); return; }
+        v.currentTime = 0;
+        var pr = v.play(); if (pr && pr.catch) pr.catch(function () { if (!over) showStill(); });
+        (function loop() { if (v.readyState >= 2) { paint(v); onTime(v.currentTime); } if (v.ended) { paint(v); fin(); } else if (!over) requestAnimationFrame(loop); })();
+      } };
     }
-    // animated leaf logo: traced frames from shop/leaf-frames.js, played once, then holds the wink
-    var leaf = logoEl && logoEl.querySelector('.mb-leaf'), F = window.MB_LEAF_FRAMES;
-    if (leaf && F && F.length) {
-      leaf.innerHTML = '<svg viewBox="1 0 385 385" aria-hidden="true"><path fill-rule="evenodd"></path></svg>';
-      var path = leaf.querySelector('path'), i = 0, last = 0;
-      var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      // the METRO BLOOMIN lettering is tied to the leaf: it appears as the leaf pops in (frame 8), plays its reveal,
-      // holds, then tucks back into the leaf
+    var wordEl = logoEl && logoEl.querySelector('.mb-word'), leafEl = logoEl && logoEl.querySelector('.mb-leaf');
+    if (wordEl && leafEl) {
+      wordEl.setAttribute('aria-label', (wordEl.textContent || 'Metro Bloomin').trim()); wordEl.textContent = ''; leafEl.textContent = '';
+      var wordClip = alphaClip(wordEl, 'word-sm', 480, 260), leafClip = alphaClip(leafEl, 'leaf', 384, 384);
+      window.__mbWordVideo = wordClip.video; window.__mbLeafVideo = leafClip.video;   // read by the site tests
       var word = function (on) { logoEl.classList.toggle('mb-word-show', on); };
-      var showWord = function () { word(true); wordPlay(function () { word(false); }); };
-      var play = function () {
-        if (still) { path.setAttribute('d', F[F.length - 1]); showWord(); }
-        // frame follows the clock (12 fps), so it always ends at ~5s even on a busy phone
-        else requestAnimationFrame(function tick(t) { if (!last) last = t; var n = Math.min(F.length - 1, Math.floor((t - last) * 12 / 1000));
-          if (n !== i - 1) { path.setAttribute('d', F[n]); i = n + 1; if (n === 8) showWord(); }
-          if (n < F.length - 1) requestAnimationFrame(tick); });
-      };
-      // the falling-buds loading screen (loader.js) covers the header: start the leaf once it lifts
+      // the lettering appears as the leaf pops in (~0.9s), plays its reveal, holds 1.5s, then tucks back into the leaf
+      var wordStarted = false;
+      var startWord = function () { if (wordStarted) return; wordStarted = true; word(true);
+        wordClip.play(function () {}, function () { setTimeout(function () { word(false); }, 1500); }); };
+      var play = function () { leafClip.play(function (t) { if (t >= .9) startWord(); }, startWord); };
+      // the falling-buds loading screen (loader.js) covers the header: start once it lifts
       if (window.__mbLoading) document.addEventListener('mb:loaded-in', play, { once: true }); else play();
     } else if (logoEl) logoEl.classList.add('mb-word-show');
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });

@@ -80,7 +80,7 @@
 
 #logo .mb-leaf{position:relative;z-index:2}
 #logo .mb-word{display:block;overflow:hidden;max-width:220px;transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1)}
-body.mb-menu-open #logo .mb-word{max-width:0;opacity:0;transform:translateX(-40px)}
+body.mb-menu-open #logo .mb-word,#logo.mb-word-done .mb-word{max-width:0;opacity:0;transform:translateX(-40px)}
 
 /* original top menu is hidden (the site uses mbnav.css); the side section dots stay, styled in index.7d544b17.css */
 nav.menu,.mb-dir-btn,#aboutView{display:none!important}

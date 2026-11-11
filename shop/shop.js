@@ -89,8 +89,12 @@
       leaf.innerHTML = '<svg viewBox="25 -6 588 588" aria-hidden="true"><path fill-rule="evenodd"></path></svg>';
       var path = leaf.querySelector('path'), i = 0, last = 0;
       var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (still) path.setAttribute('d', F[F.length - 1]);
-      else (function tick(t) { if (t - last >= 1000 / 12) { path.setAttribute('d', F[i]); last = t; i++; } if (i < F.length) requestAnimationFrame(tick); })(0);
+      // when the leaf lands on the wink, the METRO BLOOMIN wordmark slides away behind it
+      var done = function () { logoEl.classList.add('mb-word-done'); };
+      if (still) { path.setAttribute('d', F[F.length - 1]); setTimeout(done, F.length * 1000 / 12); }
+      // frame follows the clock (12 fps), so it always ends at ~5s even on a busy phone
+      else requestAnimationFrame(function tick(t) { if (!last) last = t; var n = Math.min(F.length - 1, Math.floor((t - last) * 12 / 1000));
+        if (n !== i - 1) { path.setAttribute('d', F[n]); i = n + 1; } if (n < F.length - 1) requestAnimationFrame(tick); else done(); });
     }
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
     document.body.setAttribute('data-view', 'about');

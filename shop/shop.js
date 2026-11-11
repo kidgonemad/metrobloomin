@@ -46,8 +46,8 @@
       var pts = [];
       for (var i = 0; i < N; i++) { var a = i / N * 6.2832;
         var r = 46 * (1 + .06 * Math.cos(2 * a + sd[0]) + .04 * Math.cos(3 * a + sd[1])          // its own lumpy shape
-          + .03 * Math.sin(t * 1.2 + sd[2] + i * 1.7) + .02 * Math.sin(t * 2 + sd[0] + i * 2.9))  // slow wobble
-          * (1 + .04 * Math.sin(t * 2.2 + sd[1]));                                                // breathing
+          + .03 * Math.sin(t * 2.4 + sd[2] + i * 1.7) + .02 * Math.sin(t * 4 + sd[0] + i * 2.9))  // slow wobble
+          * (1 + .04 * Math.sin(t * 4.4 + sd[1]));                                                // breathing
         pts.push([50 + Math.cos(a) * r, 50 + Math.sin(a) * r]); }
       var d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
       for (i = 0; i < N; i++) { var p0 = pts[(i + N - 1) % N], p1 = pts[i], p2 = pts[(i + 1) % N], p3 = pts[(i + 2) % N];   // smooth curve through the points

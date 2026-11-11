@@ -15,14 +15,15 @@
   document.body.appendChild(root);
   html.classList.remove('mb-intro');           // the loader's own white takes over
 
-  var shop = null, ended = false;
+  var shop = null, ended = false, dropped = false;
   function prepShop() {                        // load product photos now, so they are there when they fall in
     shop = document.getElementById('shopView');
     if (!shop) return;
     shop.querySelectorAll('.mb-card img').forEach(function (im) { im.loading = 'eager'; });
     shop.querySelectorAll('.mb-card').forEach(function (c, k) { c.style.setProperty('--k', k); });
   }
-  function dropProducts() {                    // the pile is leaving: products fall in right behind it
+  function dropProducts() {                    // the pile is leaving: products fall in right behind it (once only)
+    if (dropped) return; dropped = true;
     prepShop();
     if (shop) {
       shop.classList.add('mb-drop-in');
@@ -31,12 +32,12 @@
     root.classList.add('is-falling');          // white lifts; only the falling buds stay on top
   }
   function end() {
-    if (ended) return; ended = true;
+    if (ended) return; ended = true; clearTimeout(safety);
     window.__mbLoading = false;
     document.dispatchEvent(new Event('mb:loaded-in'));
     root.remove();
   }
-  setTimeout(function () { dropProducts(); end(); }, 8000);   // safety net
+  var safety = setTimeout(function () { dropProducts(); end(); }, 8000);   // safety net if the animation never finishes
 
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) {
     setTimeout(function () { root.classList.add('is-falling'); end(); }, 300); return;

@@ -63,6 +63,7 @@
     }
     var SRC = { a: source('skulls-a', true), b: source('skulls-b', true), l: source('leaves', true) };
     window.__mbShopBg = SRC;                                           // read by the site tests
+    window.__mbShopBgPieces = function () { return pieces; };
     var smokeTex = texture(), smokeReady = false, smokeImg = new Image();
     smokeImg.onload = function () { upload(smokeTex, smokeImg); smokeReady = true; }; smokeImg.src = base + 'smoke.webp';
 
@@ -79,7 +80,7 @@
         for (var x = -step * .3; x < W + step; x += step) {
           var d = r(), kind = r() < .66 ? (r() < .5 ? 'a' : 'b') : 'l';
           pieces.push({ src: kind, cell: Math.floor(r() * 9), x: x + (r() - .5) * step * .7, y: y + (r() - .5) * step * .7,
-            size: S * (.62 + d * .55) * (kind === 'l' ? .9 : 1), rot: (r() - .5) * .9, d: d, s: 0, vs: 0, w: 0, vw: 0 });
+            size: S * (.62 + d * .55) * (kind === 'l' ? .9 : 1), rot: (r() - .5) * .9, d: d, s: 0, vs: 0, w: 0, vw: 0, ox: 0, oy: 0, vx: 0, vy: 0 });
         }
       pieces.sort(function (p, q) { return p.d - q.d; });              // far ones first, near ones on top
       for (var i = 0; i < 6; i++) trails.push({ cell: i % 8, x: r() * W, y0: r() * H, size: S * (.7 + r() * .5), d: .6 + r() * .4, ph: r() * 6.28, sp: 14 + r() * 16 });
@@ -89,10 +90,22 @@
     // ---------- input ----------
     var aim = { x: 0, y: 0 }, ptr = { x: 0, y: 0 }, finger = { x: .5, y: .5 }, touch = 0, touchT = 0, tilt = false;
     var bursts = [[0, 0, -1], [0, 0, -1], [0, 0, -1]], bi = 0, t0 = performance.now();
-    shop.addEventListener('pointermove', function (e) {
-      finger = { x: e.clientX / W, y: 1 - e.clientY / H }; touchT = 1;
-      if (!tilt) aim = { x: e.clientX / W * 2 - 1, y: e.clientY / H * 2 - 1 };
-    });
+    // the finger (or mouse) pushes the pile around: pieces near it are shoved away and dragged along, then spring back.
+    // touch events keep firing while the page scrolls under the finger, so this works during a scroll-drag too.
+    var hand = { x: -1e4, y: -1e4, vx: 0, vy: 0, on: 0, last: 0 };
+    function handAt(x, y, down) {
+      var now = performance.now(), dt = Math.max(8, now - hand.last);
+      if (hand.on && now - hand.last < 120) { hand.vx = (x - hand.x) / dt * 16; hand.vy = (y - hand.y) / dt * 16; } else { hand.vx = hand.vy = 0; }
+      hand.x = x; hand.y = y; hand.last = now; hand.on = down ? 1 : hand.on;
+      finger = { x: x / W, y: 1 - y / H }; touchT = 1;
+      if (!tilt) aim = { x: x / W * 2 - 1, y: y / H * 2 - 1 };
+    }
+    shop.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') { hand.on = 1; handAt(e.clientX, e.clientY); } });
+    shop.addEventListener('touchstart', function (e) { var t = e.touches[0]; hand.last = 0; handAt(t.clientX, t.clientY, true); }, { passive: true });
+    shop.addEventListener('touchmove', function (e) { var t = e.touches[0]; handAt(t.clientX, t.clientY, true); }, { passive: true });
+    shop.addEventListener('touchend', function () { hand.on = 0; }, { passive: true });
+    shop.addEventListener('mouseleave', function () { hand.on = 0; });
+    var lastScroll = 0;
     addEventListener('deviceorientation', function (e) { if (e.gamma == null) return; tilt = true;
       aim = { x: Math.max(-1, Math.min(1, e.gamma / 25)), y: Math.max(-1, Math.min(1, (e.beta - 45) / 25)) }; });
     var asked = false;
@@ -102,7 +115,7 @@
       playAll();
       if (e.target.closest && e.target.closest('a,button')) return;                         // product links keep working
       bursts[bi++ % 3] = [e.clientX / W, 1 - e.clientY / H, (performance.now() - t0) / 1000];
-      for (var i = pieces.length - 1; i >= 0; i--) { var p = pieces[i], px = p.x + ptr.x * p.d * 30, py = p.y + ptr.y * p.d * 30;
+      for (var i = pieces.length - 1; i >= 0; i--) { var p = pieces[i], px = p.x + ptr.x * p.d * 45 + p.ox, py = p.y + ptr.y * p.d * 45 - shop.scrollTop * .25 * p.d + p.oy;
         if (Math.hypot(e.clientX - px, e.clientY - py) < p.size * .38) { p.vs += .9; p.vw += (Math.random() - .5) * .8; break; } }
     });
 
@@ -135,13 +148,22 @@
       gl.useProgram(sprite); gl.bindBuffer(gl.ARRAY_BUFFER, quad);
       var loc = gl.getAttribLocation(sprite, 'c'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(sprite.u('res'), W, H);
-      var scroll = shop.scrollTop;
+      var scroll = shop.scrollTop, dS = scroll - lastScroll; lastScroll = scroll;
+      if (Math.abs(dS) > 200) dS = 0;                                     // a jump (e.g. view switch), not a scroll
       for (var i = 0; i < pieces.length; i++) { var p = pieces[i], s = SRC[p.src]; if (!s.ready) continue;
         p.vs += -p.s * .18; p.vs *= .82; p.s += p.vs * .12; p.vw += -p.w * .12; p.vw *= .85; p.w += p.vw * .2;      // tap springs
         var bob = Math.sin(t * .8 + i) * 3 * p.d;
+        var px = p.x + ptr.x * p.d * 45, py = p.y + ptr.y * p.d * 45 - scroll * .25 * p.d + bob;
+        if (hand.on) {                                                     // push away from the finger and drag along with it
+          var dx = px + p.ox - hand.x, dy = py + p.oy - hand.y, d = Math.hypot(dx, dy) || 1, R = p.size * 1.5;
+          if (d < R) { var k = (1 - d / R) * (.6 + p.d * .6);
+            p.vx += dx / d * k * 5 + hand.vx * k * .8; p.vy += dy / d * k * 5 + hand.vy * k * .8; p.vw += (hand.vx * dy - hand.vy * dx) / d * k * .0025; }
+        }
+        p.vy -= Math.max(-40, Math.min(40, dS)) * .3 * p.d;                                            // scrolling jiggles the pile, nearer pieces more
+        p.vx += -p.ox * .035; p.vy += -p.oy * .035; p.vx *= .88; p.vy *= .88; p.ox += p.vx; p.oy += p.vy;   // spring home
         drawSprite(s.tex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
-          p.x + ptr.x * p.d * 30, p.y + ptr.y * p.d * 30 - scroll * .12 * p.d + bob, p.size, p.size,
-          p.rot + p.w + ptr.x * p.d * .05, 1 + p.s * .22, 1 - p.s * .18, .4 + p.d * .6);
+          px + p.ox, py + p.oy, p.size, p.size,
+          p.rot + p.w + ptr.x * p.d * .08, 1 + p.s * .22, 1 - p.s * .18, .4 + p.d * .6);
       }
       if (smokeReady) for (i = 0; i < trails.length; i++) { var q = trails[i];                 // drawn smoke trails drift up
         var y = ((q.y0 - t * q.sp) % (H + q.size * 2) + H + q.size * 2) % (H + q.size * 2) - q.size;

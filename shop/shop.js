@@ -54,7 +54,7 @@
     setShop(next === 'shop');
     if (window.__mbVideos) { if (next === 'videos') window.__mbVideos.open(); else window.__mbVideos.close(); }
     document.body.setAttribute('data-view', next);
-    if (nav) { nav.setCurrent(next); nav.setTone(next === 'videos' ? 'dark' : 'light'); }
+    if (nav) { nav.setCurrent(next); nav.setTone(next === 'about' ? 'dark' : next === 'videos' ? 'auto' : 'light'); }
     var h = next === 'about' ? '' : '#' + next;
     if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search);
   }
@@ -77,7 +77,7 @@
         { label: 'videos', onClick: function () { show('videos'); } },
         { label: 'about', onClick: function () { show('about'); } }
       ],
-      current: 'about', tone: 'light',
+      current: 'about', tone: 'dark',
       onToggle: function (o) { document.body.classList.toggle('mb-menu-open', o); }
     });
     nav.classList.add('mbn--site');

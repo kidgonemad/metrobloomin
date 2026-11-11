@@ -3,7 +3,8 @@
 //
 // var nav = MBNav.create({ items:[{label, href?, onClick?}], current:'about', tone:'light', onToggle:fn })
 //   nav.setCurrent(label)  underline the current view
-//   nav.setTone('light'|'dark')  light = white circle, dark text; dark = black circle, white text
+//   nav.setTone('light'|'dark')  the page behind the menu: light page = black text, dark page = white text,
+//                                auto = inverts against whatever is behind it (videos: blobs move under the menu)
 //   nav.close()
 (function () {
   function create(opts) {
@@ -41,7 +42,7 @@
         if (on) links[k].setAttribute('aria-current', 'page'); else links[k].removeAttribute('aria-current');
       });
     };
-    wrap.setTone = function (t) { wrap.setAttribute('data-tone', t === 'dark' ? 'dark' : 'light'); };
+    wrap.setTone = function (t) { wrap.setAttribute('data-tone', t === 'dark' || t === 'auto' ? t : 'light'); };
     wrap.close = function () { set(false); };
     wrap.setTone(opts.tone || 'light');
     if (opts.current) wrap.setCurrent(opts.current);

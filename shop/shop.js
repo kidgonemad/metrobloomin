@@ -73,6 +73,7 @@
   function show(next) {
     if (next === view) return;
     view = next;
+    document.body.classList.remove('mb-scrolling');
     setShop(next === 'shop');
     if (window.__mbVideos) { if (next === 'videos') window.__mbVideos.open(); else window.__mbVideos.close(); }
     document.body.setAttribute('data-view', next);
@@ -149,6 +150,15 @@
       if (window.__mbLoading) document.addEventListener('mb:loaded-in', play, { once: true }); else play();
     } else if (logoEl) logoEl.classList.add('mb-word-show');
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
+    // about page: while you scroll, the header (leaf, lettering, menu) steps aside so the 3D scroll is clear;
+    // 350ms after you stop it pops back out (shop.css body.mb-scrolling)
+    var scrollStop = null;
+    var scrolling = function () {
+      if (view !== 'about' || document.body.classList.contains('mb-menu-open')) return;
+      document.body.classList.add('mb-scrolling'); clearTimeout(scrollStop);
+      scrollStop = setTimeout(function () { document.body.classList.remove('mb-scrolling'); }, 350);
+    };
+    ['wheel', 'touchmove', 'scroll'].forEach(function (e) { window.addEventListener(e, scrolling, { passive: true, capture: true }); });
     document.body.setAttribute('data-view', 'about');
     // the site opens on the shop, unless a link asks for videos or about
     var h = location.hash;

@@ -45,7 +45,7 @@
 body.mb-shop-open .mb-shopbg{visibility:visible;opacity:1;transition:opacity .35s ease}
 .mb-shop>.mb-hero,.mb-shop>.mb-collection{position:relative;z-index:1}
 
-.mb-collection{max-width:1320px;margin:0 auto;padding:40px 48px 64px;scroll-margin-top:90px}
+.mb-collection{max-width:1320px;margin:0 auto;padding:0 48px 28px;scroll-margin-top:90px}
 
 .mb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;list-style:none;margin:0;padding:0}
 .mb-card a{display:block;text-decoration:none}
@@ -67,7 +67,7 @@ body.mb-shop-open .mb-shopbg{visibility:visible;opacity:1;transition:opacity .35
   .mb-shop__brand{text-align:left;font-size:18px}
   .mb-hero,.mb-collection{padding-left:16px;padding-right:16px}
   .mb-hero{padding-top:36px}
-  .mb-collection{padding-top:32px;padding-bottom:44px}
+  .mb-collection{padding-top:0;padding-bottom:26px}
   .mb-grid{gap:26px 18px}
 }
 @media (prefers-reduced-motion:reduce){.mb-shop,.mb-card__media img{transition:none}}
@@ -112,7 +112,10 @@ html,body{background:#000}
 .loader{color:#fff}
 .loader .progress{border-color:#fff!important}
 .loader .progress .bar{background:#fff!important}
-#logo,nav.menu{transition:opacity .4s ease}
+#logo,nav.menu{transition:opacity .4s ease,transform .5s cubic-bezier(.3,1.6,.5,1)}
+#logo{transform-origin:20% 30%}
+/* about page: the leaf, lettering and menu step aside while you scroll and pop back out when you stop (shop.js) */
+body.mb-scrolling #logo,body.mb-scrolling .mbn--site{transform:scale(0);transition:opacity .4s ease,transform .25s ease-in}
 body:not(.mb-loaded) #logo,body:not(.mb-loaded) nav.menu{opacity:0!important;pointer-events:none}
 /* footer: white with black text */
 #links .accessibility{background:#fff!important;color:#000!important}

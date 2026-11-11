@@ -27,9 +27,9 @@
       'attribute vec2 c;uniform vec2 res,pos,size,sc;uniform float rot;uniform vec4 cell;varying vec2 uv;' +
       'void main(){vec2 p=c*size*sc;float s=sin(rot),k=cos(rot);p=vec2(p.x*k-p.y*s,p.x*s+p.y*k)+pos;' +
       'uv=cell.xy+(c+.5)*cell.zw;gl_Position=vec4(p.x/res.x*2.-1.,1.-p.y/res.y*2.,0.,1.);}',
-      'precision mediump float;varying vec2 uv;uniform sampler2D tex;uniform float stacked,alpha;' +
+      'precision mediump float;varying vec2 uv;uniform sampler2D tex;uniform float stacked,alpha,shade;' +
       'void main(){vec4 o;if(stacked>.5){o=vec4(texture2D(tex,vec2(uv.x,uv.y*.5)).rgb,texture2D(tex,vec2(uv.x,.5+uv.y*.5)).r);}' +
-      'else{o=texture2D(tex,uv);}gl_FragColor=vec4(o.rgb,o.a*alpha);}');
+      'else{o=texture2D(tex,uv);}gl_FragColor=vec4(o.rgb*shade,o.a*alpha);}');
     var smoke = prog('attribute vec2 c;varying vec2 uv;void main(){uv=c+.5;gl_Position=vec4(c*2.,0.,1.);}',
       'precision highp float;varying vec2 uv;uniform vec2 res,ptr;uniform float t,touch;uniform vec3 b0,b1,b2;' +
       'float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}' +
@@ -91,16 +91,16 @@
     function layout() {
       dpr = Math.min(1.5, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      var r = rnd(7), S = Math.max(120, Math.min(250, W / 2.7)), step = S * .62;
+      var r = rnd(7), S = Math.max(150, Math.min(300, W / 2.2)), step = S * .42;
       pieces = []; trails = [];
       for (var y = -step * .3; y < H + step; y += step)
         for (var x = -step * .3; x < W + step; x += step) {
           var d = r(), kind = r() < .66 ? (r() < .5 ? 'a' : 'b') : 'l';
           pieces.push({ src: kind, cell: Math.floor(r() * 9), x: x + (r() - .5) * step * .7, y: y + (r() - .5) * step * .7,
-            size: S * (.62 + d * .55) * (kind === 'l' ? .9 : 1), rot: (r() - .5) * .9, d: d, s: 0, vs: 0, w: 0, vw: 0, ox: 0, oy: 0, vx: 0, vy: 0 });
+            size: S * (.75 + d * .5) * (kind === 'l' ? 1.05 : 1), rot: (r() - .5) * .9, d: d, s: 0, vs: 0, w: 0, vw: 0, ox: 0, oy: 0, vx: 0, vy: 0 });
         }
       pieces.sort(function (p, q) { return p.d - q.d; });              // far ones first, near ones on top
-      for (var i = 0; i < 6; i++) trails.push({ cell: i % 8, x: r() * W, y0: r() * H, size: S * (.7 + r() * .5), d: .6 + r() * .4, ph: r() * 6.28, sp: 14 + r() * 16 });
+      for (var i = 0; i < Math.round(W * H / (S * S) * 1.1) + 4; i++) trails.push({ cell: i % 8, x: r() * W, y0: r() * H, size: S * (.8 + r() * .5), d: .6 + r() * .4, ph: r() * 6.28, sp: 14 + r() * 16 });
     }
     layout(); addEventListener('resize', layout);
 
@@ -141,7 +141,7 @@
     // only a few pieces animate at a time: each loop of an atlas video (which starts and ends on its first frame,
     // the same picture as the still) picks a fresh random handful; the rest show the still. Swaps happen on that
     // matching frame, so nothing jumps. The three videos start out of step, so the swaps don't all happen together.
-    function shuffle(k) { var mine = pieces.filter(function (p) { return p.src === k; }), n = Math.max(1, Math.round(mine.length * .2));
+    function shuffle(k) { var mine = pieces.filter(function (p) { return p.src === k; }), n = Math.max(1, Math.min(4, Math.round(mine.length * .1)));
       mine.forEach(function (p) { p.active = false; });
       for (var j = 0; j < n && mine.length; j++) mine.splice(Math.floor(Math.random() * mine.length), 1)[0].active = true; }
     var delay = { a: 0, b: 3300, l: 6600 }, begun = false;                // the first time, the three videos start out of step
@@ -161,8 +161,8 @@
     document.addEventListener('visibilitychange', sync);
 
     // ---------- draw ----------
-    function drawSprite(tex, stacked, cell, x, y, w, h, rot, sx, sy, alpha) {
-      gl.uniform1f(sprite.u('stacked'), stacked); gl.uniform1f(sprite.u('alpha'), alpha); gl.bindTexture(gl.TEXTURE_2D, tex);
+    function drawSprite(tex, stacked, cell, x, y, w, h, rot, sx, sy, alpha, shade) {
+      gl.uniform1f(sprite.u('stacked'), stacked); gl.uniform1f(sprite.u('alpha'), alpha); gl.uniform1f(sprite.u('shade'), shade == null ? 1 : shade); gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.uniform4f(sprite.u('cell'), cell[0], cell[1], cell[2], cell[3]); gl.uniform2f(sprite.u('pos'), x, y);
       gl.uniform2f(sprite.u('size'), w, h); gl.uniform2f(sprite.u('sc'), sx, sy); gl.uniform1f(sprite.u('rot'), rot);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -194,12 +194,12 @@
         p.vx += -p.ox * .035; p.vy += -p.oy * .035; p.vx *= .88; p.vy *= .88; p.ox += p.vx; p.oy += p.vy;   // spring home
         drawSprite(p.solo && p.solo.ready ? p.solo.tex : p.active && s.live ? s.tex : s.stillTex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
           px + p.ox, py + p.oy, p.size, p.size,
-          p.rot + p.w + ptr.x * p.d * .08, 1 + p.s * .22, 1 - p.s * .18, .4 + p.d * .6);
+          p.rot + p.w + ptr.x * p.d * .08, 1 + p.s * .22, 1 - p.s * .18, 1, .5 + p.d * .5);
       }
       if (smokeReady) for (i = 0; i < trails.length; i++) { var q = trails[i];                 // drawn smoke trails drift up
         var y = ((q.y0 - t * q.sp) % (H + q.size * 2) + H + q.size * 2) % (H + q.size * 2) - q.size;
         drawSprite(smokeTex, 0, [(q.cell % 4) / 4, Math.floor(q.cell / 4) / 2, .25, .5], q.x + Math.sin(t * .6 + q.ph) * 14 + ptr.x * q.d * 34,
-          y + ptr.y * q.d * 34, q.size, q.size, Math.sin(t * .4 + q.ph) * .12, 1, 1, .85);
+          y + ptr.y * q.d * 34, q.size, q.size, Math.sin(t * .4 + q.ph) * .12, 1, 1, .95);
       }
       gl.useProgram(smoke); loc = gl.getAttribLocation(smoke, 'c'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(smoke.u('res'), W, H); gl.uniform2f(smoke.u('ptr'), finger.x, finger.y); gl.uniform1f(smoke.u('t'), t); gl.uniform1f(smoke.u('touch'), touch);

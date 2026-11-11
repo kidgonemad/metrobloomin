@@ -4,7 +4,7 @@
 @font-face{font-family:"MB Inter";src:url("fonts/inter-700.woff2") format("woff2");font-weight:700;font-display:swap}
 
 /* brand mark (replaces the old header logo; colour follows the page theme via currentColor) */
-#logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+#logo{display:flex;align-items:center;gap:12px;text-decoration:none;width:auto!important;overflow:visible}
 #logo .mb-leaf{flex:none;width:30px;height:32px;background:currentColor;
   -webkit-mask:url("img/leaf-mark.png") center/contain no-repeat;mask:url("img/leaf-mark.png") center/contain no-repeat;transition:background-color .5s}
 #logo .mb-word{font:700 15px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}

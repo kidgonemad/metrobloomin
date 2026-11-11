@@ -23,7 +23,7 @@
       '<div class="mb-card__media"><img src="' + base + 'img/' + p.img + '-1.webp" alt="' + esc(p.name) + '" loading="lazy" width="640" height="640">' +
       '<img src="' + base + 'img/' + p.img + '-2.webp" alt="" aria-hidden="true" loading="lazy" width="640" height="640"></div>' +
       '<div class="mb-card__info"><span class="mb-card__name">' + esc(p.name) + '</span><span class="mb-card__price">' + money(p.price) + '</span></div>' +
-      '<span class="mb-card__cta">Buy now ↗</span></a></li>';
+      '</a></li>';
   }
 
   var el = document.createElement('section');
@@ -33,18 +33,12 @@
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-label', 'Metro Bloomin shop');
   el.innerHTML =
-    '<div class="mb-hero"><h2>Shop</h2><p>The Metro Bloomin signature logo collection: heavyweight hand-tufted rugs, molded soft PVC keychains and more. Checkout happens on metrobloomin.com.</p></div>' +
+    '<div class="mb-hero"><h2>Shop</h2></div>' +
     collections.map(function (c) {
       return '<section class="mb-collection" id="mb-' + c.id + '"><div class="mb-collection__head"><h3>' + esc(c.title) + '</h3>' +
-        '<a href="' + STORE + '/collections/' + c.handle + '" target="_blank" rel="noopener">View collection ↗</a></div>' +
+        '</div>' +
         '<ul class="mb-grid">' + c.products.map(card).join('') + '</ul></section>';
-    }).join('') +
-    '<div class="mb-loop"><div><h3>Stay in the loop</h3><p>Drops, releases, and Metro Bloomin updates.</p></div>' +
-      '<a class="mb-btn" href="' + STORE + '/#newsletter" target="_blank" rel="noopener">Join the list ↗</a></div>' +
-    '<footer class="mb-foot"><span>© ' + new Date().getFullYear() + ' METRO BLOOMIN</span><nav>' +
-      [['Privacy policy', 'privacy-policy'], ['Shipping policy', 'shipping-policy'], ['Refund policy', 'refund-policy'], ['Terms of service', 'terms-of-service']]
-        .map(function (l) { return '<a href="' + STORE + '/policies/' + l[1] + '" target="_blank" rel="noopener">' + l[0] + '</a>'; }).join('') +
-    '</nav></footer>';
+    }).join('');
   document.body.appendChild(el);
 
   // ---- one controller for the three views: about (the 3D page), shop, videos ----
@@ -89,6 +83,15 @@
     nav.classList.add('mbn--site');
     document.body.appendChild(nav);
     var logoEl = document.getElementById('logo');
+    // animated leaf logo: traced frames from shop/leaf-frames.js, played once, then holds the wink
+    var leaf = logoEl && logoEl.querySelector('.mb-leaf'), F = window.MB_LEAF_FRAMES;
+    if (leaf && F && F.length) {
+      leaf.innerHTML = '<svg viewBox="0 0 160 160" aria-hidden="true"><path fill-rule="evenodd"></path></svg>';
+      var path = leaf.querySelector('path'), i = 0, last = 0;
+      var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (still) path.setAttribute('d', F[F.length - 1]);
+      else (function tick(t) { if (t - last >= 1000 / 12) { path.setAttribute('d', F[i]); last = t; i++; } if (i < F.length) requestAnimationFrame(tick); })(0);
+    }
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
     document.body.setAttribute('data-view', 'about');
     // the site opens on the shop, unless a link asks for videos or about

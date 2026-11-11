@@ -5,8 +5,9 @@
 
 /* brand mark (replaces the old header logo; colour follows the page theme via currentColor) */
 #logo{display:flex;align-items:center;gap:12px;text-decoration:none;width:auto!important;overflow:visible}
-#logo .mb-leaf{flex:none;width:30px;height:32px;background:currentColor;
-  -webkit-mask:url("img/leaf-mark.png") center/contain no-repeat;mask:url("img/leaf-mark.png") center/contain no-repeat;transition:background-color .5s}
+#logo .mb-leaf{flex:none;display:block;width:36px;height:36px;color:inherit}
+#logo .mb-leaf svg{display:block;width:100%;height:100%;overflow:visible}
+#logo .mb-leaf path{fill:currentColor}
 #logo .mb-word{font:700 15px/1 "MB Inter",Arial,sans-serif;letter-spacing:.12em;white-space:nowrap;text-transform:uppercase}
 
 /* nav link */
@@ -34,14 +35,11 @@
 
 .mb-hero{max-width:1320px;margin:0 auto;padding:56px 48px 8px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
 .mb-hero h2{margin:0;font-size:clamp(40px,8vw,104px);font-weight:700;line-height:.9;letter-spacing:-.02em;text-transform:uppercase;color:var(--mb-fg)}
-.mb-hero p{margin:0;max-width:340px;font-size:15px;line-height:1.5;color:var(--mb-muted)}
 
 .mb-collection{max-width:1320px;margin:0 auto;padding:40px 48px 64px;scroll-margin-top:90px}
 .mb-collection+.mb-collection{border-top:1px solid var(--mb-line)}
 .mb-collection__head{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:24px}
 .mb-collection__head h3{margin:0;font-size:28px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--mb-fg)}
-.mb-collection__head a{font-size:13px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
-.mb-collection__head a:hover{text-decoration:underline}
 
 .mb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;list-style:none;margin:0;padding:0}
 .mb-card a{display:block;text-decoration:none}
@@ -53,25 +51,15 @@
 .mb-card__info{display:flex;justify-content:space-between;gap:12px;padding-top:12px;font-size:14px;line-height:1.35}
 .mb-card__name{font-weight:500;text-transform:capitalize}
 .mb-card__price{font-variant-numeric:tabular-nums;white-space:nowrap}
-.mb-card__cta{display:inline-block;margin-top:8px;font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid currentColor;padding-bottom:2px}
 
-.mb-loop{max-width:1320px;margin:0 auto;padding:56px 48px;border-top:1px solid var(--mb-line);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
-.mb-loop h3{margin:0 0 6px;font-size:28px;font-weight:700;text-transform:uppercase;color:var(--mb-fg)}
-.mb-loop p{margin:0;color:var(--mb-muted);font-size:15px}
-.mb-btn{display:inline-block;background:var(--mb-fg);color:#fff!important;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:16px 28px}
-.mb-btn:hover{background:#000}
 
-.mb-foot{max-width:1320px;margin:0 auto;padding:32px 48px 48px;border-top:1px solid var(--mb-line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mb-muted)}
-.mb-foot nav{display:flex;gap:20px;flex-wrap:wrap}
-.mb-foot a{text-decoration:none}
-.mb-foot a:hover{text-decoration:underline}
 
 @media (max-width:900px){.mb-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){
   .mb-shop__bar{grid-template-columns:auto 1fr auto;padding:14px 16px;gap:12px}
   .mb-shop__nav{display:none}
   .mb-shop__brand{text-align:left;font-size:18px}
-  .mb-hero,.mb-collection,.mb-loop,.mb-foot{padding-left:16px;padding-right:16px}
+  .mb-hero,.mb-collection{padding-left:16px;padding-right:16px}
   .mb-hero{flex-direction:column;align-items:flex-start;padding-top:36px}
   .mb-collection{padding-top:32px;padding-bottom:44px}
   .mb-grid{gap:20px 12px}
@@ -147,3 +135,7 @@ body.mb-shop-open #logo,body.mb-videos-open #logo{opacity:1!important;pointer-ev
 /* the one menu: hidden until the 3D page has loaded, except on the shop/videos views (shown right away) */
 body:not(.mb-loaded) .mbn--site{opacity:0;pointer-events:none}
 body[data-view="shop"] .mbn--site,body[data-view="videos"] .mbn--site{opacity:1;pointer-events:auto}
+/* white fade behind the header inside the shop, so products scroll under the logo and menu cleanly */
+.mb-shop::before{content:"";display:block;position:sticky;top:0;height:110px;margin-bottom:-110px;z-index:2;pointer-events:none;
+  background:linear-gradient(#fff 0,#fff 70%,rgba(255,255,255,0) 100%)}
+@media (min-width:768px){.mb-shop::before{height:160px;margin-bottom:-160px}}

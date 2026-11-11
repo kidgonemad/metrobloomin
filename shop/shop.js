@@ -108,11 +108,15 @@
       // the METRO BLOOMIN wordmark is tied to the leaf: it slides out as the leaf pops in (frame 8)
       // and slides back behind it when the leaf lands on the wink (last frame)
       var word = function (on) { logoEl.classList.toggle('mb-word-show', on); };
-      if (still) { path.setAttribute('d', F[F.length - 1]); word(true); setTimeout(function () { word(false); }, F.length * 1000 / 12); }
-      // frame follows the clock (12 fps), so it always ends at ~5s even on a busy phone
-      else requestAnimationFrame(function tick(t) { if (!last) last = t; var n = Math.min(F.length - 1, Math.floor((t - last) * 12 / 1000));
-        if (n !== i - 1) { path.setAttribute('d', F[n]); i = n + 1; if (n === 8) word(true); }
-        if (n < F.length - 1) requestAnimationFrame(tick); else word(false); });
+      var play = function () {
+        if (still) { path.setAttribute('d', F[F.length - 1]); word(true); setTimeout(function () { word(false); }, F.length * 1000 / 12); }
+        // frame follows the clock (12 fps), so it always ends at ~5s even on a busy phone
+        else requestAnimationFrame(function tick(t) { if (!last) last = t; var n = Math.min(F.length - 1, Math.floor((t - last) * 12 / 1000));
+          if (n !== i - 1) { path.setAttribute('d', F[n]); i = n + 1; if (n === 8) word(true); }
+          if (n < F.length - 1) requestAnimationFrame(tick); else word(false); });
+      };
+      // the falling-buds loading screen (loader.js) covers the header: start the leaf once it lifts
+      if (window.__mbLoading) document.addEventListener('mb:loaded-in', play, { once: true }); else play();
     } else if (logoEl) logoEl.classList.add('mb-word-show');
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
     document.body.setAttribute('data-view', 'about');

@@ -151,3 +151,11 @@ body[data-view="shop"] .mbn--site,body[data-view="videos"] .mbn--site{opacity:1;
 .mb-shop::before{content:"";display:block;position:sticky;top:0;height:110px;margin-bottom:-110px;z-index:2;pointer-events:none;
   background:linear-gradient(#fff 0,#fff 70%,rgba(255,255,255,0) 100%)}
 @media (min-width:768px){.mb-shop::before{height:240px;margin-bottom:-240px}}
+
+/* loading screen (loader.js): buds pile up on white, then fall away; the shop products then drop into place */
+.mb-loader{position:fixed;inset:0;z-index:1300;background:#fff;overflow:hidden;pointer-events:none;transition:background-color .6s ease .2s,opacity .4s ease}
+.mb-loader img{position:absolute;left:0;top:0;height:auto;will-change:transform;user-select:none}
+.mb-loader.is-falling{background-color:rgba(255,255,255,0)}
+.mb-loader.is-gone{opacity:0}
+.mb-shop.mb-drop-in .mb-card{animation:mbCardDrop .85s cubic-bezier(.3,.7,.35,1) calc(var(--k) * 90ms) backwards}
+@keyframes mbCardDrop{0%{transform:translateY(-110vh) rotate(-6deg)}70%{transform:translateY(10px) rotate(1deg)}85%{transform:translateY(-4px)}100%{transform:none}}

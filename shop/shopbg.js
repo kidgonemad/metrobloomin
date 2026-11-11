@@ -12,7 +12,9 @@
     var cv = document.createElement('canvas');
     cv.className = 'mb-shopbg';
     cv.setAttribute('aria-hidden', 'true');
-    shop.insertBefore(cv, shop.firstChild);
+    // pinned to the page itself, just behind the shop (not inside the shop's scrolling area: iPhone Safari draws
+    // fixed elements inside a scrolling area wrongly). Shown only while the shop is open (shop.css).
+    shop.parentNode.insertBefore(cv, shop);
     var gl = cv.getContext('webgl', { alpha: false, antialias: false, premultipliedAlpha: false });
     if (!gl) return;                                             // no WebGL: the dark CSS background shows
     var still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);

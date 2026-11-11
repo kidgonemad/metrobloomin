@@ -19,7 +19,7 @@
 /* overlay */
 /* dark shop: an animated skull + leaf scene (shopbg.js, canvas.mb-shopbg) sits behind the products */
 .mb-shop{--mb-fg:#fff;--mb-muted:#bdbdbd;--mb-line:rgba(255,255,255,.15);--mb-tile:transparent;
-  position:fixed;inset:0;z-index:1000;background:#0b0b0b;color:var(--mb-fg);
+  position:fixed;inset:0;z-index:1000;background:transparent;color:var(--mb-fg);
   font-family:"MB Inter",Arial,Helvetica,sans-serif;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   visibility:hidden;opacity:0;transform:translateY(16px);transition:opacity .35s ease,transform .35s ease,visibility 0s linear .35s}
 .mb-shop.is-open{visibility:visible;opacity:1;transform:none;transition:opacity .35s ease,transform .35s ease}
@@ -39,7 +39,10 @@
 
 /* empty spacer under the fixed header */
 .mb-hero{max-width:1320px;margin:0 auto;padding:56px 48px 8px}
-.mb-shopbg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+/* the scene canvas sits on the page right behind the shop (also its dark background when WebGL is unavailable) */
+.mb-shopbg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:999;background:#0b0b0b;pointer-events:none;
+  visibility:hidden;opacity:0;transition:opacity .35s ease,visibility 0s linear .35s}
+body.mb-shop-open .mb-shopbg{visibility:visible;opacity:1;transition:opacity .35s ease}
 .mb-shop>.mb-hero,.mb-shop>.mb-collection{position:relative;z-index:1}
 
 .mb-collection{max-width:1320px;margin:0 auto;padding:40px 48px 64px;scroll-margin-top:90px}
@@ -142,10 +145,6 @@ body.mb-shop-open #logo,body.mb-videos-open #logo{opacity:1!important;pointer-ev
 /* the one menu: hidden until the 3D page has loaded, except on the shop/videos views (shown right away) */
 body:not(.mb-loaded) .mbn--site{opacity:0;pointer-events:none}
 body[data-view="shop"] .mbn--site,body[data-view="videos"] .mbn--site{opacity:1;pointer-events:auto}
-/* dark fade behind the header inside the shop, so products scroll under the logo and menu cleanly */
-.mb-shop::before{content:"";display:block;position:sticky;top:0;height:110px;margin-bottom:-110px;z-index:2;pointer-events:none;
-  background:linear-gradient(rgba(11,11,11,.92) 0,rgba(11,11,11,.7) 60%,rgba(11,11,11,0) 100%)}
-@media (min-width:768px){.mb-shop::before{height:240px;margin-bottom:-240px}}
 
 /* loading screen (loader.js): buds pile up on white, the pile falls away, then the shop products drop into place.
    html.mb-intro (set by the inline script in <head>) paints the page white from the very first frame */

@@ -83,6 +83,22 @@
     nav.classList.add('mbn--site');
     document.body.appendChild(nav);
     var logoEl = document.getElementById('logo');
+    // split the METRO BLOOMIN wordmark into letters so they can flow into / out of the leaf one by one (shop.css .mb-ch)
+    var wordEl = logoEl && logoEl.querySelector('.mb-word');
+    if (wordEl) {
+      var txt = wordEl.textContent;
+      wordEl.setAttribute('aria-label', txt);
+      wordEl.innerHTML = txt.split('').map(function (c, k) { return '<span class="mb-ch" aria-hidden="true" style="--i:' + k + '">' + (c === ' ' ? ' ' : c) + '</span>'; }).join('');
+      var chars = wordEl.querySelectorAll('.mb-ch');
+      var aim = function () {   // --x: how far each letter travels to reach the leaf centre (layout boxes ignore transforms)
+        var lf = logoEl.querySelector('.mb-leaf'); if (!lf) return;
+        var cx = lf.offsetLeft + lf.offsetWidth / 2;   // offsets are all relative to #logo (position:fixed)
+        for (var k = 0; k < chars.length; k++) { var c = chars[k];
+          c.style.setProperty('--x', Math.round(cx - c.offsetLeft - c.offsetWidth / 2) + 'px'); }
+      };
+      aim(); window.addEventListener('resize', aim);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(aim);
+    }
     // animated leaf logo: traced frames from shop/leaf-frames.js, played once, then holds the wink
     var leaf = logoEl && logoEl.querySelector('.mb-leaf'), F = window.MB_LEAF_FRAMES;
     if (leaf && F && F.length) {

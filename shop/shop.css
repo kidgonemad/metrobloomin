@@ -79,9 +79,17 @@
 #links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#111111}
 
 #logo .mb-leaf{position:relative;z-index:2}
-#logo .mb-word{display:block;overflow:hidden;max-width:220px;transition:max-width .55s cubic-bezier(.65,0,.2,1),opacity .4s ease .1s,transform .55s cubic-bezier(.65,0,.2,1)}
-/* the wordmark is tucked behind the leaf unless the leaf animation is showing it (shop.js), and while the menu is open */
-body.mb-menu-open #logo .mb-word,#logo:not(.mb-word-show) .mb-word{max-width:0;opacity:0;transform:translateX(-40px)}
+#logo .mb-word{display:block}
+/* each letter (split by shop.js, --i = order, --x = distance to the leaf centre) flows into / out of the leaf in turn */
+/* appear (timing set on the shown state): letters shoot out of the leaf fast, then fade in once clear of it */
+#logo .mb-ch{display:inline-block;white-space:pre;will-change:transform,opacity,filter;
+  transition:transform .8s cubic-bezier(.16,.84,.3,1) calc(var(--i) * 40ms),opacity .45s ease calc(var(--i) * 40ms + .15s),filter .6s ease calc(var(--i) * 40ms + .1s)}
+/* retract (timing set on the hidden state): the wordmark is tucked into the leaf unless the leaf animation
+   is showing it (shop.js), and while the menu is open */
+body.mb-menu-open #logo .mb-ch,#logo:not(.mb-word-show) .mb-ch{transform:translateX(var(--x)) scale(.2);opacity:0;filter:blur(3px);
+  transition:transform .7s cubic-bezier(.7,0,.2,1) calc(var(--i) * 32ms),opacity .5s ease calc(var(--i) * 32ms),filter .6s ease calc(var(--i) * 32ms)}
+body.mb-menu-open #logo .mb-word,#logo:not(.mb-word-show) .mb-word{pointer-events:none}
+@media (prefers-reduced-motion:reduce){#logo .mb-ch{transition:opacity .3s ease}}
 
 /* original top menu is hidden (the site uses mbnav.css); the side section dots stay, styled in index.7d544b17.css */
 nav.menu,.mb-dir-btn,#aboutView{display:none!important}

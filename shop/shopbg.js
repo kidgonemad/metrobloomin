@@ -63,6 +63,22 @@
       s.video = v; return s;
     }
     var SRC = { a: source('skulls-a', true), b: source('skulls-b', true), l: source('leaves', true) };
+    var FILE = { a: 'skulls-a', b: 'skulls-b', l: 'leaves' };
+    // tap a piece: it plays its own animation once from the start (its own copy of the video), then settles back to the
+    // still. At most 4 at once; the oldest is dropped. The video starts and ends on the still frame, so nothing jumps.
+    var solos = [];
+    function solo(p) {
+      if (still) return;
+      if (p.solo) { p.solo.v.currentTime = 0; p.solo.v.play().catch(function () {}); return; }
+      if (solos.length >= 4) endSolo(solos[0]);
+      var v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true;
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = base + FILE[p.src] + '.mp4?v=2';
+      var o = { p: p, v: v, tex: texture(), ready: false }; p.solo = o; solos.push(o);
+      v.addEventListener('ended', function () { endSolo(o); });
+      v.play().catch(function () { endSolo(o); });
+    }
+    function endSolo(o) { var i = solos.indexOf(o); if (i < 0) return; solos.splice(i, 1); o.p.solo = null;
+      o.v.pause(); o.v.removeAttribute('src'); o.v.load(); gl.deleteTexture(o.tex); }
     window.__mbShopBg = SRC;                                           // read by the site tests
     window.__mbShopBgPieces = function () { return pieces; };
     var smokeTex = texture(), smokeReady = false, smokeImg = new Image();
@@ -117,7 +133,7 @@
       if (e.target.closest && e.target.closest('a,button')) return;                         // product links keep working
       bursts[bi++ % 3] = [e.clientX / W, 1 - e.clientY / H, (performance.now() - t0) / 1000];
       for (var i = pieces.length - 1; i >= 0; i--) { var p = pieces[i], px = p.x + ptr.x * p.d * 45 + p.ox, py = p.y + ptr.y * p.d * 45 - shop.scrollTop * .25 * p.d + p.oy;
-        if (Math.hypot(e.clientX - px, e.clientY - py) < p.size * .38) { p.vs += .9; p.vw += (Math.random() - .5) * .8; break; } }
+        if (Math.hypot(e.clientX - px, e.clientY - py) < p.size * .38) { p.vs += .9; p.vw += (Math.random() - .5) * .8; solo(p); break; } }
     });
 
     // ---------- playback: only while the shop is open ----------
@@ -135,7 +151,7 @@
         else setTimeout(function () { if (running && v.paused) v.play().catch(function () {}); }, delay[k]); });
       begun = true;
     }
-    function pauseAll() { ['a', 'b', 'l'].forEach(function (k) { var v = SRC[k].video; if (v && !v.paused) v.pause(); }); }
+    function pauseAll() { ['a', 'b', 'l'].forEach(function (k) { var v = SRC[k].video; if (v && !v.paused) v.pause(); }); solos.slice().forEach(endSolo); }
     function sync() {
       var on = shop.classList.contains('is-open') && !document.hidden;
       if (on && !running) { running = true; playAll(); requestAnimationFrame(frame); }
@@ -157,6 +173,7 @@
       ['a', 'b', 'l'].forEach(function (k) { var s = SRC[k], v = s.video;
         if (v && v.readyState >= 2) { if ((!s.live && v.currentTime < .3) || v.currentTime < s.prevT - .5) shuffle(k); s.prevT = v.currentTime; }   // new loop -> new handful
         if (v && v.readyState >= 2 && (!v.paused || !s.live)) { upload(s.tex, v); s.live = s.ready = true; } });
+      solos.forEach(function (o) { if (o.v.readyState >= 2) { upload(o.tex, o.v); o.ready = true; } });
       ptr.x += (aim.x - ptr.x) * .06; ptr.y += (aim.y - ptr.y) * .06; touchT *= .97; touch += (touchT - touch) * .1;
       gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(.043, .043, .043, 1); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(sprite); gl.bindBuffer(gl.ARRAY_BUFFER, quad);
@@ -175,7 +192,7 @@
         }
         p.vy -= Math.max(-40, Math.min(40, dS)) * .3 * p.d;                                            // scrolling jiggles the pile, nearer pieces more
         p.vx += -p.ox * .035; p.vy += -p.oy * .035; p.vx *= .88; p.vy *= .88; p.ox += p.vx; p.oy += p.vy;   // spring home
-        drawSprite(p.active && s.live ? s.tex : s.stillTex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
+        drawSprite(p.solo && p.solo.ready ? p.solo.tex : p.active && s.live ? s.tex : s.stillTex, 1, [(p.cell % 3) / 3, Math.floor(p.cell / 3) / 3, 1 / 3, 1 / 3],
           px + p.ox, py + p.oy, p.size, p.size,
           p.rot + p.w + ptr.x * p.d * .08, 1 + p.s * .22, 1 - p.s * .18, .4 + p.d * .6);
       }

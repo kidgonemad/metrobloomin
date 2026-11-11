@@ -47,8 +47,8 @@
     function shape(path, sd, t) {
       var pts = [];
       for (var i = 0; i < N; i++) { var a = i / N * 6.2832;
-        var r = 42 * (1 + .12 * Math.cos(2 * a + sd[0]) + .07 * Math.cos(3 * a + sd[1])          // its own lumpy shape
-          + .05 * Math.sin(t * .55 + sd[2] + i * 1.7) + .03 * Math.sin(t * .9 + sd[0] + i * 2.9))  // slow wobble
+        var r = 46 * (1 + .06 * Math.cos(2 * a + sd[0]) + .04 * Math.cos(3 * a + sd[1])          // its own lumpy shape
+          + .03 * Math.sin(t * .55 + sd[2] + i * 1.7) + .02 * Math.sin(t * .9 + sd[0] + i * 2.9))  // slow wobble
           * (1 + .04 * Math.sin(t * 1.0 + sd[1]));                                                // breathing
         pts.push([50 + Math.cos(a) * r, 50 + Math.sin(a) * r]); }
       var d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);

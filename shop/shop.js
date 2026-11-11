@@ -89,13 +89,15 @@
       leaf.innerHTML = '<svg viewBox="25 -6 588 588" aria-hidden="true"><path fill-rule="evenodd"></path></svg>';
       var path = leaf.querySelector('path'), i = 0, last = 0;
       var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      // when the leaf lands on the wink, the METRO BLOOMIN wordmark slides away behind it
-      var done = function () { logoEl.classList.add('mb-word-done'); };
-      if (still) { path.setAttribute('d', F[F.length - 1]); setTimeout(done, F.length * 1000 / 12); }
+      // the METRO BLOOMIN wordmark is tied to the leaf: it slides out as the leaf pops in (frame 8)
+      // and slides back behind it when the leaf lands on the wink (last frame)
+      var word = function (on) { logoEl.classList.toggle('mb-word-show', on); };
+      if (still) { path.setAttribute('d', F[F.length - 1]); word(true); setTimeout(function () { word(false); }, F.length * 1000 / 12); }
       // frame follows the clock (12 fps), so it always ends at ~5s even on a busy phone
       else requestAnimationFrame(function tick(t) { if (!last) last = t; var n = Math.min(F.length - 1, Math.floor((t - last) * 12 / 1000));
-        if (n !== i - 1) { path.setAttribute('d', F[n]); i = n + 1; } if (n < F.length - 1) requestAnimationFrame(tick); else done(); });
-    }
+        if (n !== i - 1) { path.setAttribute('d', F[n]); i = n + 1; if (n === 8) word(true); }
+        if (n < F.length - 1) requestAnimationFrame(tick); else word(false); });
+    } else if (logoEl) logoEl.classList.add('mb-word-show');
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
     document.body.setAttribute('data-view', 'about');
     // the site opens on the shop, unless a link asks for videos or about

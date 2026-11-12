@@ -48,12 +48,15 @@ export default function Model({ onReady, ...props }) {
     scene.traverse((child) => {
       if (child.isMesh && child.material && blackMats.has(child.material.name)) child.material.color = new Color(0x3a3a3a)   // charcoal
     })
-    // The Panasonic badge (3D lettering, mesh "defaultMaterial.008") shares the front's material,
-    // so it took the body colour and vanished into it. It gets its own silver finish.
-    const badge = scene.getObjectByName('defaultMaterial008')   // three.js drops the '.' from glTF names
-    if (badge && badge.isMesh) {
-      badge.material = new MeshStandardMaterial({ name: 'PanasonicBadge', color: 0xd8d8d8, metalness: 1, roughness: 0.3 })
-    }
+    // The badge, buttons and AV jacks share the front's material (fully metallic, tinted charcoal), which
+    // turned them into dull dark shapes. Each gets its own finish. (three.js drops the '.' from glTF names.)
+    const part = (name) => { const o = scene.getObjectByName(name); return o && o.isMesh ? o : null }
+    const badge = part('defaultMaterial008')     // Panasonic lettering: brushed silver
+    if (badge) badge.material = new MeshStandardMaterial({ name: 'PanasonicBadge', color: 0xe4e4e4, metalness: 0.45, roughness: 0.5 })
+    const buttons = part('defaultMaterial002')   // power + front buttons: glossy black plastic
+    if (buttons) buttons.material = new MeshStandardMaterial({ name: 'Buttons', color: 0x161616, metalness: 0, roughness: 0.5 })
+    const jacks = part('defaultMaterial005')     // AV jacks: the texture's own yellow / white / red rings and metal pins
+    if (jacks) { jacks.material = jacks.material.clone(); jacks.material.name = 'Jacks'; jacks.material.color = new Color(0xffffff) }
   }, [scene])
 
   useEffect(() => { if (onReady) onReady(scene) }, [])

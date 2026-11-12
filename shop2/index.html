@@ -59,7 +59,12 @@ body.embed .tabs__cart{display:block}
 .goo-cursor{position:absolute;left:0;bottom:0;width:0;height:0;border-radius:50%;background:var(--goo-color);transform:translate(-50%,50%)}
 @keyframes gooSize{0%,75%{width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem))}100%{width:0;height:0}}
 @keyframes gooMove{0%{bottom:calc(var(--goo-rem) * -4 + var(--goo-pad))}100%{bottom:calc(var(--distance) * var(--goo-rem) + var(--goo-pad))}}
-.band--bottom{height:220px;margin-top:-1px;--goo-color:#e4e4e1}   /* the tiles as they show on screen (--tile under the noise texture) */
+.band--bottom{height:220px;margin-top:-1px;--goo-color:#e4e4e1;--cols:4}   /* the tiles as they show on screen (--tile under the noise texture) */
+/* the grid's tile dividers carry on down through the grey goo to wherever it ends: drawn over the band in
+   darken mode, so they show on the grey goo and vanish on the (darker) green */
+.goo-lines{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:darken;
+  background:linear-gradient(var(--line),var(--line)) left top/1px 100% no-repeat,
+    repeating-linear-gradient(to right,transparent 0 calc(100% / var(--cols) - 1px),var(--line) calc(100% / var(--cols) - 1px) calc(100% / var(--cols)))}
 
 /* grid */
 .bar{display:flex;justify-content:space-between;padding:8px 16px;font-size:10px;letter-spacing:.06em;border-bottom:1px solid var(--line)}
@@ -70,7 +75,7 @@ body.embed .tabs__cart{display:block}
 .cell img{width:100%;height:70%;object-fit:contain;mix-blend-mode:multiply;transition:transform .4s ease}
 .cell a:hover img{transform:scale(1.04)}
 .cell span{font-size:12px;letter-spacing:.32em;text-transform:uppercase}
-@media (max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.cell span{font-size:10px;letter-spacing:.25em}.band{height:80px}.band--bottom{height:140px}}
+@media (max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.cell span{font-size:10px;letter-spacing:.25em}.band{height:80px}.band--bottom{height:140px;--cols:2}}
 
 /* product page (look layout) */
 .look{display:none}
@@ -122,7 +127,7 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   <div class="band" data-goo="top bottom" aria-hidden="true"></div>
   <div class="bar"><span class="count"></span><span>Views ▦</span></div>
   <div class="grid"></div>
-  <div class="band band--bottom" data-goo="top" aria-hidden="true"></div>
+  <div class="band band--bottom" data-goo="top" aria-hidden="true"><div class="goo-lines"></div></div>
 </main>
 
 <main class="look" aria-live="polite"></main>

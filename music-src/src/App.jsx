@@ -8,20 +8,22 @@ import CrashIn from './CrashIn'
 import useChannelStore from './store'
 import './App.css'
 
-// Lights: no network-loaded HDR; a few soft light panels give the TV its reflections.
+// Lights: the six soft light panels the Shopify Editions TV is lit with, at their exact
+// positions (no network-loaded HDR). Only their direction matters: they are baked into
+// the reflection map, which is seen from the scene's centre.
 function SceneLights() {
+  const panel = (intensity, scale, position, target) => (
+    <Lightformer form="rect" color="#e8eefd" intensity={intensity} scale={scale} position={position} target={target} />
+  )
   return (
-    <>
-      <color attach="background" args={['#ebebe8']} />
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[5, 8, 5]} intensity={1.4} />
-      <directionalLight position={[-3, 4, -5]} intensity={0.4} />
-      <Environment resolution={256}>
-        <Lightformer form="rect" intensity={2} position={[0, 4, 6]} scale={[10, 4, 1]} />
-        <Lightformer form="rect" intensity={1} position={[-6, 2, 2]} rotation-y={Math.PI / 2} scale={[6, 4, 1]} />
-        <Lightformer form="rect" intensity={1} position={[6, 2, 2]} rotation-y={-Math.PI / 2} scale={[6, 4, 1]} />
-      </Environment>
-    </>
+    <Environment resolution={256}>
+      {panel(2.8, [4, 1.5], [-5, 0, 5], [5, 0, 0])}
+      {panel(2.8, [4, 2.5], [5, 0, 5], [-5, 0, 0])}
+      {panel(6.5, [4, 4], [-1, 4, 5], [0, 0, 0])}
+      {panel(6.5, [4, 4], [0, -5, 5], [0, 0, 0])}
+      {panel(3, [8, 2.5], [0, 0, 5], [0, 0, 0])}
+      {panel(6.5, [2, 4.5], [-0.5, -2, 5], [0, 0, 0])}
+    </Environment>
   )
 }
 
@@ -64,14 +66,10 @@ function Rig({ controlsRef, onReady, onLanded }) {
   const frameTv = useFrameTv(controlsRef, boxRef)
   const [rest, setRest] = useState(null)
   useEffect(() => { frameTv() }, [frameTv])   // re-frame on resize
-  // camera shake on impact: the whole view jolts (CSS, so it never fights the camera controls)
-  const shake = () => {
-    const el = document.getElementById('canvas-container')
-    if (!el) return
-    el.classList.remove('is-shaking'); void el.offsetWidth; el.classList.add('is-shaking')
-  }
   return (
-    <CrashIn rest={rest} onImpact={shake} onLanded={onLanded}>
+    <>
+    <SceneLights />
+    <CrashIn rest={rest} onLanded={onLanded}>
       <Model onReady={(model) => {
         requestAnimationFrame(() => {
           const m = measureTv(model)
@@ -83,6 +81,7 @@ function Rig({ controlsRef, onReady, onLanded }) {
         })
       }} />
     </CrashIn>
+    </>
   )
 }
 
@@ -115,7 +114,7 @@ export default function App() {
   return (
     <div id="canvas-container">
       <Canvas camera={{ position: [0, 0, 10], fov: 35 }} gl={{ antialias: true, toneMapping: 3 }} dpr={[1, 2]}>
-        <SceneLights />
+        <color attach="background" args={['#ebebe8']} />
         <Suspense fallback={null}>
           <Rig controlsRef={controlsRef} onReady={() => setLoaded(true)} onLanded={() => setLanded(true)} />
         </Suspense>

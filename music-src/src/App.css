@@ -2,14 +2,3 @@
 .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #78b04a; font: 700 12px/1 Arial, sans-serif; letter-spacing: .3em; }
 
 
-/* the TV's crash landing: one short jolt of the whole view */
-#canvas-container.is-shaking { animation: tvShake .45s cubic-bezier(.3,.7,.4,1); }
-@keyframes tvShake {
-  0% { transform: translate(0, 0); }
-  12% { transform: translate(-4px, 9px); }
-  26% { transform: translate(5px, -6px); }
-  40% { transform: translate(-3px, 4px); }
-  58% { transform: translate(2px, -2px); }
-  78% { transform: translate(-1px, 1px); }
-  100% { transform: translate(0, 0); }
-}

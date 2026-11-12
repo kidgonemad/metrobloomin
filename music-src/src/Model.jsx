@@ -14,6 +14,11 @@ const DRACO = BASE + 'draco/'   // local decoder (drei would otherwise fetch it 
 const GLB_URL = BASE + 'assets/tv-optimized.glb'
 useGLTF.preload(GLB_URL, DRACO)
 
+// The picture is the screen's own light, like a real CRT: almost all glow, very little lit
+// surface. Light falling on it only greys the video out.
+const SCREEN_GLOW = 1.0
+const SCREEN_LIT = 0.06
+
 export default function Model({ onReady, ...props }) {
   const { scene } = useGLTF(GLB_URL, DRACO)
   const videoRef = useRef(null)
@@ -73,10 +78,12 @@ export default function Model({ onReady, ...props }) {
       map: videoTexture,
       emissiveMap: videoTexture,
       emissive: '#ffffff',
-      emissiveIntensity: 0.5,
+      emissiveIntensity: SCREEN_GLOW,
       roughness: 0.4,
       metalness: 0.0,
+      envMapIntensity: 0.02,   // a hint of the room on the glass; more greys the picture out
     })
+    crtMat.toneMapped = false  // the picture keeps the video's own colours (like the Shopify TV's screen)
     materialRef.current = crtMat
     screenMesh.material = crtMat
 
@@ -115,8 +122,8 @@ export default function Model({ onReady, ...props }) {
       clearTimers()
       crtMat.power = 0
       powerTargetRef.current = 1
-      crtMat.color.setScalar(1.0)
-      crtMat.emissiveIntensity = 0.5
+      crtMat.color.setScalar(SCREEN_LIT)
+      crtMat.emissiveIntensity = SCREEN_GLOW
       crtMat.noSignal = 1.0
       crtMat.staticAmount = 0.04
       setScreenTexture(videoTexture, true)
@@ -132,8 +139,8 @@ export default function Model({ onReady, ...props }) {
     function enterChannelsMode() {
       if (!mounted) return
       clearTimers()
-      crtMat.color.setScalar(1.0)
-      crtMat.emissiveIntensity = 0.5
+      crtMat.color.setScalar(SCREEN_LIT)
+      crtMat.emissiveIntensity = SCREEN_GLOW
       useChannelStore.setState({ phase: 'channels', buffering: false })
       setScreenTexture(videoTexture, true)
       video.loop = false

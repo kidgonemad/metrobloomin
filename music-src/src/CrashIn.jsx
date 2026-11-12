@@ -1,27 +1,25 @@
 import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CanvasTexture, SRGBColorSpace } from 'three'
+import { CanvasTexture, SRGBColorSpace, Quaternion } from 'three'
+import { CRASH_T, CRASH_POS, CRASH_ROT } from './crashKeys'
 
-// The TV's entrance: it drops in from above the frame, slightly tilted, crash-lands
-// (squash, screen shake, dust puff), bounces twice and settles. Then onLanded fires
-// and the set switches on.
+// The TV's entrance, played as is from the Shopify Editions Winter '25 TV (see crashKeys.js):
+// it falls straight down, crash-lands, rocks back, hops twice and settles (about 1.1 s).
+// Then onLanded fires and the set switches on.
 //
-// `rest` is the TV's bounding box measured at rest ({ base: [x, y, z], size: [w, h, d] }),
-// null until the model has loaded. Everything pivots on the middle of the TV's base,
-// so the tilt and the squash happen where it touches the ground.
+// `rest` is the TV's bounding box at rest ({ base: [x, y, z], size: [w, h, d] }), null until the
+// model has loaded. The keyframes pivot on the middle of the TV's base, as in the original.
 
-const FALL_S = 0.55          // time from the top of the frame to the ground
-const BOUNCE = 0.26          // how much speed survives each impact
-const BOUNCES = 2            // small hops after the crash before it stays down
-const TILT = [-0.09, 0, 0.14] // lean on the way down (x, y, z radians)
+const END = CRASH_T[CRASH_T.length - 1]
+const SHADOW_DELAY = 0.3   // the original's shadow fades in 300 ms after the drop starts...
+const SHADOW_FADE = 0.3    // ...over 300 ms, growing from half size
 
-// soft round blob: rgb at full strength in the middle, fading smoothly (no visible rim) to nothing
-function radialTexture(rgb) {
+function shadowTexture() {
   const c = document.createElement('canvas')
   c.width = c.height = 128
   const g = c.getContext('2d')
   const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-  ;[[0, 1], [0.25, 0.8], [0.5, 0.42], [0.75, 0.12], [1, 0]].forEach(([at, a]) => grad.addColorStop(at, `rgba(${rgb},${a})`))
+  ;[[0, 1], [0.35, 0.7], [0.7, 0.2], [1, 0]].forEach(([at, a]) => grad.addColorStop(at, `rgba(0,0,0,${a})`))
   g.fillStyle = grad
   g.fillRect(0, 0, 128, 128)
   const t = new CanvasTexture(c)
@@ -29,90 +27,66 @@ function radialTexture(rgb) {
   return t
 }
 
-const DUST = 40
+const qa = new Quaternion(), qb = new Quaternion()
 
-export default function CrashIn({ rest, onImpact, onLanded, children }) {
-  const outer = useRef()
-  const inner = useRef()
-  const shadow = useRef()
-  const dust = useRef([])
-  const sim = useRef(null)
-
-  const shadowTex = useMemo(() => radialTexture('0,0,0'), [])
-  const dustTex = useMemo(() => radialTexture('196,189,176'), [])   // light dusty beige
-  useEffect(() => () => { shadowTex.dispose(); dustTex.dispose() }, [shadowTex, dustTex])
-
-  // a fixed spray pattern: every particle heads outward along the ground, a few kick up
-  const spray = useMemo(() => Array.from({ length: DUST }, (_, i) => {
-    const a = (i / DUST) * Math.PI * 2 + Math.random() * 0.4
-    const z = Math.sin(a)
-    // out to the sides and back; only a little toward the camera so it never clouds the screen
-    return { dx: Math.cos(a), dz: z > 0 ? z * 0.35 : z * 0.8, up: 0.1 + Math.random() * 0.45, speed: 0.6 + Math.random() * 0.7, size: 0.8 + Math.random() * 0.9 }
-  }), [])
-
-  // start the drop once the resting position is known
+// The TV turns a little toward the mouse, like the Shopify TV: up to 0.15 rad either way,
+// on a soft spring (their tension 55, friction 40, mass 1).
+function MouseTurn({ children }) {
+  const g = useRef()
+  const target = useRef(0)
+  const v = useRef(0)
   useEffect(() => {
-    if (!rest) return
-    const h = rest.size[1]
-    const height = h * 3.2                      // starts well above the top of the frame
-    const g = (2 * height) / (FALL_S * FALL_S)
-    sim.current = { y: height, vy: 0, g, bounces: 0, landedAt: -1, impactAt: -1, t: 0, done: false, firedLanded: false }
-  }, [rest])
+    const move = (e) => { target.current = (e.clientX / window.innerWidth * 2 - 1) * 0.15 }
+    window.addEventListener('mousemove', move)
+    return () => window.removeEventListener('mousemove', move)
+  }, [])
+  useFrame((_, delta) => {
+    if (!g.current) return
+    const dt = Math.min(delta, 1 / 30)
+    const x = g.current.rotation.y
+    v.current += (55 * (target.current - x) - 40 * v.current) * dt
+    g.current.rotation.y = x + v.current * dt
+  })
+  return <group ref={g}>{children}</group>
+}
+
+export default function CrashIn({ rest, onLanded, children }) {
+  const outer = useRef()
+  const shadow = useRef()
+  const clock = useRef(-1)
+  const fired = useRef(false)
+  const shadowTex = useMemo(shadowTexture, [])
+  useEffect(() => () => shadowTex.dispose(), [shadowTex])
+  useEffect(() => { if (rest) clock.current = 0 }, [rest])
 
   useFrame((_, delta) => {
-    const s = sim.current
-    if (!rest || !s || !outer.current) return
-    const dt = Math.min(delta, 1 / 30)
-    s.t += dt
-    const [w, h, d] = rest.size
+    if (!rest || clock.current < 0 || !outer.current) return
+    clock.current += Math.min(delta, 1 / 30)
+    const t = Math.min(clock.current, END)
 
-    // --- fall and bounces ---
-    if (s.landedAt < 0) {
-      s.vy -= s.g * dt
-      s.y += s.vy * dt
-      if (s.y <= 0) {
-        s.y = 0
-        if (s.impactAt < 0) { s.impactAt = s.t; onImpact && onImpact() }
-        if (s.bounces < BOUNCES) { s.vy = -s.vy * BOUNCE * (s.bounces ? 0.6 : 1); s.bounces++ }
-        else { s.vy = 0; s.landedAt = s.t }
-      }
-    }
-    const since = s.impactAt < 0 ? -1 : s.t - s.impactAt
+    // linear interpolation between the two keyframes around t, like the original clip
+    let i = 0
+    while (i < CRASH_T.length - 2 && CRASH_T[i + 1] < t) i++
+    const k = Math.min(1, Math.max(0, (t - CRASH_T[i]) / (CRASH_T[i + 1] - CRASH_T[i])))
+    const h = rest.size[1]
+    const p = (n) => (CRASH_POS[i * 3 + n] + (CRASH_POS[(i + 1) * 3 + n] - CRASH_POS[i * 3 + n]) * k) * h
+    outer.current.position.set(rest.base[0] + p(0), rest.base[1] + p(1), rest.base[2] + p(2))
+    qa.fromArray(CRASH_ROT, i * 4)
+    qb.fromArray(CRASH_ROT, (i + 1) * 4)
+    outer.current.quaternion.slerpQuaternions(qa, qb, k)
 
-    // --- tilt: leans while falling, rocks after the crash and settles flat ---
-    const rock = since < 0 ? 1 : Math.exp(-6 * since) * Math.cos(16 * since) * 0.5
-    outer.current.rotation.set(TILT[0] * rock, TILT[1], TILT[2] * rock)
-    outer.current.position.set(rest.base[0], rest.base[1] + s.y, rest.base[2])
-
-    // --- squash on impact, springing back ---
-    const sq = since < 0 ? 0 : 0.1 * Math.exp(-9 * since) * Math.cos(22 * since)
-    outer.current.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5)
-
-    // --- shadow: small and faint while high up, full once down ---
     if (shadow.current) {
-      const near = 1 - Math.min(1, s.y / (h * 3.2))
-      shadow.current.position.set(rest.base[0], rest.base[1] + 0.002, rest.base[2])
-      shadow.current.scale.set(w * (0.7 + 0.6 * near), d * (0.9 + 0.9 * near), 1)
-      shadow.current.material.opacity = 0.08 + 0.32 * near * near
+      const f = Math.min(1, Math.max(0, (clock.current - SHADOW_DELAY) / SHADOW_FADE))
+      const s = 0.5 + 0.5 * f
+      // like the original's shadow image: a soft flat ellipse facing the viewer, centred on the
+      // base line just behind the TV (a floor plane would turn into a thin streak when seen level)
+      shadow.current.position.set(rest.base[0], rest.base[1], rest.base[2] - rest.size[2] * 0.45)
+      shadow.current.scale.set(rest.size[0] * 1.45 * s, rest.size[1] * 0.16 * s, 1)
+      shadow.current.material.opacity = 0.4 * f
     }
 
-    // --- dust puff along the ground from the impact ---
-    dust.current.forEach((m, i) => {
-      if (!m) return
-      if (since < 0 || since > 1.2) { m.visible = false; return }
-      const p = spray[i], k = 1 - Math.exp(-3.5 * since)   // fast out, slowing down
-      m.visible = true
-      m.position.set(
-        rest.base[0] + p.dx * w * (0.45 + 0.55 * k * p.speed),
-        rest.base[1] + h * 0.03 + p.up * h * 0.14 * k,
-        rest.base[2] + p.dz * d * (0.6 + 0.9 * k * p.speed),
-      )
-      m.scale.setScalar(w * 0.2 * p.size * (0.6 + 1.2 * k))      // billows as it spreads
-      m.material.opacity = 0.42 * (1 - since / 1.2) ** 1.5
-    })
-
-    if (s.landedAt >= 0 && !s.firedLanded && s.t - s.landedAt > 0.25) {
-      s.firedLanded = true
+    if (!fired.current && clock.current >= END) {
+      fired.current = true
       onLanded && onLanded()
     }
   })
@@ -122,21 +96,16 @@ export default function CrashIn({ rest, onImpact, onLanded, children }) {
     <>
       {/* pivot on the TV's base: outer sits there, inner moves the model back so nothing jumps */}
       <group ref={outer} visible={!!rest}>
-        <group ref={inner} position={[-base[0], -base[1], -base[2]]}>
-          {children}
-        </group>
+        <MouseTurn>
+          <group position={[-base[0], -base[1], -base[2]]}>{children}</group>
+        </MouseTurn>
       </group>
       {rest && (
-        <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]} renderOrder={-1}>
+        <mesh ref={shadow} renderOrder={-1}>
           <planeGeometry args={[1, 1]} />
           <meshBasicMaterial map={shadowTex} transparent depthWrite={false} opacity={0} />
         </mesh>
       )}
-      {rest && spray.map((_, i) => (
-        <sprite key={i} ref={(m) => { dust.current[i] = m }} visible={false}>
-          <spriteMaterial map={dustTex} transparent depthWrite={false} opacity={0} />
-        </sprite>
-      ))}
     </>
   )
 }

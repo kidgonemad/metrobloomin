@@ -107,7 +107,7 @@ export function mount(box) {
   // ---- buds (owner's model): inside the jar, fly out to hover around it when it opens ----
   const draco = new DRACOLoader().setDecoderPath(BASE + 'draco/')
   const buds = []                               // { obj, home: Vector3 (spot in the jar), hover: Vector3, rot: Vector3, ph }
-  const HOVER = [[-0.95, 0.75, 0.25], [0.95, 0.55, 0.2], [-1.0, -0.05, 0.35], [1.0, -0.2, 0.3], [-0.55, 1.35, 0.1], [0.6, 1.3, 0.15]]
+  const HOVER = [[-0.62, 1.12, 0.62], [0.66, 1.02, 0.6], [-1.0, 0.55, 0.35], [1.02, 0.35, 0.3], [-0.95, -0.2, 0.45], [0.98, -0.35, 0.4]]   // around the front; the lid floats up and behind
   new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud.glb', (g) => {
     const src = g.scene, b = new THREE.Box3().setFromObject(src), sz = b.getSize(new THREE.Vector3())
     const k = 0.52 / Math.max(sz.x, sz.y, sz.z)          // each bud about half the jar's width
@@ -121,7 +121,14 @@ export function mount(box) {
       holder.visible = false; scene.add(holder)
     })
   })
-  let open = false, openK = 0                   // openK eases 0 (closed) <-> 1 (open)
+  // one clock drives the whole open / close: the lid first, then the buds one by one (reversed when closing:
+  // buds back in, last out first in, then the lid screws back down)
+  const LID_S = 0.9, BUD_START = 0.85, BUD_GAP = 0.13, BUD_S = 1.0
+  const C_MAX = BUD_START + (HOVER.length - 1) * BUD_GAP + BUD_S
+  let open = false, clock = 0, openK = 0
+  const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3(), tmpD = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0)
+  const bez = (out, a, b, c, d, u) => { const v = 1 - u; return out.set(0, 0, 0).addScaledVector(a, v * v * v).addScaledVector(b, 3 * v * v * u).addScaledVector(c, 3 * v * u * u).addScaledVector(d, u * u * u) }
+  const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeInOut = (x) => (x < 0.5 ? 4 * x ** 3 : 1 - Math.pow(-2 * x + 2, 3) / 2)
 
   // ---- interaction ----
   let spinV = 0, dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, tilt = 0, tiltTarget = 0
@@ -178,7 +185,8 @@ export function mount(box) {
     // entrance: close on the lid -> the whole jar
     const k = reduce ? 1 : ease(Math.min(1, t / 3.2))
     // open / close progress (1.1 s), used by the lid, the buds and the framing
-    openK = THREE.MathUtils.clamp(openK + (open ? dt : -dt) / 1.1, 0, 1)
+    clock = THREE.MathUtils.clamp(clock + (open ? dt : -dt * 1.25), 0, C_MAX)
+    openK = clock / C_MAX
     const ok = openK < 0.5 ? 4 * openK ** 3 : 1 - Math.pow(-2 * openK + 2, 3) / 2
     // the view: orbit the look point at the base elevation plus tilt, distance growing when open
     tilt += (tiltTarget - tilt) * (1 - Math.pow(0.002, dt))
@@ -200,25 +208,41 @@ export function mount(box) {
     jar.position.y = -(BODY_H + LID_H) / 2 + f * 0.035 * Math.sin(t * 1.1)
     jar.rotation.z = f * 0.035 * Math.sin(t * 0.7); jar.rotation.x = f * 0.03 * Math.sin(t * 0.9 + 1)
     shadow.scale.setScalar(1 - 0.06 * Math.sin(t * 1.1) * f)
-    // lid: unscrews (twist), lifts off and floats above, tilted; reverses to close
-    const lk = THREE.MathUtils.clamp(ok * 1.4, 0, 1)
-    logo.position.y = LOGO_Y + 0.5 * lk           // rises clear of the floating lid
-    lid.position.y = BODY_H + 0.04 + 0.62 * lk + 0.03 * Math.sin(t * 1.6) * lk
-    lid.rotation.set(0.32 * lk, -2.4 * lk, -0.18 * lk)
-    // buds: from their spot inside the jar up out of the opening, then out to their hover spot; bob and turn
+    // lid: unscrews (two turns' worth of twist while rising a little), then floats up and back, tilting its top
+    // toward you, out of the buds' way. It stops turning with the jar once it's off.
+    const lp = THREE.MathUtils.clamp(clock / LID_S, 0, 1)
+    const u1 = easeInOut(THREE.MathUtils.clamp(lp / 0.4, 0, 1)), u2 = easeInOut(THREE.MathUtils.clamp((lp - 0.3) / 0.7, 0, 1))
+    const yaw = jar.rotation.y
+    tmpA.set(0, 0.62, -0.62).applyAxisAngle(up, -yaw)      // world "up and behind", in the jar's turning frame
+    lid.position.set(tmpA.x * u2, BODY_H + 0.04 + 0.07 * u1 + tmpA.y * u2 + 0.025 * Math.sin(t * 1.6) * u2, tmpA.z * u2)
+    lid.rotation.order = 'YXZ'
+    lid.rotation.set(0.62 * u2, -1.9 * u1 * (1 - u2) - yaw * u2, 0.06 * Math.sin(t * 1.2) * u2)
+    logo.position.y = LOGO_Y + 0.5 * u2           // rises clear of the floating lid
+    // buds: each pops out of the jar on an arc (straight up over the rim, then out and over to its spot), spinning
+    // fast and slowing, growing as it clears the rim, then settles with a little bounce and hovers; reversed to go back in
     jar.updateMatrixWorld()
-    const mouth = new THREE.Vector3(0, BODY_H + 0.35, 0).applyMatrix4(jar.matrixWorld)
+    const mouth = tmpB.set(0, BODY_H + 0.1, 0).applyMatrix4(jar.matrixWorld).clone()
+    let kick = 0
     buds.forEach((b, i) => {
-      const bk = THREE.MathUtils.clamp((openK - 0.18 - i * 0.06) / 0.6, 0, 1), e = bk < 0.5 ? 4 * bk ** 3 : 1 - Math.pow(-2 * bk + 2, 3) / 2
-      b.obj.visible = bk > 0
-      if (!b.obj.visible) return
-      const home = b.home.clone().applyMatrix4(jar.matrixWorld)
-      const hov = b.hover.clone().add(new THREE.Vector3(0.02 * Math.sin(t * 0.9 + b.ph), 0.05 * Math.sin(t * 1.3 + b.ph), 0.02 * Math.cos(t * 0.8 + b.ph)))
-      // two-stage path: home -> mouth (first 40%) -> hover spot
-      if (e < 0.4) b.obj.position.lerpVectors(home, mouth, e / 0.4)
-      else b.obj.position.lerpVectors(mouth, hov, (e - 0.4) / 0.6)
-      b.obj.rotation.set(b.rot.x + t * 0.3, b.rot.y + t * 0.45, b.rot.z)
+      const bp = THREE.MathUtils.clamp((clock - BUD_START - i * BUD_GAP) / BUD_S, 0, 1)
+      b.obj.visible = bp > 0
+      if (!b.obj.visible) { b.settle = 0; return }
+      const u = easeOut(bp)
+      if (bp < 0.12) kick += 1 - bp / 0.12                 // the jar dips a touch as each one pops
+      const home = tmpA.copy(b.home).applyMatrix4(jar.matrixWorld)
+      const hov = tmpD.copy(b.hover).add(tmpC.set(0.02 * Math.sin(t * 0.9 + b.ph), 0.05 * Math.sin(t * 1.3 + b.ph), 0.02 * Math.cos(t * 0.8 + b.ph)))
+      const c1 = mouth.clone().add(tmpC.set(0, 0.75, 0.4))                            // up out of the jar and toward you (the lid is up and behind)
+      const c2 = hov.clone().add(tmpC.set(0, 0.55, 0))                                // come down onto the spot
+      bez(b.obj.position, home, c1, c2, hov, u)
+      // settle: once there, a small damped bounce
+      b.settle = bp >= 1 ? (b.settle || 0) + dt : 0
+      if (b.settle > 0) b.obj.position.y += 0.07 * Math.exp(-4 * b.settle) * Math.sin(11 * b.settle)
+      const s0 = b.obj.userData.s || (b.obj.userData.s = b.obj.scale.x)
+      b.obj.scale.setScalar(s0 * (0.55 + 0.45 * Math.min(1, u * 2.2)))
+      const spin = 7 * Math.pow(1 - u, 2)                  // fast while flying, calm when hovering
+      b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
     })
+    jar.position.y -= 0.025 * Math.min(1, kick)
     renderer.render(scene, camera)
   }
   requestAnimationFrame(frame)

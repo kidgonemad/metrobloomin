@@ -20,9 +20,10 @@ html,body{background:#050103;min-height:100%}
 <body>
 <a class="back" href="../" aria-label="Back to Metro Bloomin"><canvas width="384" height="384"></canvas></a>
 <div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=1'
-mount(document.getElementById('jar'))
+import { mount } from './jar.js?v=4'
+window.__jar = mount(document.getElementById('jar'))
 // header leaf: the site's stacked-alpha still (colour on top, mask below) painted into the canvas
 const im = new Image(); im.onload = () => {
   const cv = document.querySelector('.back canvas'), g = cv.getContext('2d'), t = document.createElement('canvas'); t.width = 384; t.height = 768

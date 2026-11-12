@@ -1,7 +1,8 @@
 // Music view: the TV page (music/, built from music-src/) as a full-screen layer on the one page.
 // Opened and closed only by the view controller in shop.js (MBView.show).
 (function () {
-  var src = new URL('music/', document.baseURI).href;
+  // ?v= changes with every music build, so phones don't keep an old copy of the TV page (bump it with the build)
+  var src = new URL('music/?v=7', document.baseURI).href;
   var wrap = document.createElement('div');
   wrap.id = 'videoView';
   wrap.className = 'mb-vlayer';

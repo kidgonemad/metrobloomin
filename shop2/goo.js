@@ -28,7 +28,8 @@
       var id = 'mbGoo' + n + (top ? 't' : 'b');
       var f = document.createElementNS(NS, 'filter');
       f.setAttribute('id', id);
-      ['x', '-10%', 'y', '-60%', 'width', '120%', 'height', '220%', 'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
+      ['x', '-10%', 'y', '-10%', 'width', '120%', 'height', '135%',   // the area the goo reaches: less to filter each frame
+        'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
       // the bottom layer is turned upside down, so it takes an upside-down copy of the pattern (reads right way up)
       var img = top ? 'leaf-pattern.webp?v=1' : 'leaf-pattern-flip.webp?v=1';
       f.innerHTML = '<feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>' +
@@ -109,6 +110,7 @@
     all.forEach(function (b) {
       if (!b.visible) return;
       b.edges.forEach(function (e) {
+        if (e.target === 0 && e.r < 0.05) { if (e.r) { e.r = 0; e.cur.style.width = e.cur.style.height = '0px'; } return; }   // idle: nothing to update
         e.sx += (e.x - e.sx) * 0.15; e.sd += (e.d - e.sd) * 0.15; e.r += (e.target - e.r) * 0.12;
         var c = e.cur.style;
         c.width = c.height = (2 * e.r).toFixed(1) + 'px';

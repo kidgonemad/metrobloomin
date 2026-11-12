@@ -3,7 +3,7 @@
   // the shop itself is shop2/ (grid, product pages, goo band), loaded into the shop view; ?embed=1 makes it
   // leave room for the site's header (leaf + lettering, menu) instead of drawing its own
   var base = new URL('shop/', document.baseURI).href;
-  var SHOP_SRC = new URL('shop2/?embed=1&v=18', document.baseURI).href;
+  var SHOP_SRC = new URL('shop2/?embed=1&v=19', document.baseURI).href;
 
   var el = document.createElement('section');
   el.id = 'shopView';
@@ -92,7 +92,8 @@
         var over = false, fin = function () { if (!over) { over = true; done(); } };
         var showStill = function () { if (over) return; if (still.complete) paint(still); else still.onload = function () { paint(still); }; onTime(99); setTimeout(fin, 2500); };
         if (reduce) { showStill(); return; }
-        var loop = function () { if (over) return; if (v.readyState >= 2) { paint(v); onTime(v.currentTime); }
+        var last = -1;   // paint only new frames (not every frame while it waits, e.g. Low Power Mode blocks autoplay)
+        var loop = function () { if (over) return; if (v.readyState >= 2 && v.currentTime !== last) { last = v.currentTime; paint(v); onTime(v.currentTime); }
           if (v.ended) { fin(); return; } requestAnimationFrame(loop); };
         var waiting = false, safety = null, EV = ['touchend', 'click', 'keydown'];   // iPhone only lets video start on these (the end of a tap), not on touchstart or scroll
         var blocked = function () {

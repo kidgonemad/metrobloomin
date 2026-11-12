@@ -57,7 +57,7 @@ export default function Model({ onReady, ...props }) {
     if (badge) {
       scene.updateMatrixWorld(true)
       const box = new Box3().setFromObject(badge), size = box.getSize(new Vector3()), mid = box.getCenter(new Vector3())
-      // the real Panasonic logotype in brand blue (letters only, cut from the owner's reference image)
+      // the real Panasonic logotype in light silver-grey (letters only, cut from the owner's reference image)
       const tex = new TextureLoader().load(BASE + 'tv-ui-assets/img/panasonic-logo.png')
       tex.colorSpace = SRGBColorSpace; tex.anisotropy = 8
       const lw = size.x, lh = size.x * 167 / 1039   // keep the logo's own proportions, as wide as the badge

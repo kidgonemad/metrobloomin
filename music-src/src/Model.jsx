@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useEffect, useRef } from 'react'
-import { VideoTexture, SRGBColorSpace, LinearFilter, Color, MeshStandardMaterial, MeshBasicMaterial, CanvasTexture, Mesh, PlaneGeometry, Box3, Vector3 } from 'three'
+import { VideoTexture, SRGBColorSpace, LinearFilter, Color, MeshStandardMaterial, MeshBasicMaterial, TextureLoader, Mesh, PlaneGeometry, Box3, Vector3 } from 'three'
 import TvScreenMaterial from './TvScreenMaterial'
 import useChannelStore from './store'
 import TVUI from './TVUI'
@@ -52,21 +52,17 @@ export default function Model({ onReady, ...props }) {
     // turned them into dull dark shapes. Each gets its own finish. (three.js drops the '.' from glTF names.)
     const part = (name) => { const o = scene.getObjectByName(name); return o && o.isMesh ? o : null }
     // Panasonic badge: its 3D letters are too thin to draw cleanly at screen size (they turned into a white
-    // smear), so it is replaced by a crisp printed label of the same size, in the same spot
+    // smear), so it is replaced by the Panasonic logo printed flat, same width, same spot
     const badge = part('defaultMaterial008')
     if (badge) {
       scene.updateMatrixWorld(true)
       const box = new Box3().setFromObject(badge), size = box.getSize(new Vector3()), mid = box.getCenter(new Vector3())
-      const cw = 1024, ch = Math.max(64, Math.round(cw * size.y / size.x))
-      const c = document.createElement('canvas'); c.width = cw; c.height = ch
-      const g = c.getContext('2d')
-      g.fillStyle = '#d6d6d6'; g.textAlign = 'center'; g.textBaseline = 'middle'
-      let fs = ch * 0.9; g.font = `900 ${fs}px "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif`
-      const tw = g.measureText('Panasonic').width; if (tw > cw * 0.98) { fs *= cw * 0.98 / tw; g.font = `900 ${fs}px "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif` }
-      g.fillText('Panasonic', cw / 2, ch / 2)
-      const tex = new CanvasTexture(c); tex.colorSpace = SRGBColorSpace; tex.anisotropy = 8
+      // the real Panasonic logotype in brand blue (letters only, cut from the owner's reference image)
+      const tex = new TextureLoader().load(BASE + 'tv-ui-assets/img/panasonic-logo.png')
+      tex.colorSpace = SRGBColorSpace; tex.anisotropy = 8
+      const lw = size.x, lh = size.x * 167 / 1039   // keep the logo's own proportions, as wide as the badge
       // letters only: every other pixel is discarded (blending showed a bar around them on iPhone)
-      const label = new Mesh(new PlaneGeometry(size.x, size.y), new MeshBasicMaterial({ map: tex, alphaTest: 0.12, toneMapped: false }))
+      const label = new Mesh(new PlaneGeometry(lw, lh), new MeshBasicMaterial({ map: tex, alphaTest: 0.12, toneMapped: false }))
       // place it in the badge's parent space: centred on the badge, just in front of the TV's face (+Z)
       const parent = badge.parent
       label.position.copy(parent.worldToLocal(new Vector3(mid.x, mid.y, box.max.z + size.y * 0.05)))

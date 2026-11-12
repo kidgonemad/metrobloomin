@@ -65,7 +65,8 @@ export default function Model({ onReady, ...props }) {
       const tw = g.measureText('Panasonic').width; if (tw > cw * 0.98) { fs *= cw * 0.98 / tw; g.font = `900 ${fs}px "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif` }
       g.fillText('Panasonic', cw / 2, ch / 2)
       const tex = new CanvasTexture(c); tex.colorSpace = SRGBColorSpace; tex.anisotropy = 8
-      const label = new Mesh(new PlaneGeometry(size.x, size.y), new MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false }))
+      // letters only: every other pixel is discarded (blending showed a bar around them on iPhone)
+      const label = new Mesh(new PlaneGeometry(size.x, size.y), new MeshBasicMaterial({ map: tex, alphaTest: 0.12, toneMapped: false }))
       // place it in the badge's parent space: centred on the badge, just in front of the TV's face (+Z)
       const parent = badge.parent
       label.position.copy(parent.worldToLocal(new Vector3(mid.x, mid.y, box.max.z + size.y * 0.05)))

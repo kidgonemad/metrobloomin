@@ -1,5 +1,5 @@
 import { useRef, useMemo, useEffect } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { CanvasTexture, SRGBColorSpace } from 'three'
 
@@ -32,6 +32,8 @@ function easeOutBack(x) { const c = 1.2, c3 = c + 1; return 1 + c3 * Math.pow(x 
 
 export default function Ashtray({ rest, landed, anchorRef }) {
   const { scene } = useGLTF(URL, DRACO)
+  const { size } = useThree()
+  const phone = size.width < size.height
   const obj = useMemo(() => {
     const o = scene.clone(true)
     o.traverse((m) => { if (m.isMesh) m.raycast = () => {} })   // taps go to the remote
@@ -52,10 +54,10 @@ export default function Ashtray({ rest, landed, anchorRef }) {
     const aw = MODEL_W * scale
     return {
       scale, aw,
-      x: bx - w * 0.36, y: by, z: bz + d * 0.5 + aw * 0.9,   // on the floor, in front of the TV's lower-left
+      x: bx - w * 0.34, y: by, z: bz + d * 0.5 + aw * (phone ? 2.6 : 1.4),   // on the floor, in front of the TV's lower-left (nearer you)
       from: bx - w * 2.6,                                    // well off-screen left
     }
-  }, [rest])
+  }, [rest, phone])
 
   useFrame((_, delta) => {
     if (!place || !group.current) return

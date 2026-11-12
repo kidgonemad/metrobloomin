@@ -51,7 +51,7 @@ function useFrameTv(controlsRef, boxRef) {
     const aspect = size.width / size.height
     const fitH = s.y / 2 / Math.tan(MathUtils.degToRad(camera.fov / 2))
     const fitW = s.x / 2 / Math.tan(MathUtils.degToRad(camera.fov / 2)) / aspect
-    const dist = Math.max(fitH, fitW) * (aspect < 1 ? 1.55 : 1.45) + s.z / 2
+    const dist = Math.max(fitH, fitW) * (aspect < 1 ? 1.55 : 1.75) + s.z / 2
     // phones: the remote fills the bottom of the screen, so the TV sits in the top part
     const visH = 2 * dist * Math.tan(MathUtils.degToRad(camera.fov / 2))
     const dy = aspect < 1 ? visH * 0.17 : 0
@@ -59,7 +59,10 @@ function useFrameTv(controlsRef, boxRef) {
     ctrl.minAzimuthAngle = -Infinity; ctrl.maxAzimuthAngle = Infinity
     ctrl.minPolarAngle = 0; ctrl.maxPolarAngle = Math.PI
     ctrl.minDistance = 0; ctrl.maxDistance = Infinity
-    ctrl.setLookAt(c.x, c.y + s.y * 0.05 - dy, c.z + dist, c.x, c.y - dy, c.z, false)
+    // looking down on the TV a little, from above (like standing over it), so the floor and the ashtray read
+    const el = MathUtils.degToRad(aspect < 1 ? 26 : 20)
+    const ty = c.y - dy - s.y * (aspect < 1 ? 0.08 : 0.2)   // desktop: aim a bit low, so the ashtray in front shows
+    ctrl.setLookAt(c.x, ty + dist * Math.sin(el), c.z + dist * Math.cos(el), c.x, ty, c.z, false)
     // a little side-to-side tilt only: no up/down, no zoom
     ctrl.minAzimuthAngle = ctrl.azimuthAngle - MathUtils.degToRad(12)
     ctrl.maxAzimuthAngle = ctrl.azimuthAngle + MathUtils.degToRad(12)

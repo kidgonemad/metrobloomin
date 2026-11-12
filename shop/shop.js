@@ -3,7 +3,7 @@
   // the shop itself is shop2/ (grid, product pages, goo band), loaded into the shop view; ?embed=1 makes it
   // leave room for the site's header (leaf + lettering, menu) instead of drawing its own
   var base = new URL('shop/', document.baseURI).href;
-  var SHOP_SRC = new URL('shop2/?embed=1&v=5', document.baseURI).href;
+  var SHOP_SRC = new URL('shop2/?embed=1&v=6', document.baseURI).href;
 
   var el = document.createElement('section');
   el.id = 'shopView';

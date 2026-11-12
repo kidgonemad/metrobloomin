@@ -46,6 +46,7 @@
     var u = unit();
     band.style.setProperty('--goo-rem', u + 'px');
     blur.setAttribute('stdDeviation', (10 * u / 16).toFixed(2));
+    band.style.setProperty('--goo-pad', Math.ceil(2 * 10 * u / 16) + 'px');   // 2 x the blur: past the edge
   }
 
   function apply(e) {

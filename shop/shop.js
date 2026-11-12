@@ -110,6 +110,7 @@
     // browser, iPhone included. Each plays once; a still of its last frame is the fallback.
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     var CLIP_V = '4';   // bump when a video in shop/bg/ changes, so phones fetch the new one
+    var clips = [];      // every header clip's video (see unlockAll)
     function alphaClip(box, name, w, h, stillName) {
       var cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.setAttribute('aria-hidden', 'true'); box.appendChild(cv);
       var out = cv.getContext('2d'), tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h * 2;
@@ -121,19 +122,38 @@
         out.putImageData(c, 0, 0);
       };
       var still = new Image(); still.src = base + 'bg/' + (stillName || name) + '.webp?v=' + CLIP_V;
+      // the video sits in the page, invisible: iPhone Safari only decodes frames for videos that are in the document
       var v = document.createElement('video');
       v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-      v.preload = 'auto'; v.src = base + 'bg/' + name + '.mp4?v=' + CLIP_V;
-      // plays once; onTime(seconds) runs every frame, done() when it ends (or when it cannot play: the still shows)
+      v.setAttribute('aria-hidden', 'true'); v.preload = 'auto';
+      v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;z-index:-1';
+      v.src = base + 'bg/' + name + '.mp4?v=' + CLIP_V; document.body.appendChild(v); v.load();
+      clips.push(v);
+      // plays once; onTime(seconds) runs every frame, done() when it ends. If the phone blocks autoplay (Low Power
+      // Mode), it waits for the first tap or scroll and plays then; the still is only the last resort.
       return { video: v, play: function (onTime, done) {
         var over = false, fin = function () { if (!over) { over = true; done(); } };
-        var showStill = function () { if (still.complete) paint(still); else still.onload = function () { paint(still); }; onTime(99); setTimeout(fin, 2500); };
+        var showStill = function () { if (over) return; if (still.complete) paint(still); else still.onload = function () { paint(still); }; onTime(99); setTimeout(fin, 2500); };
         if (reduce) { showStill(); return; }
-        v.currentTime = 0;
-        var pr = v.play(); if (pr && pr.catch) pr.catch(function () { if (!over) showStill(); });
-        (function loop() { if (v.readyState >= 2) { paint(v); onTime(v.currentTime); } if (v.ended) { paint(v); fin(); } else if (!over) requestAnimationFrame(loop); })();
+        var loop = function () { if (over) return; if (v.readyState >= 2) { paint(v); onTime(v.currentTime); }
+          if (v.ended) { fin(); return; } requestAnimationFrame(loop); };
+        var waiting = false, safety = null, EV = ['touchstart', 'pointerdown', 'scroll', 'keydown'];
+        var blocked = function () {
+          if (over || waiting) return; waiting = true;
+          var off = function () { EV.forEach(function (e) { window.removeEventListener(e, go, true); }); clearTimeout(safety); };
+          var go = function () { off(); waiting = false; unlockAll();
+            var p2 = v.play(); if (p2 && p2.catch) p2.catch(showStill); };
+          EV.forEach(function (e) { window.addEventListener(e, go, { capture: true, passive: true }); });
+          safety = setTimeout(function () { off(); showStill(); }, 6000);
+        };
+        v.__started = true; v.currentTime = 0;
+        var pr = v.play(); if (pr && pr.catch) pr.catch(blocked);
+        requestAnimationFrame(loop);
       } };
     }
+    // on the first tap after a blocked autoplay, unlock every header clip (so the lettering can play later without another tap)
+    function unlockAll() { clips.forEach(function (c) { if (c.__started || !c.paused) return;
+      var p = c.play(); if (p && p.then) p.then(function () { if (!c.__started) { c.pause(); c.currentTime = 0; } }).catch(function () {}); }); }
     var wordEl = logoEl && logoEl.querySelector('.mb-word'), leafEl = logoEl && logoEl.querySelector('.mb-leaf');
     if (wordEl && leafEl) {
       wordEl.setAttribute('aria-label', (wordEl.textContent || 'Metro Bloomin').trim()); wordEl.textContent = ''; leafEl.textContent = '';

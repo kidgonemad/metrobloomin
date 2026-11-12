@@ -37,9 +37,17 @@ body.embed .top{padding-top:96px}
 body.embed .tabs__cart{display:block}
 
 /* green leaf band: the brand's leaf pattern, tiled */
-.band{position:relative;height:120px;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
-/* white goo along the band's top and bottom edges (goo.js) */
-.goo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.band{position:relative;overflow:hidden;height:120px;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
+/* white goo on the band's top and bottom edges (goo.js): the Bass Victim tour page's bubble pool, in white.
+   --goo-rem is the original's rem scaled to the band (set by goo.js) */
+.goo-layer{position:absolute;inset:0;pointer-events:none;filter:url(#mbGoo);opacity:0;transition:opacity .3s ease}
+.goo-layer--top{transform:scaleY(-1)}
+.goo-strip{position:absolute;left:0;right:0;bottom:0;height:var(--goo-rem);background:#fff}
+.goo-bubble{position:absolute;left:var(--position);bottom:calc(var(--goo-rem) * -4);width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem));
+  border-radius:50%;background:#fff;transform:translate(-50%,100%)}
+.goo-layer.is-on .goo-bubble{animation:gooSize var(--time) ease-in infinite var(--delay),gooMove var(--time) ease-in infinite var(--delay)}
+@keyframes gooSize{0%,75%{width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem))}100%{width:0;height:0}}
+@keyframes gooMove{0%{bottom:calc(var(--goo-rem) * -4)}100%{bottom:calc(var(--distance) * var(--goo-rem))}}
 .band--bottom{height:220px}
 
 /* grid */
@@ -110,7 +118,7 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 
 <script>if (/[?&]embed=1/.test(location.search)) document.body.classList.add('embed');</script>
 <script src="products.js"></script>
-<script src="goo.js?v=2"></script>
+<script src="goo.js?v=4"></script>
 <script>
 // header lettering: the site's "stacked alpha" video (colour on top, alpha mask below, ../shop/bg/word-sm.mp4)
 // painted into a transparent canvas; plays the reveal once and stays. A still of the full lettering is the fallback.

@@ -1,137 +1,98 @@
-// White goo along the top and bottom edges of the green leaf band (the effect from the owner's
-// reference video: a liquid pool sloshes, blobs bubble out and merge back, then it settles).
-// Touch / mouse near an edge makes it bulge and splash. MBGoo.splash() replays the entrance.
-//
-// Drawn as metaballs: a field (pool + blobs) is computed on a half-size grid, thresholded with a
-// soft edge, and scaled up into a canvas laid over the band.
+// White goo on the green leaf band: the bubble pool from the Bass Victim tour page (kidgonemad/BASS-VICTIM,
+// components/PageUp.tsx), as is: a 1rem strip on the edge plus 128 round bubbles (2-6rem, rising 6-10rem
+// over 2-4 s, ease-in, shrinking to nothing at the end), all melted together by an SVG goo filter
+// (blur 10, alpha 19 / -9). It fades in when the pointer comes near the edge and fades out when it leaves.
+// Here: white, on both the band's top edge (hanging down) and bottom edge (rising), sized to the band.
+// It also surges in for ~2.4 s when the shop opens (MBGoo.splash(), called by the site), and on a tap
+// near an edge (phones have no hover).
 (function () {
   var band = document.querySelector('.band');
   if (!band) return;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var COUNT = 128, THRESHOLD = 150;   // the original's bubble count (full width) and hover range (px)
 
-  var cv = document.createElement('canvas');
-  cv.className = 'goo';
-  cv.setAttribute('aria-hidden', 'true');
-  band.appendChild(cv);
-  var ctx = cv.getContext('2d');
-  var lo = document.createElement('canvas'), lx = lo.getContext('2d');
-  var SCALE = 2;                 // field grid: one cell per SCALE css px (1 on small bands, see size())
-  var W = 0, H = 0, gw = 0, gh = 0, img = null;
+  // the original's sizes are in rem against a full-height page; scale them to the band
+  function unit() { return band.getBoundingClientRect().height / 240 * 16; }   // px per original rem
+
+  // the goo filter, same values as the original (its blur scaled with the bubbles)
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.cssText = 'position:absolute;width:0;height:0';
+  svg.innerHTML = '<defs><filter id="mbGoo" x="-10%" y="-60%" width="120%" height="220%" color-interpolation-filters="sRGB">' +
+    '<feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>' +
+    '<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="blob"/></filter></defs>';
+  document.body.appendChild(svg);
+  var blur = svg.querySelector('feGaussianBlur');
+
+  // one layer per edge: the strip and its bubbles; the top layer is the bottom one turned upside down
+  function layer(top) {
+    var el = document.createElement('div');
+    el.className = 'goo-layer' + (top ? ' goo-layer--top' : '');
+    el.setAttribute('aria-hidden', 'true');
+    var html = '<div class="goo-strip"></div>';
+    for (var i = 0; i < COUNT; i++) {
+      var t = 2 + Math.random() * 2;
+      html += '<div class="goo-bubble" style="--size:' + (2 + Math.random() * 4).toFixed(2) + ';--distance:' + (6 + Math.random() * 4).toFixed(2) +
+        ';--position:' + (-5 + Math.random() * 110).toFixed(1) + '%;--time:' + t.toFixed(2) + 's;--delay:' + (-1 * (2 + Math.random() * 2)).toFixed(2) + 's"></div>';
+    }
+    el.innerHTML = html;
+    band.appendChild(el);
+    return { el: el, top: top, hover: 0, splashUntil: 0, on: false };
+  }
+  var edges = [layer(true), layer(false)];
 
   function size() {
-    var r = band.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    SCALE = W * H > 60000 ? 2 : 1;
-    gw = Math.ceil(W / SCALE); gh = Math.ceil(H / SCALE);
-    lo.width = gw; lo.height = gh; img = lx.createImageData(gw, gh);
-    for (var k = 0; k < img.data.length; k += 4) { img.data[k] = img.data[k + 1] = img.data[k + 2] = 255; }
+    var u = unit();
+    band.style.setProperty('--goo-rem', u + 'px');
+    blur.setAttribute('stdDeviation', (10 * u / 16).toFixed(2));
   }
 
-  // two pools: edge 0 hangs from the top of the band, edge 1 rises from the bottom (the products bar)
-  var edges = [{ dir: 1, bumps: [] }, { dir: -1, bumps: [] }];
-  var blobs = [];
-  var t0 = 0, last = 0, running = false, splashAt = -1e9;
-  var REST = 7;                  // settled pool depth (px)
-
-  function now() { return performance.now() / 1000; }
-
-  // how stirred up the liquid is: 1 right after a splash, easing to 0 over ~3.5 s
-  function stir(t) { var s = t - splashAt; return s < 0 ? 0 : Math.exp(-s / 1.4); }
-
-  function depth(e, x, t) {
-    var a = stir(t), sx = x / W;
-    var wave = Math.sin(sx * 9 + t * 2.3 + e.dir) * 0.5 + Math.sin(sx * 23 - t * 3.1) * 0.3 + Math.sin(sx * 41 + t * 4.7 + 2 * e.dir) * 0.2;
-    var d = REST + 1.6 * Math.sin(sx * 13 + t * 0.9 + e.dir * 2)     // idle: a slow breathing edge
-          + a * (H * 0.13 + H * 0.09 * wave);                          // splash: deeper and choppy
-    for (var i = 0; i < e.bumps.length; i++) {                          // pointer bulges
-      var b = e.bumps[i], age = t - b.t, dx = (x - b.x) / b.w;
-      if (age < 0) continue;
-      d += b.h * Math.exp(-dx * dx) * Math.exp(-age / 0.6) * Math.min(1, age * 12);
-    }
-    return d;
+  function apply(e) {
+    var now = performance.now(), splash = now < e.splashUntil ? 1 : 0;
+    var k = Math.max(e.hover, splash);
+    e.el.style.opacity = k.toFixed(3);
+    var run = k > 0.2 && !reduce;          // like the original: bubbles only move while it's showing
+    if (run === e.on) return;
+    e.on = run; clearTimeout(e.stopT);
+    if (run) e.el.classList.add('is-on');
+    else e.stopT = setTimeout(function () { if (!e.on) e.el.classList.remove('is-on'); }, 350);   // after the .3s fade
   }
 
-  function spawn(e, x, t, power) {
-    // heavy lumps: they bulge out of the pool, some pinch off, and fall back in
-    var r = (4 + Math.random() * 6) * Math.min(1.3, 0.6 + power * 0.4) * (H / 120);
-    blobs.push({ e: e, x: x, y: depth(e, x, t) * 0.85, vx: (Math.random() - 0.5) * 24, vy: (20 + Math.random() * 40) * power * (H / 120), r: r, born: t });
-  }
-
-  function step(t, dt) {
-    // blobs fly out of the pool, gravity (toward their pool) pulls them back in, where they merge
-    for (var i = blobs.length - 1; i >= 0; i--) {
-      var b = blobs[i];
-      b.vy -= 260 * dt; b.y += b.vy * dt; b.x += b.vx * dt; b.vx *= 0.98;
-      if ((b.y < 0 && b.vy < 0) || t - b.born > 4) blobs.splice(i, 1);
-    }
-    // a stirred-up pool keeps throwing blobs
-    var a = stir(t);
+  // pointer near an edge (within the original's 150 px, measured from that edge of the band)
+  function near(ev) {
+    var r = band.getBoundingClientRect();
+    if (ev.clientX < r.left || ev.clientX > r.right) { edges.forEach(function (e) { e.hover = 0; apply(e); }); return; }
     edges.forEach(function (e) {
-      if (Math.random() < a * dt * 22 * (W / 900 + 0.3)) spawn(e, Math.random() * W, t, 0.6 + a);
-      e.bumps = e.bumps.filter(function (b) { return t - b.t < 3; });
+      var d = e.top ? Math.abs(ev.clientY - r.top) : Math.abs(r.bottom - ev.clientY);
+      e.hover = d < THRESHOLD ? 1 - d / THRESHOLD : 0;
+      apply(e);
     });
   }
+  window.addEventListener('mousemove', near, { passive: true });
+  document.addEventListener('mouseleave', function () { edges.forEach(function (e) { e.hover = 0; apply(e); }); });
 
-  // narrow threshold band: a crisp liquid edge
-  function smooth(v) { v = (v - 0.93) / 0.14; return v <= 0 ? 0 : v >= 1 ? 1 : v * v * (3 - 2 * v); }
+  // a tap near an edge surges that edge for a moment
+  window.addEventListener('pointerdown', function (ev) {
+    if (ev.pointerType === 'mouse') return;
+    var r = band.getBoundingClientRect();
+    if (ev.clientX < r.left || ev.clientX > r.right) return;
+    edges.forEach(function (e) {
+      var d = e.top ? Math.abs(ev.clientY - r.top) : Math.abs(r.bottom - ev.clientY);
+      if (d < THRESHOLD) surge(e, 1600);
+    });
+  }, { passive: true });
 
-  function render(t) {
-    var d = img.data, top = edges[0], bot = edges[1];
-    var lvT = new Float32Array(gw), lvB = new Float32Array(gw);
-    for (var gx = 0; gx < gw; gx++) { lvT[gx] = depth(top, gx * SCALE, t); lvB[gx] = depth(bot, gx * SCALE, t); }
-    // blobs in band coordinates
-    var bl = blobs.map(function (b) { return { x: b.x, y: b.e.dir > 0 ? b.y : H - b.y, rr: b.r * b.r }; });
-    for (var gy = 0; gy < gh; gy++) {
-      var y = gy * SCALE, row = gy * gw;
-      for (gx = 0; gx < gw; gx++) {
-        var x = gx * SCALE;
-        // pool field: 1 at the liquid's surface, rising inside it, falling off outside
-        var f = Math.exp((lvT[gx] - y) / 4) + Math.exp((lvB[gx] - (H - y)) / 4);
-        for (var i = 0; i < bl.length; i++) { var dx = x - bl[i].x, dy = y - bl[i].y; f += bl[i].rr / (dx * dx + dy * dy + 1); }
-        d[(row + gx) * 4 + 3] = 255 * smooth(f);
-      }
-    }
-    lx.putImageData(img, 0, 0);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(lo, 0, 0, gw, gh, 0, 0, gw * SCALE * cv.width / W, gh * SCALE * cv.height / H);
+  function surge(e, ms) {
+    e.splashUntil = performance.now() + ms; apply(e);
+    clearTimeout(e.timer); e.timer = setTimeout(function () { apply(e); }, ms + 20);
   }
 
-  var visible = true;
-  function frame() {
-    if (!running) return;
-    var t = now(), dt = Math.min(0.05, t - last); last = t;
-    step(t, dt); render(t);
-    requestAnimationFrame(frame);
-  }
-  function start() { if (running || reduce) return; running = true; last = now(); requestAnimationFrame(frame); }
-  function stop() { running = false; }
-  function sync() { if (visible && !document.hidden) start(); else stop(); }
-
-  // pointer: near an edge the pool bulges toward it and throws a few blobs
-  function poke(ev) {
-    var r = band.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, t = now();
-    if (x < 0 || x > W || y < -40 || y > H + 40) return;
-    var e = y < H / 2 ? edges[0] : edges[1], dist = e.dir > 0 ? y : H - y;
-    if (dist > H * 0.7) return;
-    var lastB = e.bumps[e.bumps.length - 1];
-    if (lastB && t - lastB.t < 0.08 && Math.abs(lastB.x - x) < 20) return;
-    e.bumps.push({ x: x, w: 22 + Math.random() * 14, h: Math.max(5, H * 0.22 - dist * 0.25), t: t });
-    if (Math.random() < 0.5) spawn(e, x, t, 0.8);
-  }
-  window.addEventListener('pointermove', poke, { passive: true });
-  window.addEventListener('pointerdown', function (ev) { poke(ev); poke(ev); }, { passive: true });
-
-  window.MBGoo = { splash: function () { splashAt = now(); blobs.length = 0; sync(); } };
+  window.MBGoo = { splash: function () { edges.forEach(function (e) { surge(e, 2400); }); } };
 
   size();
-  if (reduce) { splashAt = -1e9; render(now()); }
-  addEventListener('resize', function () { size(); if (!running) render(now()); });
-  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; sync(); }).observe(band);
-  document.addEventListener('visibilitychange', sync);
-  // the site tells the shop when its view opens (shop/shop.js), so the goo splashes in every time
+  addEventListener('resize', size);
+  // the site tells the shop when its view opens (shop/shop.js), so the goo surges in every time
   addEventListener('message', function (e) { if (e.data === 'mb-shop-open') window.MBGoo.splash(); });
-  window.MBGoo.splash();
+  if (!reduce) window.MBGoo.splash();
 })();

@@ -1,6 +1,6 @@
 import { Suspense, useRef, useState, useCallback, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { CameraControls, Environment, Lightformer } from '@react-three/drei'
+import { CameraControls, Environment, Lightformer, useProgress } from '@react-three/drei'
 import { Box3, Vector3, MathUtils } from 'three'
 import Model from './Model'
 import RemoteHud from './RemoteHud'
@@ -103,6 +103,18 @@ function Rig({ controlsRef, onReady, onLanded, landed }) {
   )
 }
 
+// loading screen, the same as the about page's: percentage (futura, uppercase) over a rounded progress bar
+function Loading() {
+  const { progress } = useProgress()
+  const p = Math.round(progress)
+  return (
+    <div className="loader">
+      <div className="text">{p}%</div>
+      <div className="progress"><div className="bar" style={{ width: p + '%' }} /></div>
+    </div>
+  )
+}
+
 export default function App() {
   const controlsRef = useRef()
   const [loaded, setLoaded] = useState(false)
@@ -154,7 +166,7 @@ export default function App() {
         {/* lucki's three.js remote, held in front of the camera (bottom right); rises in after the TV lands */}
         {landed && <RemoteHud />}
       </Canvas>
-      {!loaded && <div className="loading">LOADING</div>}
+      {!loaded && <Loading />}
     </div>
   )
 }

@@ -33,5 +33,5 @@
   font:inherit;opacity:0;transition:opacity .25s ease .1s,color .3s ease;-webkit-tap-highlight-color:transparent;outline:none}
 .mbn.is-open .mbn__pill a{opacity:1}
 .mbn__pill a:hover,.mbn__pill a.is-current{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
-@media (max-width:767px){.mbn__pill a{padding:0 9px;font-size:14px}}
+@media (max-width:767px){.mbn__pill a{padding:0 6px;font-size:13px}}   /* 4 items (shop, music, collabs, about) clear the header leaf */
 @media (prefers-reduced-motion:reduce){.mbn *{transition:none!important}}

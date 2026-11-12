@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Metro Bloomin — Jar (test)</title>
+<title>Metro Bloomin — Collabs</title>
 <link rel="icon" href="../favicon.png">
+<link rel="stylesheet" href="../shop/mbnav.css?v=1794447409">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#050103;min-height:100%}
@@ -20,6 +21,14 @@ html,body{background:#050103;min-height:100%}
 <body>
 <a class="back" href="../" aria-label="Back to Metro Bloomin"><canvas width="384" height="384"></canvas></a>
 <div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
+<script src="../shop/mbnav.js?v=1794447409"></script>
+<script>
+// the site's one menu, inverted like on every view; collabs is this page
+document.body.appendChild(MBNav.create({
+  items: [{ label: 'shop', href: '../#shop' }, { label: 'music', href: '../#music' }, { label: 'collabs', href: './' }, { label: 'about', href: '../#about' }],
+  current: 'collabs', tone: 'auto'
+})).classList.add('mbn--site')
+</script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
 import { mount } from './jar.js?v=4'

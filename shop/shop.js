@@ -54,6 +54,7 @@
       items: [
         { label: 'shop', onClick: function () { show('shop'); } },
         { label: 'music', onClick: function () { show('music'); } },
+        { label: 'collabs', href: 'jar/' },
         { label: 'about', onClick: function () { show('about'); } }
       ],
       current: 'about', tone: 'auto',

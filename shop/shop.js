@@ -106,25 +106,21 @@
         requestAnimationFrame(loop);
       } };
     }
-    // on the first tap after a blocked autoplay, unlock every header clip (so the lettering can play later without another tap)
+    // on the first tap after a blocked autoplay, unlock every header clip
     function unlockAll() { clips.forEach(function (c) { if (c.__started || !c.paused) return;
       var p = c.play(); if (p && p.then) p.then(function () { if (!c.__started) { c.pause(); c.currentTime = 0; } }).catch(function () {}); }); }
-    var wordEl = logoEl && logoEl.querySelector('.mb-word'), leafEl = logoEl && logoEl.querySelector('.mb-leaf');
-    if (wordEl && leafEl) {
-      wordEl.setAttribute('aria-label', (wordEl.textContent || 'Metro Bloomin').trim()); wordEl.textContent = ''; leafEl.textContent = '';
-      var wordClip = alphaClip(wordEl, 'word-sm-rev', 480, 260, 'word-sm'), leafClip = alphaClip(leafEl, 'leaf', 384, 384);
-      window.__mbWordVideo = wordClip.video; window.__mbLeafVideo = leafClip.video;   // read by the site tests
-      var word = function (on) { logoEl.classList.toggle('mb-word-show', on); };
-      // the lettering appears as the leaf pops in (~0.9s), plays its reveal, holds 1.5s, then plays it backwards to vanish
-      var wordStarted = false;
-      var startWord = function () { if (wordStarted) return; wordStarted = true; word(true);
-        wordClip.play(function () {}, function () { word(false); }); };
-      var play = function () { leafClip.play(function (t) { if (t >= .9) startWord(); }, startWord); };
+    // header: the leaf only (the METRO BLOOMIN lettering is the music TV's intro now)
+    var leafEl = logoEl && logoEl.querySelector('.mb-leaf');
+    if (leafEl) {
+      leafEl.textContent = '';
+      var leafClip = alphaClip(leafEl, 'leaf', 384, 384);
+      window.__mbLeafVideo = leafClip.video;   // read by the site tests
+      var play = function () { leafClip.play(function () {}, function () {}); };
       // the falling-buds loading screen (loader.js) covers the header: start once it lifts
       if (window.__mbLoading) document.addEventListener('mb:loaded-in', play, { once: true }); else play();
-    } else if (logoEl) logoEl.classList.add('mb-word-show');
+    }
     if (logoEl) logoEl.addEventListener('click', function () { show('about'); });
-    // about page: while you scroll, the header (leaf, lettering, menu) steps aside so the 3D scroll is clear;
+    // about page: while you scroll, the header (leaf, menu) steps aside so the 3D scroll is clear;
     // 350ms after you stop it pops back out (shop.css body.mb-scrolling)
     var scrollStop = null;
     var scrolling = function () {

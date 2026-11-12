@@ -157,7 +157,7 @@ export default function Model({ onReady, ...props }) {
       setScreenTexture(videoTexture, true)
       useChannelStore.getState().setPhase('intro')
       video.loop = false
-      video.src = BASE + 'intro-leaf.mp4'   // Metro Bloomin leaf appears out of thin air
+      video.src = BASE + 'intro-word.mp4'   // the METRO BLOOMIN lettering reveal (from shop/bg/word-sm.mp4)
       video.load()
       video.play().catch(() => {
         if (mounted) enterChannelsMode()

@@ -6,10 +6,7 @@
 /* brand mark (replaces the old header logo; colour follows the page theme via currentColor) */
 #logo{display:flex;align-items:flex-start;gap:10px;text-decoration:none;width:auto!important;overflow:visible}
 #logo .mb-leaf{flex:none;display:block;width:76px;height:76px}
-/* wordmark sits level with the menu button (centre 44px phone / 76px desktop) */
-/* animated green lettering (canvas, shop.js) sits level with the menu button (centre 44px phone / 76px desktop) */
-#logo .mb-word{width:150px;aspect-ratio:480/260}
-@media (min-width:768px){#logo .mb-leaf{width:192px;height:192px}#logo .mb-word{width:220px}}
+@media (min-width:768px){#logo .mb-leaf{width:192px;height:192px}}
 /* the leaf is a full-colour video drawn into a canvas (shop.js); its colour does not change per page */
 #logo .mb-leaf canvas{display:block;width:100%;height:100%}
 
@@ -34,12 +31,6 @@
 #links .accessibility:after{content:"";position:absolute;left:0;right:0;top:calc(100% - 2px);height:100vh;background:#111111}
 
 #logo .mb-leaf{position:relative;z-index:2}
-#logo .mb-word{display:block}
-#logo .mb-word canvas{display:block;width:100%;height:100%;transition:opacity .4s ease}
-/* hidden unless the leaf animation is showing it (shop.js; the video itself reverses the reveal to vanish), and while the menu is open */
-body.mb-menu-open #logo .mb-word canvas,#logo:not(.mb-word-show) .mb-word canvas{opacity:0}
-body.mb-menu-open #logo .mb-word,#logo:not(.mb-word-show) .mb-word{pointer-events:none}
-@media (prefers-reduced-motion:reduce){#logo .mb-word canvas{transition:opacity .3s ease}}
 
 /* original top menu is hidden (the site uses mbnav.css); the side section dots stay, styled in index.7d544b17.css */
 nav.menu,.mb-dir-btn,#aboutView{display:none!important}

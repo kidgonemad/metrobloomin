@@ -30,7 +30,7 @@ function shadowTexture() {
 // ease out with a small overshoot, like something skidding to a stop
 function easeOutBack(x) { const c = 1.2, c3 = c + 1; return 1 + c3 * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2) }
 
-export default function Ashtray({ rest, landed }) {
+export default function Ashtray({ rest, landed, anchorRef }) {
   const { scene } = useGLTF(URL, DRACO)
   const obj = useMemo(() => {
     const o = scene.clone(true)
@@ -82,7 +82,11 @@ export default function Ashtray({ rest, landed }) {
   if (!place) return null
   return (
     <>
-      <group ref={group} visible={false}><primitive object={obj} /></group>
+      <group ref={group} visible={false}>
+        <primitive object={obj} />
+        {/* where the joint rests (Joint.jsx): across the rim, its lit end (+X) turned in and dipping into the bowl */}
+        <group ref={anchorRef} position={[0.032, 0.047, 0.012]} rotation={[0, Math.PI * 0.85, -0.14]} />
+      </group>
       <mesh ref={shadow} visible={false} renderOrder={-1}>
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial map={shadowTex} transparent depthWrite={false} />

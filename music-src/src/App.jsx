@@ -6,6 +6,7 @@ import Model from './Model'
 import RemoteHud from './RemoteHud'
 import CrashIn from './CrashIn'
 import Ashtray from './Ashtray'
+import Joint from './Joint'
 import useChannelStore from './store'
 import './App.css'
 
@@ -71,6 +72,7 @@ function Rig({ controlsRef, onReady, onLanded, landed }) {
   const boxRef = useRef(null)
   const frameTv = useFrameTv(controlsRef, boxRef)
   const [rest, setRest] = useState(null)
+  const trayAnchor = useRef(null)
   useEffect(() => { frameTv() }, [frameTv])   // re-frame on resize
   return (
     <>
@@ -88,7 +90,9 @@ function Rig({ controlsRef, onReady, onLanded, landed }) {
       }} />
     </CrashIn>
     {/* the ashtray slides in from the left once the TV has landed */}
-    <Ashtray rest={rest} landed={landed} />
+    <Ashtray rest={rest} landed={landed} anchorRef={trayAnchor} />
+    {/* the joint rests on the ashtray; tap it to pick it up (first person, lit) and again to put it back */}
+    <Joint anchorRef={trayAnchor} />
     </>
   )
 }

@@ -4,17 +4,14 @@
 @media (min-width:768px){.mbn{top:54px;right:58px}}
 
 /* tones = the page behind the menu (no circle or pill): light page -> black text, dark page -> white text */
-.mbn[data-tone="light"]:not(.is-open){--mbn-fg:#111}
-.mbn[data-tone="dark"]:not(.is-open){--mbn-fg:#78b04a}   /* the green of the METRO BLOOMIN lettering */
-.mbn[data-tone="auto"]:not(.is-open){--mbn-fg:#fff;mix-blend-mode:difference}
-/* open: the page names sit on a white blob with a black outline (mbn__blob), so they're black on every view */
-.mbn.is-open{--mbn-fg:#111}
+/* the dots and the page names always sit on the white blob (mbn__blob), so they're black on every view */
+.mbn{--mbn-fg:#111}
 
-/* the blob: grows out of the ••• button behind the names, wobbling; scaled away to the button when closed */
-.mbn__blob{position:absolute;top:-6px;bottom:-6px;left:-12px;right:-6px;background:#fff;border:2.5px solid #111;pointer-events:none;
-  border-radius:48% 52% 46% 54% / 62% 48% 52% 38%;transform-origin:calc(100% - 28px) 50%;transform:scale(0);opacity:0;
-  transition:transform .55s cubic-bezier(.3,1.5,.5,1),opacity .2s ease}
-.mbn.is-open .mbn__blob{transform:scale(1);opacity:1;animation:mbnBlobWobble 3.2s ease-in-out infinite}
+/* the blob: a wobbling circle around the ••• button when closed; it stretches with the menu (the pill grows) to
+   cover the page names when open */
+.mbn__blob{position:absolute;top:-4px;bottom:-4px;left:2px;right:-4px;background:#fff;border:2.5px solid #111;pointer-events:none;
+  border-radius:48% 52% 46% 54% / 62% 48% 52% 38%;animation:mbnBlobWobble 3.2s ease-in-out infinite;transition:left .5s cubic-bezier(.65,0,.2,1),top .3s,bottom .3s}
+.mbn.is-open .mbn__blob{left:-12px;top:-6px;bottom:-6px}
 @keyframes mbnBlobWobble{
   0%,100%{border-radius:48% 52% 46% 54% / 62% 48% 52% 38%}
   33%{border-radius:55% 45% 52% 48% / 45% 60% 40% 58%}

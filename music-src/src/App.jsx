@@ -51,7 +51,7 @@ function useFrameTv(controlsRef, boxRef) {
     const aspect = size.width / size.height
     const fitH = s.y / 2 / Math.tan(MathUtils.degToRad(camera.fov / 2))
     const fitW = s.x / 2 / Math.tan(MathUtils.degToRad(camera.fov / 2)) / aspect
-    const dist = Math.max(fitH, fitW) * (aspect < 1 ? 1.55 : 1.75) + s.z / 2
+    const dist = Math.max(fitH, fitW) * (aspect < 1 ? 1.62 : 1.9) + s.z / 2
     // phones: the remote fills the bottom of the screen, so the TV sits in the top part
     const visH = 2 * dist * Math.tan(MathUtils.degToRad(camera.fov / 2))
     const dy = aspect < 1 ? visH * 0.17 : 0
@@ -61,12 +61,15 @@ function useFrameTv(controlsRef, boxRef) {
     ctrl.minDistance = 0; ctrl.maxDistance = Infinity
     // looking down on the TV a little, from above (like standing over it), so the floor and the ashtray read
     const el = MathUtils.degToRad(aspect < 1 ? 34 : 20)
-    const ty = c.y - dy - s.y * (aspect < 1 ? 0.08 : 0.2)   // desktop: aim a bit low, so the ashtray in front shows
-    ctrl.setLookAt(c.x, ty + dist * Math.sin(el), c.z + dist * Math.cos(el), c.x, ty, c.z, false)
-    // a little side-to-side tilt only: no up/down, no zoom
+    // orbit around a point low and in front of the TV (between it and the ashtray), so tilting keeps both in frame
+    const ty = c.y - dy - s.y * (aspect < 1 ? 0.16 : 0.34), tz = c.z + s.z * 0.55
+    ctrl.setLookAt(c.x, ty + dist * Math.sin(el), tz + dist * Math.cos(el), c.x, ty, tz, false)
+    // drag: a little side to side. Scroll (wheel) or a vertical swipe: tilt between more level and more
+    // overhead. No zoom.
     ctrl.minAzimuthAngle = ctrl.azimuthAngle - MathUtils.degToRad(12)
     ctrl.maxAzimuthAngle = ctrl.azimuthAngle + MathUtils.degToRad(12)
-    ctrl.minPolarAngle = ctrl.maxPolarAngle = ctrl.polarAngle
+    ctrl.minPolarAngle = MathUtils.degToRad(90 - (aspect < 1 ? 58 : 48))   // most overhead
+    ctrl.maxPolarAngle = MathUtils.degToRad(90 - 6)                        // most level
     ctrl.minDistance = ctrl.maxDistance = ctrl.distance
   }, [camera, size, controlsRef, boxRef])
 }
@@ -121,6 +124,18 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // scroll wheel tilts the view up/down (CameraControls clamps it to the limits set in useFrameTv)
+  useEffect(() => {
+    const onWheel = (e) => {
+      const ctrl = controlsRef.current
+      if (!ctrl) return
+      e.preventDefault()
+      ctrl.rotate(0, MathUtils.clamp(e.deltaY, -120, 120) * 0.0016, true)
+    }
+    window.addEventListener('wheel', onWheel, { passive: false })
+    return () => window.removeEventListener('wheel', onWheel)
   }, [])
 
   // switch the TV on once it has crash-landed (muted, so the browser allows it); the leaf intro plays first

@@ -9,7 +9,7 @@
   var bands = [].slice.call(document.querySelectorAll('.band[data-goo]'));
   if (!bands.length) return;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var COUNT = 128;   // the original's bubble count (full width)
+  var COUNT = 128;   // the original's bubble count, for a full-width (1440px) band; fewer on narrower screens, same density
   var NS = 'http://www.w3.org/2000/svg';
   var svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('aria-hidden', 'true');
@@ -18,6 +18,7 @@
 
   // the original's sizes are in rem against a full-height page; scaled to the first (top) band, used for all
   function unit() { return bands[0].getBoundingClientRect().height / 240 * 16; }   // px per original rem
+  function count() { return Math.max(32, Math.min(COUNT, Math.round(COUNT * (innerWidth / unit()) / (1440 / 8)))); }
 
   var all = [];   // every band's state
   var TILE = 500;   // the band's leaf tile size (background: center/500px)
@@ -28,7 +29,8 @@
       var id = 'mbGoo' + n + (top ? 't' : 'b');
       var f = document.createElementNS(NS, 'filter');
       f.setAttribute('id', id);
-      ['x', '-10%', 'y', '-60%', 'width', '120%', 'height', '220%', 'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
+      ['x', '0', 'y', '-10%', 'width', '100%', 'height', '125%',   // just the layer: less to filter each frame
+        'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
       // the bottom layer is turned upside down, so it takes an upside-down copy of the pattern (reads right way up)
       var img = top ? 'leaf-pattern.webp?v=1' : 'leaf-pattern-flip.webp?v=1';
       f.innerHTML = '<feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>' +
@@ -46,7 +48,7 @@
       el.setAttribute('aria-hidden', 'true');
       el.style.filter = 'url(#' + id + ')';
       var html = '<div class="goo-strip"></div><div class="goo-cursor"></div>';
-      for (var i = 0; i < COUNT; i++) {
+      for (var i = 0, k = count(); i < k; i++) {
         html += '<div class="goo-bubble" style="--size:' + (2 + Math.random() * 4).toFixed(2) + ';--distance:' + (6 + Math.random() * 4).toFixed(2) +
           ';--position:' + (-5 + Math.random() * 110).toFixed(1) + '%;--time:' + (2 + Math.random() * 2).toFixed(2) + 's;--delay:' + (-1 * (2 + Math.random() * 2)).toFixed(2) + 's"></div>';
       }
@@ -109,11 +111,10 @@
     all.forEach(function (b) {
       if (!b.visible) return;
       b.edges.forEach(function (e) {
+        if (e.target === 0 && e.r < 0.2) { if (e.r) { e.r = 0; e.cur.style.transform = 'scale(0)'; } return; }   // idle: no work
         e.sx += (e.x - e.sx) * 0.15; e.sd += (e.d - e.sd) * 0.15; e.r += (e.target - e.r) * 0.12;
-        var c = e.cur.style;
-        c.width = c.height = (2 * e.r).toFixed(1) + 'px';
-        c.left = e.sx.toFixed(1) + 'px';
-        c.bottom = e.sd.toFixed(1) + 'px';
+        // transform only (no layout): centred on (sx, sd up from the edge), 2r across
+        e.cur.style.transform = 'translate(' + (e.sx - 50).toFixed(1) + 'px,' + (50 - e.sd).toFixed(1) + 'px) scale(' + (e.r / 50).toFixed(3) + ')';
       });
     });
     raf = requestAnimationFrame(tick);
@@ -121,7 +122,7 @@
   function sync() {
     var any = false;
     all.forEach(function (b) {
-      var on = b.visible && !document.hidden && !reduce;
+      var on = b.visible && !document.hidden && !reduce && !scrolling;   // frozen while scrolling: smooth scroll
       b.band.classList.toggle('goo-paused', !on); if (on) any = true;
     });
     if (any && !running) { running = true; raf = requestAnimationFrame(tick); }
@@ -138,5 +139,10 @@
     all.forEach(function (b) { io.observe(b.band); });
   }
   document.addEventListener('visibilitychange', sync);
+  var scrolling = false, still = 0;
+  addEventListener('scroll', function () {
+    if (!scrolling) { scrolling = true; sync(); }
+    clearTimeout(still); still = setTimeout(function () { scrolling = false; sync(); }, 160);
+  }, { passive: true });
   sync();
 })();

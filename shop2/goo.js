@@ -28,8 +28,7 @@
       var id = 'mbGoo' + n + (top ? 't' : 'b');
       var f = document.createElementNS(NS, 'filter');
       f.setAttribute('id', id);
-      ['x', '0', 'y', '-10%', 'width', '100%', 'height', '125%',   // just the layer: less to filter each frame
-        'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
+      ['x', '-10%', 'y', '-60%', 'width', '120%', 'height', '220%', 'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
       // the bottom layer is turned upside down, so it takes an upside-down copy of the pattern (reads right way up)
       var img = top ? 'leaf-pattern.webp?v=1' : 'leaf-pattern-flip.webp?v=1';
       f.innerHTML = '<feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>' +
@@ -110,10 +109,11 @@
     all.forEach(function (b) {
       if (!b.visible) return;
       b.edges.forEach(function (e) {
-        if (e.target === 0 && e.r < 0.2) { if (e.r) { e.r = 0; e.cur.style.transform = 'scale(0)'; } return; }   // idle: no work
         e.sx += (e.x - e.sx) * 0.15; e.sd += (e.d - e.sd) * 0.15; e.r += (e.target - e.r) * 0.12;
-        // transform only (no layout): centred on (sx, sd up from the edge), 2r across
-        e.cur.style.transform = 'translate(' + (e.sx - 50).toFixed(1) + 'px,' + (50 - e.sd).toFixed(1) + 'px) scale(' + (e.r / 50).toFixed(3) + ')';
+        var c = e.cur.style;
+        c.width = c.height = (2 * e.r).toFixed(1) + 'px';
+        c.left = e.sx.toFixed(1) + 'px';
+        c.bottom = e.sd.toFixed(1) + 'px';
       });
     });
     raf = requestAnimationFrame(tick);
@@ -121,7 +121,7 @@
   function sync() {
     var any = false;
     all.forEach(function (b) {
-      var on = b.visible && !document.hidden && !reduce && !scrolling;   // frozen while scrolling: smooth scroll
+      var on = b.visible && !document.hidden && !reduce;
       b.band.classList.toggle('goo-paused', !on); if (on) any = true;
     });
     if (any && !running) { running = true; raf = requestAnimationFrame(tick); }
@@ -138,10 +138,8 @@
     all.forEach(function (b) { io.observe(b.band); });
   }
   document.addEventListener('visibilitychange', sync);
-  var scrolling = false, still = 0;
-  addEventListener('scroll', function () {
-    if (!scrolling) { scrolling = true; sync(); }
-    clearTimeout(still); still = setTimeout(function () { scrolling = false; sync(); }, 160);
-  }, { passive: true });
+  var head = document.querySelector('.top');
+  function clear() { if (head) head.classList.toggle('is-clear', (window.scrollY || document.documentElement.scrollTop) < 2); }
+  addEventListener('scroll', clear, { passive: true }); clear();
   sync();
 })();

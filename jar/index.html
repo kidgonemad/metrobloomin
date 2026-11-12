@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro Bloomin — Jar (test)</title>
+<link rel="icon" href="../favicon.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#050103;min-height:100%}
+/* the jar container: drop .mb-jar anywhere and call MBJar.mount on it */
+.mb-jar{position:relative;width:100vw;height:150vw;max-height:100svh;margin:0 auto;overflow:hidden}
+@media (min-width:761px){.mb-jar{width:560px;height:840px;margin-top:40px}}
+.mb-jar canvas{display:block;width:100%;height:100%;cursor:grab}
+.mb-jar canvas:active{cursor:grabbing}
+.back{position:fixed;top:18px;left:18px;z-index:2;width:64px;height:64px;display:block}
+.back canvas{width:100%;height:100%}
+</style>
+</head>
+<body>
+<a class="back" href="../" aria-label="Back to Metro Bloomin"><canvas width="384" height="384"></canvas></a>
+<div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
+<script type="module">
+import { mount } from './jar.js?v=1'
+mount(document.getElementById('jar'))
+// header leaf: the site's stacked-alpha still (colour on top, mask below) painted into the canvas
+const im = new Image(); im.onload = () => {
+  const cv = document.querySelector('.back canvas'), g = cv.getContext('2d'), t = document.createElement('canvas'); t.width = 384; t.height = 768
+  const tx = t.getContext('2d'); tx.drawImage(im, 0, 0, 384, 768)
+  const c = tx.getImageData(0, 0, 384, 384), m = tx.getImageData(0, 384, 384, 384).data
+  for (let k = 3; k < c.data.length; k += 4) c.data[k] = m[k - 3]
+  g.putImageData(c, 0, 0)
+}; im.src = '../shop/bg/leaf.webp'
+</script>
+</body>
+</html>

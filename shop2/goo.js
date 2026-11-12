@@ -9,7 +9,7 @@
   var bands = [].slice.call(document.querySelectorAll('.band[data-goo]'));
   if (!bands.length) return;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var COUNT = 128;   // the original's bubble count, for a full-width (1440px) band; fewer on narrower screens, same density
+  var COUNT = 128;   // the original's bubble count
   var NS = 'http://www.w3.org/2000/svg';
   var svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('aria-hidden', 'true');
@@ -18,7 +18,6 @@
 
   // the original's sizes are in rem against a full-height page; scaled to the first (top) band, used for all
   function unit() { return bands[0].getBoundingClientRect().height / 240 * 16; }   // px per original rem
-  function count() { return Math.max(32, Math.min(COUNT, Math.round(COUNT * (innerWidth / unit()) / (1440 / 8)))); }
 
   var all = [];   // every band's state
   var TILE = 500;   // the band's leaf tile size (background: center/500px)
@@ -48,7 +47,7 @@
       el.setAttribute('aria-hidden', 'true');
       el.style.filter = 'url(#' + id + ')';
       var html = '<div class="goo-strip"></div><div class="goo-cursor"></div>';
-      for (var i = 0, k = count(); i < k; i++) {
+      for (var i = 0; i < COUNT; i++) {
         html += '<div class="goo-bubble" style="--size:' + (2 + Math.random() * 4).toFixed(2) + ';--distance:' + (6 + Math.random() * 4).toFixed(2) +
           ';--position:' + (-5 + Math.random() * 110).toFixed(1) + '%;--time:' + (2 + Math.random() * 2).toFixed(2) + 's;--delay:' + (-1 * (2 + Math.random() * 2)).toFixed(2) + 's"></div>';
       }

@@ -1,6 +1,6 @@
 import { Suspense, useRef, useState, useCallback, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { CameraControls, Environment, Lightformer } from '@react-three/drei'
+import { CameraControls, Environment } from '@react-three/drei'
 import { Box3, Vector3, MathUtils } from 'three'
 import Model from './Model'
 import RemoteHud from './RemoteHud'
@@ -8,22 +8,17 @@ import CrashIn from './CrashIn'
 import useChannelStore from './store'
 import './App.css'
 
-// Lights: the six soft light panels the Shopify Editions TV is lit with, at their exact
-// positions (no network-loaded HDR). Only their direction matters: they are baked into
-// the reflection map, which is seen from the scene's centre.
+// Lights: lucki's SceneLights at its default values, and its <Environment preset="studio" />.
+// The studio HDR is the same file drei's preset loads, bundled here (hdri/) instead of fetched from a CDN.
+const mobile = () => window.innerWidth / window.innerHeight < 1
 function SceneLights() {
-  const panel = (intensity, scale, position, target) => (
-    <Lightformer form="rect" color="#e8eefd" intensity={intensity} scale={scale} position={position} target={target} />
-  )
   return (
-    <Environment resolution={256}>
-      {panel(2.8, [4, 1.5], [-5, 0, 5], [5, 0, 0])}
-      {panel(2.8, [4, 2.5], [5, 0, 5], [-5, 0, 0])}
-      {panel(6.5, [4, 4], [-1, 4, 5], [0, 0, 0])}
-      {panel(6.5, [4, 4], [0, -5, 5], [0, 0, 0])}
-      {panel(3, [8, 2.5], [0, 0, 5], [0, 0, 0])}
-      {panel(6.5, [2, 4.5], [-0.5, -2, 5], [0, 0, 0])}
-    </Environment>
+    <>
+      <ambientLight intensity={0.3} />
+      <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow={!mobile()} shadow-mapSize={[512, 512]} />
+      <directionalLight position={[-3, 4, -5]} intensity={0.5} />
+      <Environment files={import.meta.env.BASE_URL + 'hdri/studio_small_03_1k.hdr'} />
+    </>
   )
 }
 
@@ -113,7 +108,8 @@ export default function App() {
 
   return (
     <div id="canvas-container">
-      <Canvas camera={{ position: [0, 0, 10], fov: 35 }} gl={{ antialias: true, toneMapping: 3 }} dpr={[1, 2]}>
+      <Canvas camera={{ position: [0, 0, 10], fov: 35 }} shadows={!mobile()} dpr={mobile() ? [1, 1.5] : [1, 2]}
+        gl={{ antialias: !mobile(), toneMapping: 3 }}>
         <color attach="background" args={['#ebebe8']} />
         <Suspense fallback={null}>
           <Rig controlsRef={controlsRef} onReady={() => setLoaded(true)} onLanded={() => setLanded(true)} />

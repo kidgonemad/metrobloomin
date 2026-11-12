@@ -29,27 +29,6 @@ function shadowTexture() {
 
 const qa = new Quaternion(), qb = new Quaternion()
 
-// The TV turns a little toward the mouse, like the Shopify TV: up to 0.15 rad either way,
-// on a soft spring (their tension 55, friction 40, mass 1).
-function MouseTurn({ children }) {
-  const g = useRef()
-  const target = useRef(0)
-  const v = useRef(0)
-  useEffect(() => {
-    const move = (e) => { target.current = (e.clientX / window.innerWidth * 2 - 1) * 0.15 }
-    window.addEventListener('mousemove', move)
-    return () => window.removeEventListener('mousemove', move)
-  }, [])
-  useFrame((_, delta) => {
-    if (!g.current) return
-    const dt = Math.min(delta, 1 / 30)
-    const x = g.current.rotation.y
-    v.current += (55 * (target.current - x) - 40 * v.current) * dt
-    g.current.rotation.y = x + v.current * dt
-  })
-  return <group ref={g}>{children}</group>
-}
-
 export default function CrashIn({ rest, onLanded, children }) {
   const outer = useRef()
   const shadow = useRef()
@@ -96,9 +75,7 @@ export default function CrashIn({ rest, onLanded, children }) {
     <>
       {/* pivot on the TV's base: outer sits there, inner moves the model back so nothing jumps */}
       <group ref={outer} visible={!!rest}>
-        <MouseTurn>
-          <group position={[-base[0], -base[1], -base[2]]}>{children}</group>
-        </MouseTurn>
+        <group position={[-base[0], -base[1], -base[2]]}>{children}</group>
       </group>
       {rest && (
         <mesh ref={shadow} renderOrder={-1}>

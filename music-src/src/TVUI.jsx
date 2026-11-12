@@ -7,6 +7,8 @@ const FONT_URL = `${import.meta.env.BASE_URL}tv-ui-assets/fonts/retro-tv-font.ot
 const UI_COLOR = '#FFFFFF'
 
 const textMaterial = new MeshBasicMaterial({ color: UI_COLOR, toneMapped: false })
+// the channel number (001) in the site's green
+const channelMaterial = new MeshBasicMaterial({ color: '#78b04a', toneMapped: false })
 
 const textProps = {
   font: FONT_URL,
@@ -47,6 +49,8 @@ function ChannelNumber({ timeout = 2 }) {
   return (
     <Text
       {...textProps}
+      material={channelMaterial}
+      color="#78b04a"
       textAlign="right"
       anchorX="right"
       maxWidth={3}

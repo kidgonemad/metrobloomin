@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useEffect, useRef } from 'react'
-import { VideoTexture, SRGBColorSpace, LinearFilter, Color } from 'three'
+import { VideoTexture, SRGBColorSpace, LinearFilter, Color, MeshStandardMaterial } from 'three'
 import TvScreenMaterial from './TvScreenMaterial'
 import useChannelStore from './store'
 import TVUI from './TVUI'
@@ -13,6 +13,11 @@ const BASE = import.meta.env.BASE_URL
 const DRACO = BASE + 'draco/'   // local decoder (drei would otherwise fetch it from Google's CDN)
 const GLB_URL = BASE + 'assets/tv-optimized.glb'
 useGLTF.preload(GLB_URL, DRACO)
+
+// The picture is the screen's own light, like a real CRT: almost all glow, very little lit
+// surface. Light falling on it only greys the video out.
+const SCREEN_GLOW = 1.0
+const SCREEN_LIT = 0.06
 
 export default function Model({ onReady, ...props }) {
   const { scene } = useGLTF(GLB_URL, DRACO)
@@ -37,12 +42,18 @@ export default function Model({ onReady, ...props }) {
     return found
   }, [scene])
 
-  // Tint the white TV casing materials to black
+  // Tint the white TV casing materials charcoal
   useMemo(() => {
     const blackMats = new Set(['TVfront', 'Electronics plastic', 'White'])
     scene.traverse((child) => {
-      if (child.isMesh && child.material && blackMats.has(child.material.name)) child.material.color = new Color(0x000000)
+      if (child.isMesh && child.material && blackMats.has(child.material.name)) child.material.color = new Color(0x3a3a3a)   // charcoal
     })
+    // The Panasonic badge (3D lettering, mesh "defaultMaterial.008") shares the front's material,
+    // so it took the body colour and vanished into it. It gets its own silver finish.
+    const badge = scene.getObjectByName('defaultMaterial008')   // three.js drops the '.' from glTF names
+    if (badge && badge.isMesh) {
+      badge.material = new MeshStandardMaterial({ name: 'PanasonicBadge', color: 0xd8d8d8, metalness: 1, roughness: 0.3 })
+    }
   }, [scene])
 
   useEffect(() => { if (onReady) onReady(scene) }, [])
@@ -73,10 +84,12 @@ export default function Model({ onReady, ...props }) {
       map: videoTexture,
       emissiveMap: videoTexture,
       emissive: '#ffffff',
-      emissiveIntensity: 0.5,
+      emissiveIntensity: SCREEN_GLOW,
       roughness: 0.4,
       metalness: 0.0,
+      envMapIntensity: 0.02,   // a hint of the room on the glass; more greys the picture out
     })
+    crtMat.toneMapped = false  // the picture keeps the video's own colours
     materialRef.current = crtMat
     screenMesh.material = crtMat
 
@@ -115,8 +128,8 @@ export default function Model({ onReady, ...props }) {
       clearTimers()
       crtMat.power = 0
       powerTargetRef.current = 1
-      crtMat.color.setScalar(1.0)
-      crtMat.emissiveIntensity = 0.5
+      crtMat.color.setScalar(SCREEN_LIT)
+      crtMat.emissiveIntensity = SCREEN_GLOW
       crtMat.noSignal = 1.0
       crtMat.staticAmount = 0.04
       setScreenTexture(videoTexture, true)
@@ -132,8 +145,8 @@ export default function Model({ onReady, ...props }) {
     function enterChannelsMode() {
       if (!mounted) return
       clearTimers()
-      crtMat.color.setScalar(1.0)
-      crtMat.emissiveIntensity = 0.5
+      crtMat.color.setScalar(SCREEN_LIT)
+      crtMat.emissiveIntensity = SCREEN_GLOW
       useChannelStore.setState({ phase: 'channels', buffering: false })
       setScreenTexture(videoTexture, true)
       video.loop = false

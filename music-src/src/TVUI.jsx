@@ -4,11 +4,9 @@ import { MeshBasicMaterial, LinearFilter } from 'three'
 import useChannelStore from './store'
 
 const FONT_URL = `${import.meta.env.BASE_URL}tv-ui-assets/fonts/retro-tv-font.otf`
-const UI_COLOR = '#FFFFFF'
+const UI_COLOR = '#78b04a'   // all TV UI (channel number, volume) in the site green
 
 const textMaterial = new MeshBasicMaterial({ color: UI_COLOR, toneMapped: false })
-// the channel number (001) in the site's green
-const channelMaterial = new MeshBasicMaterial({ color: '#78b04a', toneMapped: false })
 
 const textProps = {
   font: FONT_URL,
@@ -49,8 +47,6 @@ function ChannelNumber({ timeout = 2 }) {
   return (
     <Text
       {...textProps}
-      material={channelMaterial}
-      color="#78b04a"
       textAlign="right"
       anchorX="right"
       maxWidth={3}

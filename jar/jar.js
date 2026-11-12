@@ -197,6 +197,7 @@ export function mount(box) {
     camera.lookAt(look)
     // logo fades in after the pull-back
     logo.material.opacity = Math.min(1, Math.max(0, (t - 3.4) / 1.2))
+      * (1 - THREE.MathUtils.clamp((tilt - 0.15) / 0.35, 0, 1))   // fades when you tilt overhead (it would sit on the lid)
     logo.lookAt(camera.position)
     // turn: idle spin plus drag momentum
     if (!dragging) { spinV *= Math.pow(0.04, dt); jar.rotation.y += (reduce ? 0 : 0.63) * dt + spinV * dt }
@@ -213,7 +214,7 @@ export function mount(box) {
     const lp = THREE.MathUtils.clamp(clock / LID_S, 0, 1)
     const u1 = easeInOut(THREE.MathUtils.clamp(lp / 0.4, 0, 1)), u2 = easeInOut(THREE.MathUtils.clamp((lp - 0.3) / 0.7, 0, 1))
     const yaw = jar.rotation.y
-    tmpA.set(0, 0.62, -0.62).applyAxisAngle(up, -yaw)      // world "up and behind", in the jar's turning frame
+    tmpA.set(0, 0.7, -0.78).applyAxisAngle(up, -yaw)      // world "up and behind", in the jar's turning frame
     lid.position.set(tmpA.x * u2, BODY_H + 0.04 + 0.07 * u1 + tmpA.y * u2 + 0.025 * Math.sin(t * 1.6) * u2, tmpA.z * u2)
     lid.rotation.order = 'YXZ'
     lid.rotation.set(0.62 * u2, -1.9 * u1 * (1 - u2) - yaw * u2, 0.06 * Math.sin(t * 1.2) * u2)
@@ -231,9 +232,17 @@ export function mount(box) {
       if (bp < 0.12) kick += 1 - bp / 0.12                 // the jar dips a touch as each one pops
       const home = tmpA.copy(b.home).applyMatrix4(jar.matrixWorld)
       const hov = tmpD.copy(b.hover).add(tmpC.set(0.02 * Math.sin(t * 0.9 + b.ph), 0.05 * Math.sin(t * 1.3 + b.ph), 0.02 * Math.cos(t * 0.8 + b.ph)))
-      const c1 = mouth.clone().add(tmpC.set(0, 0.75, 0.4))                            // up out of the jar and toward you (the lid is up and behind)
-      const c2 = hov.clone().add(tmpC.set(0, 0.55, 0))                                // come down onto the spot
-      bez(b.obj.position, home, c1, c2, hov, u)
+      // 1) straight up out of the opening until clear of the rim, 2) outward, away from the jar, then down onto
+      // the spot. (A single curve cut forward through the jar's wall while the bud was still inside.)
+      const above = mouth.clone().add(tmpC.set(0, 0.42, 0))
+      const out = tmpC.set(hov.x - mouth.x, 0, hov.z - mouth.z).normalize()
+      if (u < 0.28) b.obj.position.lerpVectors(home, above, easeInOut(u / 0.28))
+      else {
+        const v = (u - 0.28) / 0.72
+        const c1 = above.clone().addScaledVector(out, 0.7).add(new THREE.Vector3(0, 0.3, 0))
+        const c2 = hov.clone().addScaledVector(out, 0.3).add(new THREE.Vector3(0, 0.45, 0))
+        bez(b.obj.position, above, c1, c2, hov, v)
+      }
       // settle: once there, a small damped bounce
       b.settle = bp >= 1 ? (b.settle || 0) + dt : 0
       if (b.settle > 0) b.obj.position.y += 0.07 * Math.exp(-4 * b.settle) * Math.sin(11 * b.settle)

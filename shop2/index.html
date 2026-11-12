@@ -44,27 +44,25 @@ body.embed .top{padding-top:96px}
 body.embed .tabs__cart{display:block}
 
 /* green leaf band: the brand's leaf pattern, tiled */
-.band{position:relative;overflow:hidden;height:120px;--goo-color:#fff;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
-/* white goo on the band's top and bottom edges (goo.js): the Bass Victim tour page's bubble pool, in white.
-   --goo-rem is the original's rem scaled to the band (set by goo.js) */
-.goo-layer{position:absolute;top:0;left:0;right:0;bottom:calc(-1 * var(--goo-pad));pointer-events:none}   /* its goo filter is set by goo.js (one per band) */
-.goo-layer--top{top:calc(-1 * var(--goo-pad));bottom:0;transform:scaleY(-1)}   /* flipped: its pad goes past the top edge */
-/* the layer reaches --goo-pad past the band's edge, so the goo blur's soft outer edge is clipped off (no seam line) */
-.goo-strip{position:absolute;left:0;right:0;bottom:0;height:calc(var(--goo-rem) + var(--goo-pad));background:var(--goo-color)}
-.goo-bubble{position:absolute;left:var(--position);bottom:calc(var(--goo-rem) * -4 + var(--goo-pad));width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem));
-  border-radius:50%;background:var(--goo-color);transform:translate(-50%,100%)}
+.band{position:relative;z-index:1;height:120px;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
+/* green goo spilling OUT of the bands (goo.js): the Bass Victim tour page's bubble pool, in the pattern's green with
+   its dark green outline. A layer sits outside each edge listed in data-goo ("top": rises up, "bottom": hangs down),
+   clipped at the band's edge so the goo joins the band without a seam. --goo-rem, --goo-pad, --goo-out: goo.js */
+.goo-layer{position:absolute;left:0;right:0;bottom:100%;height:calc(var(--goo-rem) * 12);pointer-events:none;clip-path:inset(-60% -10% 0 -10%)}
+.goo-layer--down{bottom:auto;top:100%;transform:scaleY(-1)}
+.goo-strip{position:absolute;left:0;right:0;bottom:calc(-1 * var(--goo-pad));height:calc(var(--goo-rem) + var(--goo-pad));background:#53915a}
+.goo-bubble{position:absolute;left:var(--position);bottom:calc(var(--goo-rem) * -4);width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem));
+  border-radius:50%;background:#53915a;transform:translate(-50%,100%)}
 .goo-layer.is-on .goo-bubble{animation:gooSize var(--time) ease-in infinite var(--delay),gooMove var(--time) ease-in infinite var(--delay)}
 .band.goo-paused .goo-bubble{animation-play-state:paused}
-/* the pointer's blob (goo.js): melts into the goo like the tour page bars' mouse circle */
-.goo-cursor{position:absolute;left:0;bottom:0;width:0;height:0;border-radius:50%;background:var(--goo-color);transform:translate(-50%,50%)}
+/* the pointer's blob (goo.js): pulls the green out toward the pointer, like the tour page bars' mouse circle */
+.goo-cursor{position:absolute;left:0;bottom:0;width:0;height:0;border-radius:50%;background:#53915a;transform:translate(-50%,50%)}
 @keyframes gooSize{0%,75%{width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem))}100%{width:0;height:0}}
-@keyframes gooMove{0%{bottom:calc(var(--goo-rem) * -4 + var(--goo-pad))}100%{bottom:calc(var(--distance) * var(--goo-rem) + var(--goo-pad))}}
-.band--bottom{height:220px;margin-top:-1px;--goo-color:#e4e4e1}   /* the tiles as they show on screen (--tile under the noise texture) */
-/* the grid's tile dividers carry on down through the grey goo to wherever it ends: drawn over the band in
-   darken mode, so they show on the grey goo and vanish on the (darker) green. Placed at the measured x of
-   each real divider (syncLines below), so they line up exactly */
-.goo-lines{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:darken}
-.goo-line{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+@keyframes gooMove{0%{bottom:calc(var(--goo-rem) * -4)}100%{bottom:calc(var(--distance) * var(--goo-rem))}}
+/* room for the goo above the top band (under the tabs) and below it (above "6 products") */
+.shop > .band:first-child{margin-top:var(--goo-out)}
+.shop > .band:first-child + .bar{margin-top:var(--goo-out)}
+.band--bottom{height:220px;margin-top:-1px}
 
 /* grid */
 .bar{display:flex;justify-content:space-between;padding:8px 16px;font-size:10px;letter-spacing:.06em;border-bottom:1px solid var(--line)}
@@ -127,14 +125,14 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   <div class="band" data-goo="top bottom" aria-hidden="true"></div>
   <div class="bar"><span class="count"></span><span>Views ▦</span></div>
   <div class="grid"></div>
-  <div class="band band--bottom" data-goo="top" aria-hidden="true"><div class="goo-lines"></div></div>
+  <div class="band band--bottom" data-goo="top" aria-hidden="true"></div>
 </main>
 
 <main class="look" aria-live="polite"></main>
 
 <script>if (/[?&]embed=1/.test(location.search)) document.body.classList.add('embed');</script>
 <script src="products.js"></script>
-<script src="goo.js?v=7"></script>
+<script src="goo.js?v=9"></script>
 <script>
 // header lettering: the site's "stacked alpha" video (colour on top, alpha mask below, ../shop/bg/word-sm.mp4)
 // painted into a transparent canvas; plays the reveal once and stays. A still of the full lettering is the fallback.
@@ -187,20 +185,8 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
                 : '<div class="cell" aria-hidden="true"></div>'; }
     grid.innerHTML = html;
     document.querySelector('.count').textContent = list.length + ' products';
-    syncLines();
   }
 
-  // the bottom band's divider lines: one at the grid's left border and one at each tile's right border,
-  // measured from the last row of tiles (same x, so they continue the tile dividers exactly)
-  function syncLines() {
-    var box = document.querySelector('.band--bottom .goo-lines'), cells = grid.querySelectorAll('.cell');
-    if (!box || !cells.length) return;
-    var b = box.getBoundingClientRect(), g = grid.getBoundingClientRect(), lastTop = cells[cells.length - 1].getBoundingClientRect().top;
-    var xs = [g.left - b.left];
-    [].forEach.call(cells, function (c) { var r = c.getBoundingClientRect(); if (Math.abs(r.top - lastTop) < 1) xs.push(r.right - 1 - b.left); });
-    box.innerHTML = xs.map(function (x) { return '<i class="goo-line" style="left:' + x.toFixed(2) + 'px"></i>'; }).join('');
-  }
-  addEventListener('resize', syncLines);
 
   // ---- product page ----
   var look = document.querySelector('.look');

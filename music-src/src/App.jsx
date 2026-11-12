@@ -4,6 +4,7 @@ import { CameraControls, Environment, Lightformer } from '@react-three/drei'
 import { Box3, Vector3, MathUtils } from 'three'
 import Model from './Model'
 import RemoteHud from './RemoteHud'
+import CrashIn from './CrashIn'
 import useChannelStore from './store'
 import './App.css'
 
@@ -24,15 +25,24 @@ function SceneLights() {
   )
 }
 
+// The TV's box at rest: only the parts that are shown (the stand, VCR and strap are hidden in Model.jsx).
+// Measured once, before the drop moves it.
+function measureTv(model) {
+  let tv = null
+  model.traverse((o) => { if (o.name === 'tv') tv = o })
+  const all = new Box3()
+  model.children.forEach((part) => { if (part.visible) all.expandByObject(part) })
+  return { tv: tv ? new Box3().setFromObject(tv) : null, all }
+}
+
 // Frames the TV: camera straight in front of the screen, close enough to fill the view; orbit only sideways.
-function useFrameTv(controlsRef) {
-  const { scene, camera, size } = useThree()
+function useFrameTv(controlsRef, boxRef) {
+  const { camera, size } = useThree()
   return useCallback(() => {
     const ctrl = controlsRef.current
-    let tv = null
-    scene.traverse((o) => { if (o.name === 'tv') tv = o })
-    if (!ctrl || !tv) return
-    const box = new Box3().setFromObject(tv), c = box.getCenter(new Vector3()), s = box.getSize(new Vector3())
+    const box = boxRef.current
+    if (!ctrl || !box) return
+    const c = box.getCenter(new Vector3()), s = box.getSize(new Vector3())
     // the screen faces +Z in world space for this model (the original close-up looks down -Z at it)
     const aspect = size.width / size.height
     const fitH = s.y / 2 / Math.tan(MathUtils.degToRad(camera.fov / 2))
@@ -46,24 +56,40 @@ function useFrameTv(controlsRef) {
     ctrl.maxAzimuthAngle = ctrl.azimuthAngle + MathUtils.degToRad(25)
     ctrl.minPolarAngle = ctrl.polarAngle - MathUtils.degToRad(10)
     ctrl.maxPolarAngle = ctrl.polarAngle + MathUtils.degToRad(8)
-  }, [scene, camera, size, controlsRef])
+  }, [camera, size, controlsRef, boxRef])
 }
 
-function Rig({ controlsRef, onReady }) {
-  const frameTv = useFrameTv(controlsRef)
-  const ready = useRef(false)
-  useEffect(() => { if (ready.current) frameTv() }, [frameTv])   // re-frame on resize
+function Rig({ controlsRef, onReady, onLanded }) {
+  const boxRef = useRef(null)
+  const frameTv = useFrameTv(controlsRef, boxRef)
+  const [rest, setRest] = useState(null)
+  useEffect(() => { frameTv() }, [frameTv])   // re-frame on resize
+  // camera shake on impact: the whole view jolts (CSS, so it never fights the camera controls)
+  const shake = () => {
+    const el = document.getElementById('canvas-container')
+    if (!el) return
+    el.classList.remove('is-shaking'); void el.offsetWidth; el.classList.add('is-shaking')
+  }
   return (
-    <Model onReady={() => {
-      ready.current = true
-      requestAnimationFrame(() => { frameTv(); onReady() })
-    }} />
+    <CrashIn rest={rest} onImpact={shake} onLanded={onLanded}>
+      <Model onReady={(model) => {
+        requestAnimationFrame(() => {
+          const m = measureTv(model)
+          boxRef.current = m.tv
+          frameTv()
+          const c = m.all.getCenter(new Vector3()), s = m.all.getSize(new Vector3())
+          setRest({ base: [c.x, m.all.min.y, c.z], size: [s.x, s.y, s.z] })
+          onReady()
+        })
+      }} />
+    </CrashIn>
   )
 }
 
 export default function App() {
   const controlsRef = useRef()
   const [loaded, setLoaded] = useState(false)
+  const [landed, setLanded] = useState(false)
 
   // Keyboard, same keys as the original lucki-tv
   useEffect(() => {
@@ -83,20 +109,20 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // switch the TV on once it has loaded (muted, so the browser allows it); the leaf intro plays first
-  useEffect(() => { if (loaded) { const t = setTimeout(() => { if (!useChannelStore.getState().tvOn) useChannelStore.getState().togglePower() }, 500); return () => clearTimeout(t) } }, [loaded])
+  // switch the TV on once it has crash-landed (muted, so the browser allows it); the leaf intro plays first
+  useEffect(() => { if (landed) { const t = setTimeout(() => { if (!useChannelStore.getState().tvOn) useChannelStore.getState().togglePower() }, 300); return () => clearTimeout(t) } }, [landed])
 
   return (
     <div id="canvas-container">
       <Canvas camera={{ position: [0, 0, 10], fov: 35 }} gl={{ antialias: true, toneMapping: 3 }} dpr={[1, 2]}>
         <SceneLights />
         <Suspense fallback={null}>
-          <Rig controlsRef={controlsRef} onReady={() => setLoaded(true)} />
+          <Rig controlsRef={controlsRef} onReady={() => setLoaded(true)} onLanded={() => setLanded(true)} />
         </Suspense>
         <CameraControls ref={controlsRef} makeDefault smoothTime={0.35} draggingSmoothTime={0.15}
           mouseButtons={{ left: 1, middle: 0, right: 0, wheel: 0 }} touches={{ one: 32, two: 0, three: 0 }} />
-        {/* lucki's three.js remote, held in front of the camera (bottom right) */}
-        {loaded && <RemoteHud />}
+        {/* lucki's three.js remote, held in front of the camera (bottom right); rises in after the TV lands */}
+        {landed && <RemoteHud />}
       </Canvas>
       {!loaded && <div className="loading">LOADING</div>}
     </div>

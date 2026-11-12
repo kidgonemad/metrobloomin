@@ -45,7 +45,7 @@ export default function Model({ onReady, ...props }) {
     })
   }, [scene])
 
-  useEffect(() => { if (onReady) onReady() }, [])
+  useEffect(() => { if (onReady) onReady(scene) }, [])
 
   useEffect(() => {
     if (!screenMesh) return

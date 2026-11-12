@@ -1,15 +1,14 @@
 // White goo on the green leaf band: the bubble pool from the Bass Victim tour page (kidgonemad/BASS-VICTIM,
-// components/PageUp.tsx), as is: a 1rem strip on the edge plus 128 round bubbles (2-6rem, rising 6-10rem
-// over 2-4 s, ease-in, shrinking to nothing at the end), all melted together by an SVG goo filter
-// (blur 10, alpha 19 / -9). It fades in when the pointer comes near the edge and fades out when it leaves.
-// Here: white, on both the band's top edge (hanging down) and bottom edge (rising), sized to the band.
-// It also surges in for ~2.4 s when the shop opens (MBGoo.splash(), called by the site), and on a tap
-// near an edge (phones have no hover).
+// components/PageUp.tsx): a 1rem strip on the edge plus 128 round bubbles (2-6rem, rising 6-10rem over 2-4 s,
+// ease-in, shrinking to nothing at the end), all melted together by an SVG goo filter (blur 10, alpha 19 / -9).
+// Here: white, on both the band's top edge (hanging down) and bottom edge (rising), sized to the band, and
+// always playing. Interactive like the tour page's bars: a blob follows the pointer (mouse or finger) near an
+// edge, grows as it gets closer and melts into the goo. Paused while the band is off screen or the tab hidden.
 (function () {
   var band = document.querySelector('.band');
   if (!band) return;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var COUNT = 128, THRESHOLD = 150;   // the original's bubble count (full width) and hover range (px)
+  var COUNT = 128;   // the original's bubble count (full width)
 
   // the original's sizes are in rem against a full-height page; scale them to the band
   function unit() { return band.getBoundingClientRect().height / 240 * 16; }   // px per original rem
@@ -30,7 +29,7 @@
     var el = document.createElement('div');
     el.className = 'goo-layer' + (top ? ' goo-layer--top' : '');
     el.setAttribute('aria-hidden', 'true');
-    var html = '<div class="goo-strip"></div>';
+    var html = '<div class="goo-strip"></div><div class="goo-cursor"></div>';
     for (var i = 0; i < COUNT; i++) {
       var t = 2 + Math.random() * 2;
       html += '<div class="goo-bubble" style="--size:' + (2 + Math.random() * 4).toFixed(2) + ';--distance:' + (6 + Math.random() * 4).toFixed(2) +
@@ -38,7 +37,7 @@
     }
     el.innerHTML = html;
     band.appendChild(el);
-    return { el: el, top: top, hover: 0, splashUntil: 0, on: false };
+    return { el: el, top: top, cur: el.querySelector('.goo-cursor'), x: 0, d: 0, sx: 0, sd: 0, r: 0, target: 0 };
   }
   var edges = [layer(true), layer(false)];
 
@@ -49,51 +48,50 @@
     band.style.setProperty('--goo-pad', Math.ceil(2 * 10 * u / 16) + 'px');   // 2 x the blur: past the edge
   }
 
-  function apply(e) {
-    var now = performance.now(), splash = now < e.splashUntil ? 1 : 0;
-    var k = Math.max(e.hover, splash);
-    e.el.style.opacity = k.toFixed(3);
-    var run = k > 0.2 && !reduce;          // like the original: bubbles only move while it's showing
-    if (run === e.on) return;
-    e.on = run; clearTimeout(e.stopT);
-    if (run) e.el.classList.add('is-on');
-    else e.stopT = setTimeout(function () { if (!e.on) e.el.classList.remove('is-on'); }, 350);   // after the .3s fade
-  }
-
-  // pointer near an edge (within the original's 150 px, measured from that edge of the band)
-  function near(ev) {
-    var r = band.getBoundingClientRect();
-    if (ev.clientX < r.left || ev.clientX > r.right) { edges.forEach(function (e) { e.hover = 0; apply(e); }); return; }
+  // pointer: like the tour page bars' mouse circle, it grows with how close the pointer is to the edge
+  var RANGE = 0.95;                                        // reach, in band heights from the edge
+  function track(ev) {
+    var r = band.getBoundingClientRect(), H = r.height, inX = ev.clientX >= r.left && ev.clientX <= r.right;
     edges.forEach(function (e) {
-      var d = e.top ? Math.abs(ev.clientY - r.top) : Math.abs(r.bottom - ev.clientY);
-      e.hover = d < THRESHOLD ? 1 - d / THRESHOLD : 0;
-      apply(e);
+      var d = e.top ? ev.clientY - r.top : r.bottom - ev.clientY;   // distance in from this edge
+      e.x = ev.clientX - r.left; e.d = Math.max(0, d);
+      var prox = inX && d > -H * 0.5 && d < H * RANGE ? 1 - Math.max(0, d) / (H * RANGE) : 0;
+      e.target = prox * H * 0.36;                          // blob radius (px)
     });
   }
-  window.addEventListener('mousemove', near, { passive: true });
-  document.addEventListener('mouseleave', function () { edges.forEach(function (e) { e.hover = 0; apply(e); }); });
+  function release() { edges.forEach(function (e) { e.target = 0; }); }
+  window.addEventListener('pointermove', track, { passive: true });
+  window.addEventListener('pointerdown', track, { passive: true });
+  window.addEventListener('pointerup', function (ev) { if (ev.pointerType !== 'mouse') release(); }, { passive: true });
+  window.addEventListener('pointercancel', release, { passive: true });
+  document.addEventListener('mouseleave', release);
 
-  // a tap near an edge surges that edge for a moment
-  window.addEventListener('pointerdown', function (ev) {
-    if (ev.pointerType === 'mouse') return;
-    var r = band.getBoundingClientRect();
-    if (ev.clientX < r.left || ev.clientX > r.right) return;
+  // follow smoothly (the original's 0.15 / 0.12 easing per frame)
+  var raf = 0, running = false;
+  function tick() {
     edges.forEach(function (e) {
-      var d = e.top ? Math.abs(ev.clientY - r.top) : Math.abs(r.bottom - ev.clientY);
-      if (d < THRESHOLD) surge(e, 1600);
+      e.sx += (e.x - e.sx) * 0.15; e.sd += (e.d - e.sd) * 0.15; e.r += (e.target - e.r) * 0.12;
+      var c = e.cur.style;
+      c.width = c.height = (2 * e.r).toFixed(1) + 'px';
+      c.left = e.sx.toFixed(1) + 'px';
+      c.bottom = 'calc(var(--goo-pad) + ' + e.sd.toFixed(1) + 'px)';
     });
-  }, { passive: true });
-
-  function surge(e, ms) {
-    e.splashUntil = performance.now() + ms; apply(e);
-    clearTimeout(e.timer); e.timer = setTimeout(function () { apply(e); }, ms + 20);
+    raf = requestAnimationFrame(tick);
   }
 
-  window.MBGoo = { splash: function () { edges.forEach(function (e) { surge(e, 2400); }); } };
+  var visible = true;
+  function sync() {
+    var on = visible && !document.hidden && !reduce;
+    band.classList.toggle('goo-paused', !on);
+    if (on && !running) { running = true; raf = requestAnimationFrame(tick); }
+    if (!on && running) { running = false; cancelAnimationFrame(raf); }
+  }
+  edges.forEach(function (e) { e.el.classList.add('is-on'); });
+  window.MBGoo = { splash: function () {} };   // always playing now; kept so the site's call is harmless
 
   size();
   addEventListener('resize', size);
-  // the site tells the shop when its view opens (shop/shop.js), so the goo surges in every time
-  addEventListener('message', function (e) { if (e.data === 'mb-shop-open') window.MBGoo.splash(); });
-  if (!reduce) window.MBGoo.splash();
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; sync(); }).observe(band);
+  document.addEventListener('visibilitychange', sync);
+  sync();
 })();

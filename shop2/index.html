@@ -40,13 +40,16 @@ body.embed .tabs__cart{display:block}
 .band{position:relative;overflow:hidden;height:120px;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
 /* white goo on the band's top and bottom edges (goo.js): the Bass Victim tour page's bubble pool, in white.
    --goo-rem is the original's rem scaled to the band (set by goo.js) */
-.goo-layer{position:absolute;top:0;left:0;right:0;bottom:calc(-1 * var(--goo-pad));pointer-events:none;filter:url(#mbGoo);opacity:0;transition:opacity .3s ease}
+.goo-layer{position:absolute;top:0;left:0;right:0;bottom:calc(-1 * var(--goo-pad));pointer-events:none;filter:url(#mbGoo)}
 .goo-layer--top{top:calc(-1 * var(--goo-pad));bottom:0;transform:scaleY(-1)}   /* flipped: its pad goes past the top edge */
 /* the layer reaches --goo-pad past the band's edge, so the goo blur's soft outer edge is clipped off (no seam line) */
 .goo-strip{position:absolute;left:0;right:0;bottom:0;height:calc(var(--goo-rem) + var(--goo-pad));background:#fff}
 .goo-bubble{position:absolute;left:var(--position);bottom:calc(var(--goo-rem) * -4 + var(--goo-pad));width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem));
   border-radius:50%;background:#fff;transform:translate(-50%,100%)}
 .goo-layer.is-on .goo-bubble{animation:gooSize var(--time) ease-in infinite var(--delay),gooMove var(--time) ease-in infinite var(--delay)}
+.band.goo-paused .goo-bubble{animation-play-state:paused}
+/* the pointer's blob (goo.js): melts into the goo like the tour page bars' mouse circle */
+.goo-cursor{position:absolute;left:0;bottom:0;width:0;height:0;border-radius:50%;background:#fff;transform:translate(-50%,50%)}
 @keyframes gooSize{0%,75%{width:calc(var(--size) * var(--goo-rem));height:calc(var(--size) * var(--goo-rem))}100%{width:0;height:0}}
 @keyframes gooMove{0%{bottom:calc(var(--goo-rem) * -4 + var(--goo-pad))}100%{bottom:calc(var(--distance) * var(--goo-rem) + var(--goo-pad))}}
 .band--bottom{height:220px}
@@ -119,7 +122,7 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 
 <script>if (/[?&]embed=1/.test(location.search)) document.body.classList.add('embed');</script>
 <script src="products.js"></script>
-<script src="goo.js?v=5"></script>
+<script src="goo.js?v=6"></script>
 <script>
 // header lettering: the site's "stacked alpha" video (colour on top, alpha mask below, ../shop/bg/word-sm.mp4)
 // painted into a transparent canvas; plays the reveal once and stays. A still of the full lettering is the fallback.

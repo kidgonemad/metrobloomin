@@ -33,7 +33,7 @@
         '<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="blob"/>' +
         '<feColorMatrix in="blur" mode="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 19 -4.6" result="fat"/>' +   // a lower cut: the same shape, a little bigger and still round
         '<feFlood flood-color="#37582a" result="ink"/><feComposite in="ink" in2="fat" operator="in" result="line"/>' +
-        '<feFlood flood-color="#2ee05a" result="base"/>' +                       // the shop green (--green), same as the band
+        '<feFlood flood-color="#629f46" result="base"/>' +                       // the leaf mascot's green, same as the band
         '<feComposite in="base" in2="blob" operator="in" result="goo"/>' +
         '<feMerge><feMergeNode in="line"/><feMergeNode in="goo"/></feMerge>';
       svg.appendChild(f);

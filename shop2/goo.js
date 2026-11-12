@@ -69,8 +69,8 @@
     var u = unit(), root = document.documentElement.style;
     root.setProperty('--goo-rem', u + 'px');
     root.setProperty('--goo-pad', Math.ceil(2 * 10 * u / 16) + 'px');   // 2 x the blur: the strip reaches past the edge (clipped)
-    root.setProperty('--goo-out-top', Math.round(u * 8.4) + 'px');      // white room above the top band, as far as the drops go
-    root.setProperty('--goo-out-bottom', Math.round(u * 11) + 'px');    // and below it, down to just past the drips
+    root.setProperty('--goo-out-top', Math.round(u * 4) + 'px');        // white room above the top band (taller drops go under the tabs)
+    root.setProperty('--goo-out-bottom', Math.round(u * 5) + 'px');     // and below it (longer drips go behind "6 products")
     all.forEach(function (b) {
       var W = b.band.clientWidth, H = b.band.clientHeight, L = u * 12;   // L: the layer's height (CSS: 12 x --goo-rem)
       var bx = (W - TILE) / 2, by = (H - TILE) / 2;                       // where the band's centred tile starts

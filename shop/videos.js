@@ -11,7 +11,7 @@
   function open() {
     if (!frame) {
       frame = document.createElement('iframe');
-      frame.title = 'Metro Bloomin music';
+      frame.title = 'Metro Bloomin videos';
       frame.allow = 'autoplay; fullscreen';
       frame.setAttribute('allowfullscreen', '');
       frame.src = src;

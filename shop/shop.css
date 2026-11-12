@@ -79,7 +79,7 @@ body.mb-shop-open #logo,body.mb-videos-open #logo{opacity:1!important;pointer-ev
 
 /* the one menu: hidden until the 3D page has loaded, except on the shop/videos views (shown right away) */
 body:not(.mb-loaded) .mbn--site{opacity:0;pointer-events:none}
-body[data-view="shop"] .mbn--site,body[data-view="music"] .mbn--site{opacity:1;pointer-events:auto}
+body[data-view="shop"] .mbn--site,body[data-view="videos"] .mbn--site{opacity:1;pointer-events:auto}
 
 /* loading screen (loader.js): buds pile up on white, the pile falls away, then the shop products drop into place.
    html.mb-intro (set by the inline script in <head>) paints the page white from the very first frame */

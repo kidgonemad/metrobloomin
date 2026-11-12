@@ -31,7 +31,7 @@
     document.body.classList.remove('mb-scrolling');
     setShop(next === 'shop');
     if (next === 'shop' && !window.__mbLoading) splash();
-    if (window.__mbVideos) { if (next === 'music') window.__mbVideos.open(); else window.__mbVideos.close(); }
+    if (window.__mbVideos) { if (next === 'videos') window.__mbVideos.open(); else window.__mbVideos.close(); }
     document.body.setAttribute('data-view', next);
     if (nav) nav.setCurrent(next);   // the menu is inverted (tone auto) on every view
     var h = next === 'about' ? '' : '#' + next;
@@ -53,7 +53,7 @@
     nav = window.MBNav.create({
       items: [
         { label: 'shop', onClick: function () { show('shop'); } },
-        { label: 'music', onClick: function () { show('music'); } },
+        { label: 'videos', onClick: function () { show('videos'); } },
         { label: 'collabs', href: 'jar/' },
         { label: 'about', onClick: function () { show('about'); } }
       ],
@@ -133,7 +133,7 @@
     document.body.setAttribute('data-view', 'about');
     // the site opens on the shop, unless a link asks for music (#videos = old links) or about
     var h = location.hash;
-    if (h === '#music' || h === '#videos') show('music'); else if (h === '#about') show('about'); else show('shop');
+    if (h === '#videos' || h === '#music') show('videos');   // #music: old links else if (h === '#about') show('about'); else show('shop');
   }
   // wait for DOMContentLoaded so videos.js (loaded after this file) is ready
   if (document.readyState === 'complete') wire(); else document.addEventListener('DOMContentLoaded', wire);

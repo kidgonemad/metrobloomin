@@ -54,7 +54,7 @@ export default function Ashtray({ rest, landed, anchorRef }) {
     const aw = MODEL_W * scale
     return {
       scale, aw,
-      x: bx - w * 0.34, y: by, z: bz + d * 0.5 + aw * (phone ? 2.6 : 1.4),   // on the floor, in front of the TV's lower-left (nearer you)
+      x: bx - w * (phone ? 0.3 : 0.34), y: by, z: bz + d * 0.5 + aw * (phone ? 3.0 : 1.4),   // on the floor, in front of the TV's lower-left (nearer you)
       from: bx - w * 2.6,                                    // well off-screen left
     }
   }, [rest, phone])

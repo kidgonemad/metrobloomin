@@ -2,7 +2,7 @@
 // Opened and closed only by the view controller in shop.js (MBView.show).
 (function () {
   // ?v= changes with every music build, so phones don't keep an old copy of the TV page (bump it with the build)
-  var src = new URL('music/?v=15', document.baseURI).href;
+  var src = new URL('music/?v=16', document.baseURI).href;
   var wrap = document.createElement('div');
   wrap.id = 'videoView';
   wrap.className = 'mb-vlayer';

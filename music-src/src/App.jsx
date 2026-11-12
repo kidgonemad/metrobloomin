@@ -60,7 +60,7 @@ function useFrameTv(controlsRef, boxRef) {
     ctrl.minPolarAngle = 0; ctrl.maxPolarAngle = Math.PI
     ctrl.minDistance = 0; ctrl.maxDistance = Infinity
     // looking down on the TV a little, from above (like standing over it), so the floor and the ashtray read
-    const el = MathUtils.degToRad(aspect < 1 ? 26 : 20)
+    const el = MathUtils.degToRad(aspect < 1 ? 34 : 20)
     const ty = c.y - dy - s.y * (aspect < 1 ? 0.08 : 0.2)   // desktop: aim a bit low, so the ashtray in front shows
     ctrl.setLookAt(c.x, ty + dist * Math.sin(el), c.z + dist * Math.cos(el), c.x, ty, c.z, false)
     // a little side-to-side tilt only: no up/down, no zoom

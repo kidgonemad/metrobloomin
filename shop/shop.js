@@ -1,28 +1,9 @@
 // Metro Bloomin shop overlay. Products link to the live Shopify store for checkout.
 (function () {
-  var STORE = 'https://metrobloomin.com';
+  // the shop itself is shop2/ (grid, product pages, goo band), loaded into the shop view; ?embed=1 makes it
+  // leave room for the site's header (leaf + lettering, menu) instead of drawing its own
   var base = new URL('shop/', document.baseURI).href;
-  var collections = [
-    { id: 'classic', title: 'Classic', handle: 'classic', products: [
-      { name: 'Metro Bloomin Lighter', price: 8, handle: 'metro-bloomin-lighter', img: 'lighter' },
-      { name: 'Metro Bloomin Chrome Hat', price: 35, handle: 'metro-bloomin-chrome-hat', img: 'hat' },
-      { name: 'Metro Bloomin Rug', price: 250, handle: 'metro-bloomin-leaf-rug', img: 'rug' },
-      { name: 'Metro Bloomin Keychain', price: 15, handle: 'metro-bloomin-leaf-keychain', img: 'keychain' }
-    ]},
-    { id: 'qrome', title: 'QRÖME', handle: 'qrome', products: [
-      { name: 'QRÖME Hoodie', price: 100, handle: 'qrome-hoodie', img: 'hoodie' },
-      { name: 'QRÖME Tank', price: 35, handle: 'qrome-tank', img: 'tank' }
-    ]}
-  ];
-
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-
-  function card(p) {
-    return '<li class="mb-card"><a href="' + STORE + '/products/' + p.handle + '" target="_blank" rel="noopener">' +
-      '<div class="mb-card__media"><img src="' + base + 'img/cut/' + p.img + '-1.webp" alt="' + esc(p.name) + '" loading="lazy" width="640" height="640">' +
-      '<img src="' + base + 'img/cut/' + p.img + '-2.webp" alt="" aria-hidden="true" loading="lazy" width="640" height="640"><svg class="mb-card__blob" viewBox="0 0 100 100" aria-hidden="true"><path/></svg></div>' +
-            '</a></li>';
-  }
+  var SHOP_SRC = new URL('shop2/?embed=1&v=2', document.baseURI).href;
 
   var el = document.createElement('section');
   el.id = 'shopView';
@@ -30,37 +11,12 @@
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-label', 'Metro Bloomin shop');
-  el.innerHTML =
-    '<div class="mb-hero"></div>' +
-    collections.map(function (c) {
-      return '<section class="mb-collection" id="mb-' + c.id + '" aria-label="' + esc(c.title) + '">' +
-        '<ul class="mb-grid">' + c.products.map(card).join('') + '</ul></section>';
-    }).join('');
+  el.innerHTML = '<iframe class="mb-shop__frame" title="Metro Bloomin shop" src="' + SHOP_SRC + '"></iframe>';
   document.body.appendChild(el);
-  // the blobs behind the products: a lumpy round shape (8 points, each its own slow wobble) that breathes,
-  // like the video blobs on the videos page. Runs only while the shop is open.
-  (function () {
-    var paths = [].slice.call(el.querySelectorAll('.mb-card__blob path')), N = 8;
-    var seeds = paths.map(function (_, k) { return [k * 1.93 + .4, k * 2.71 + 1.1, (k % 3) * 1.3]; });
-    function shape(path, sd, t) {
-      var pts = [];
-      for (var i = 0; i < N; i++) { var a = i / N * 6.2832;
-        var r = 46 * (1 + .06 * Math.cos(2 * a + sd[0]) + .04 * Math.cos(3 * a + sd[1])          // its own lumpy shape
-          + .03 * Math.sin(t * 2.4 + sd[2] + i * 1.7) + .02 * Math.sin(t * 4 + sd[0] + i * 2.9))  // slow wobble
-          * (1 + .04 * Math.sin(t * 4.4 + sd[1]));                                                // breathing
-        pts.push([50 + Math.cos(a) * r, 50 + Math.sin(a) * r]); }
-      var d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
-      for (i = 0; i < N; i++) { var p0 = pts[(i + N - 1) % N], p1 = pts[i], p2 = pts[(i + 1) % N], p3 = pts[(i + 2) % N];   // smooth curve through the points
-        d += 'C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ' ' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + ' ' +
-          (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ' ' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1); }
-      path.setAttribute('d', d + 'Z');
-    }
-    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, on = false;
-    paths.forEach(function (p, k) { shape(p, seeds[k], 0); });
-    function tick(ms) { if (!on) return; var t = ms / 1000; paths.forEach(function (p, k) { shape(p, seeds[k], t); }); requestAnimationFrame(tick); }
-    function sync() { var open = el.classList.contains('is-open') && !document.hidden && !still; if (open && !on) { on = true; requestAnimationFrame(tick); } if (!open) on = false; }
-    new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['class'] }); document.addEventListener('visibilitychange', sync);
-  })();
+  // tell the shop page its view just opened: its goo band splashes in (shop2/goo.js)
+  var frame = el.querySelector('iframe');
+  function splash() { try { frame.contentWindow.postMessage('mb-shop-open', '*'); } catch (e) {} }
+  window.MBShopSplash = splash;
 
   // ---- one controller for the three views: about (the 3D page), shop, music ----
   var nav = null, view = 'about';
@@ -74,6 +30,7 @@
     view = next;
     document.body.classList.remove('mb-scrolling');
     setShop(next === 'shop');
+    if (next === 'shop' && !window.__mbLoading) splash();
     if (window.__mbVideos) { if (next === 'music') window.__mbVideos.open(); else window.__mbVideos.close(); }
     document.body.setAttribute('data-view', next);
     if (nav) { nav.setCurrent(next); nav.setTone(next === 'music' ? 'auto' : 'dark'); }

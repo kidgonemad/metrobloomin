@@ -1,6 +1,6 @@
 // Loading screen for the shop: weed buds (shop/drop/bud*.svg) drop and stack until the screen is full to the
 // very top, then the whole pile falls off the bottom and the shop products, stacked above it, fall right behind
-// it, their blobs grow and the products pop in (shop.css .mb-drop-in). Only on a fresh visit that opens on the shop (not #music/#videos/#about).
+// it, and the shop's goo band splashes in (shop2/goo.js). Only on a fresh visit that opens on the shop (not #music/#videos/#about).
 // Runs before shop.js (script order). html.mb-intro (inline script in <head>) keeps the page white until now.
 (function () {
   var html = document.documentElement;
@@ -15,20 +15,10 @@
   document.body.appendChild(root);
   html.classList.remove('mb-intro');           // the loader's own white takes over
 
-  var shop = null, ended = false, dropped = false;
-  function prepShop() {                        // load product photos now, so they are there when they fall in
-    shop = document.getElementById('shopView');
-    if (!shop) return;
-    shop.querySelectorAll('.mb-card img').forEach(function (im) { im.loading = 'eager'; });
-    shop.querySelectorAll('.mb-card').forEach(function (c, k) { c.style.setProperty('--k', k); });
-  }
-  function dropProducts() {                    // the pile is leaving: products fall in right behind it (once only)
+  var ended = false, dropped = false;
+  function dropProducts() {                    // the pile is leaving: the shop's goo splashes in behind it (once only)
     if (dropped) return; dropped = true;
-    prepShop();
-    if (shop) {
-      shop.classList.add('mb-drop-in');
-      setTimeout(function () { shop.classList.remove('mb-drop-in'); }, 2400);
-    }
+    if (window.MBShopSplash) window.MBShopSplash();
     root.classList.add('is-falling');          // white lifts; only the falling buds stay on top
   }
   function end() {
@@ -122,7 +112,7 @@
   }
 
   function frame(t) {
-    if (!t0) { t0 = prev = t; prepShop(); }
+    if (!t0) { t0 = prev = t; }
     var el = t - t0, real = Math.min(0.05, (t - prev) / 1000); prev = t;
     var n = Math.max(1, Math.ceil(real / 0.008)), dt = real / n;   // fixed small steps at real speed
     for (var s = 0; s < n; s++) physics(dt);

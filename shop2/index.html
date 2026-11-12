@@ -27,9 +27,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tabs{display:flex;gap:6px;padding:0 16px 10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;overflow-x:auto}
 .tabs button{padding:5px 8px;border:1px solid transparent;white-space:nowrap}
 .tabs button.on{border-color:var(--ink)}
+.tabs__cart{display:none;margin-left:auto;padding:5px 8px;white-space:nowrap}
+
+/* inside the site (shop/shop.js loads this page with ?embed=1): the site's own header (leaf + lettering,
+   menu) sits on top, so this page drops its back link and lettering and leaves room for that header */
+body.embed .top__row{display:none}
+body.embed .top{padding-top:96px}
+@media (min-width:768px){body.embed .top{padding-top:200px}}
+body.embed .tabs__cart{display:block}
 
 /* green leaf band: the brand's leaf pattern, tiled */
-.band{height:120px;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
+.band{position:relative;height:120px;background:#55925a url("leaf-pattern.webp?v=1") center/500px auto repeat}
+/* white goo along the band's top and bottom edges (goo.js) */
+.goo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .band--bottom{height:220px}
 
 /* grid */
@@ -98,7 +108,9 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 
 <main class="look" aria-live="polite"></main>
 
+<script>if (/[?&]embed=1/.test(location.search)) document.body.classList.add('embed');</script>
 <script src="products.js"></script>
+<script src="goo.js?v=2"></script>
 <script>
 // header lettering: the site's "stacked alpha" video (colour on top, alpha mask below, ../shop/bg/word-sm.mp4)
 // painted into a transparent canvas; plays the reveal once and stays. A still of the full lettering is the fallback.
@@ -137,10 +149,11 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 
   // ---- collection tabs + grid ----
   var tabs = document.querySelector('.tabs'), grid = document.querySelector('.grid');
-  tabs.innerHTML = Object.keys(COLS).map(function (k) { return '<button data-c="' + k + '">' + COLS[k] + '</button>'; }).join('');
-  tabs.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; filter = b.dataset.c; location.hash = '#/'; renderGrid(); });
+  tabs.innerHTML = Object.keys(COLS).map(function (k) { return '<button data-c="' + k + '">' + COLS[k] + '</button>'; }).join('') +
+    '<a class="tabs__cart" href="https://metrobloomin.com/cart" target="_blank" rel="noopener">Cart</a>';
+  tabs.addEventListener('click', function (e) { var b = e.target.closest('button[data-c]'); if (!b) return; filter = b.dataset.c; location.hash = '#/'; renderGrid(); });
   function renderGrid() {
-    [].forEach.call(tabs.children, function (b) { b.classList.toggle('on', b.dataset.c === filter); });
+    [].forEach.call(tabs.querySelectorAll('button[data-c]'), function (b) { b.classList.toggle('on', b.dataset.c === filter); });
     var list = P.filter(function (p) { return filter === 'all' || p.collection === filter; });
     var cols = innerWidth <= 760 ? 2 : 4, cells = Math.max(list.length, cols * 3);   // empty tiles complete the grid, like the mockup
     cells = Math.ceil(cells / cols) * cols;

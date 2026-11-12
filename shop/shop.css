@@ -17,55 +17,12 @@
 #shopLink{font-weight:700}
 
 /* overlay */
-/* dark shop: plain black page, products on their blobs */
-.mb-shop{--mb-fg:#fff;--mb-muted:#bdbdbd;--mb-line:rgba(255,255,255,.15);--mb-tile:transparent;
-  position:fixed;inset:0;z-index:1000;background:#000;color:var(--mb-fg);
-  font-family:"MB Inter",Arial,Helvetica,sans-serif;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+/* shop view: shop2/ in an iframe (shop.js); it scrolls inside the frame */
+.mb-shop{position:fixed;inset:0;z-index:1000;background:#fff;overflow:hidden;
   visibility:hidden;opacity:0;transform:translateY(16px);transition:opacity .35s ease,transform .35s ease,visibility 0s linear .35s}
 .mb-shop.is-open{visibility:visible;opacity:1;transform:none;transition:opacity .35s ease,transform .35s ease}
-.mb-shop *{box-sizing:border-box}
-.mb-shop a{color:inherit}
-
-.mb-shop__bar{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-  padding:20px 48px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--mb-line)}
-.mb-shop__nav{display:flex;gap:24px;font-size:13px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
-.mb-shop__nav a{text-decoration:none}
-.mb-shop__nav a:hover{text-decoration:underline}
-.mb-shop__brand{text-align:center;font-weight:700;font-size:22px;line-height:.95;letter-spacing:.06em;text-decoration:none}
-.mb-shop__brand span{display:block;margin-top:6px;font-size:10px;font-weight:500;letter-spacing:.3em;color:var(--mb-muted)}
-.mb-shop__close{justify-self:end;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--mb-fg);background:none;color:inherit;
-  font:500 13px/1 "MB Inter",Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding:10px 16px;cursor:pointer}
-.mb-shop__close:hover{background:var(--mb-fg);color:#fff}
-
-/* empty spacer under the fixed header */
-.mb-hero{max-width:1320px;margin:0 auto;padding:56px 48px 8px}
-
-.mb-collection{max-width:1320px;margin:0 auto;padding:0 48px 28px;scroll-margin-top:90px}
-
-.mb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;list-style:none;margin:0;padding:0}
-.mb-card a{display:block;text-decoration:none}
-.mb-card__media{position:relative;aspect-ratio:1/1;background:var(--mb-tile);overflow:visible}
-/* soft breathing blob behind each product, in the style of the videos page blobs (shape animated by shop.js) */
-.mb-card__blob{position:absolute;left:-3%;top:-3%;width:106%;height:106%;z-index:0;pointer-events:none;overflow:visible}
-.mb-card__blob path{fill:#f4f4f4}
-.mb-card__media img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:contain;transition:opacity .35s ease,transform .6s ease}
-.mb-card__media img+img{opacity:0}
-.mb-card a:hover .mb-card__media img:first-child,.mb-card a:focus-visible .mb-card__media img:first-child{opacity:0}
-.mb-card a:hover .mb-card__media img+img,.mb-card a:focus-visible .mb-card__media img+img{opacity:1;transform:scale(1.03)}
-
-
-
-@media (max-width:900px){.mb-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:640px){
-  .mb-shop__bar{grid-template-columns:auto 1fr auto;padding:14px 16px;gap:12px}
-  .mb-shop__nav{display:none}
-  .mb-shop__brand{text-align:left;font-size:18px}
-  .mb-hero,.mb-collection{padding-left:16px;padding-right:16px}
-  .mb-hero{padding-top:36px}
-  .mb-collection{padding-top:0;padding-bottom:26px}
-  .mb-grid{gap:26px 18px}
-}
-@media (prefers-reduced-motion:reduce){.mb-shop,.mb-card__media img{transition:none}}
+.mb-shop__frame{display:block;width:100%;height:100%;border:0}
+@media (prefers-reduced-motion:reduce){.mb-shop{transition:none}}
 
 /* no tracking cookies on this site, so no cookie banner */
 #cookieView{display:none!important}
@@ -87,16 +44,9 @@ body.mb-menu-open #logo .mb-word,#logo:not(.mb-word-show) .mb-word{pointer-event
 /* original top menu is hidden (the site uses mbnav.css); the side section dots stay, styled in index.7d544b17.css */
 nav.menu,.mb-dir-btn,#aboutView{display:none!important}
 
-/* shared menu: same spot as the main site menu (top right) */
-.mb-shop__menu{justify-self:end;width:44px;height:44px}
-.mb-shop__menu .mbn{position:fixed;top:calc(2rem - 10px);right:calc(2rem - 6px);z-index:5}
-@media (min-width:768px){.mb-shop__menu .mbn{top:calc(4rem - 10px);right:calc(4rem - 6px)}}
-.mb-shop__brand{cursor:pointer}
 
 /* one header for the whole site: the site's logo + menu sit on top of the shop */
 body.mb-shop-open #logo{z-index:1001!important}
-.mb-shop .mb-hero{padding-top:96px}
-@media (min-width:768px){.mb-shop .mb-hero{padding-top:200px}}
 
 /* black site: white logo + text on the 3D page; black logo on shop (light background) */
 body.dark #logo{color:#fff}
@@ -146,8 +96,3 @@ html.mb-intro:after{content:"";position:fixed;inset:0;z-index:1300;background:#f
 .mb-loader{position:fixed;inset:0;z-index:1300;background:#fff;pointer-events:none;transition:background-color .15s linear}
 .mb-loader canvas{display:block;width:100%;height:100%}
 .mb-loader.is-falling{background-color:transparent}
-/* entrance after the loading screen lifts: each blob grows out of nothing, then its product pops onto it (one card after another) */
-.mb-shop.mb-drop-in .mb-card__blob{transform-origin:50% 50%;animation:mbBlobGrow .6s cubic-bezier(.2,.9,.3,1.15) calc(var(--k) * 110ms) backwards}
-.mb-shop.mb-drop-in .mb-card__media img:first-child{animation:mbProdPop .5s cubic-bezier(.3,1.6,.5,1) calc(.4s + var(--k) * 110ms) backwards}
-@keyframes mbBlobGrow{from{transform:scale(0)}}
-@keyframes mbProdPop{0%{transform:scale(0);opacity:0}60%{opacity:1}100%{transform:scale(1)}}

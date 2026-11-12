@@ -28,6 +28,7 @@
   function show(next) {
     if (next === view) return;
     view = next;
+    if (next === 'about' && window.MBLoad3D) window.MBLoad3D();   // the 3D page loads the first time about opens
     document.body.classList.remove('mb-scrolling');
     setShop(next === 'shop');
     if (next === 'shop' && !window.__mbLoading) splash();

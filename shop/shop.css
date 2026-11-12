@@ -52,7 +52,7 @@ html,body{background:#000}
 #logo{transform-origin:20% 30%}
 /* about page: the leaf, lettering and menu step aside while you scroll and pop back out when you stop (shop.js) */
 body.mb-scrolling #logo,body.mb-scrolling .mbn--site{transform:scale(0);transition:opacity .4s ease,transform .25s ease-in}
-body:not(.mb-loaded) #logo,body:not(.mb-loaded) nav.menu{opacity:0!important;pointer-events:none}
+body[data-view="about"]:not(.mb-loaded) #logo,body[data-view="about"]:not(.mb-loaded) nav.menu{opacity:0!important;pointer-events:none}
 /* footer: white with black text */
 #links .accessibility{background:#fff!important;color:#000!important}
 #links .accessibility h3,#links .accessibility p,#links .accessibility a{color:#000!important}
@@ -78,7 +78,7 @@ body.mb-shop-open #logo,body.mb-videos-open #logo{opacity:1!important;pointer-ev
 
 
 /* the one menu: hidden until the 3D page has loaded, except on the shop/videos views (shown right away) */
-body:not(.mb-loaded) .mbn--site{opacity:0;pointer-events:none}
+body[data-view="about"]:not(.mb-loaded) .mbn--site{opacity:0;pointer-events:none}
 body[data-view="shop"] .mbn--site,body[data-view="videos"] .mbn--site{opacity:1;pointer-events:auto}
 
 /* loading screen (loader.js): buds pile up on white, the pile falls away, then the shop products drop into place.

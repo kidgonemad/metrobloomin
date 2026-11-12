@@ -110,6 +110,7 @@
     all.forEach(function (b) {
       if (!b.visible) return;
       b.edges.forEach(function (e) {
+        if (e.off) return;                                 // phones: this edge is covered or out of view
         if (e.target === 0 && e.r < 0.05) { if (e.r) { e.r = 0; e.cur.style.width = e.cur.style.height = '0px'; } return; }   // idle: nothing to update
         e.sx += (e.x - e.sx) * 0.15; e.sd += (e.d - e.sd) * 0.15; e.r += (e.target - e.r) * 0.12;
         var c = e.cur.style;
@@ -124,7 +125,11 @@
     var any = false;
     all.forEach(function (b) {
       var on = b.visible && !document.hidden && !reduce;
-      b.band.classList.toggle('goo-paused', !on); if (on) any = true;
+      b.band.classList.toggle('goo-paused', !on);
+      b.edges.forEach(function (e) {                       // phones: each edge also stops while covered or out of view
+        e.off = PHONE && e.seen === false; e.el.classList.toggle('goo-off', e.off);
+        if (on && !e.off) any = true;
+      });
     });
     if (any && !running) { running = true; raf = requestAnimationFrame(tick); }
     if (!any && running) { running = false; cancelAnimationFrame(raf); }
@@ -139,6 +144,22 @@
     });
     all.forEach(function (b) { io.observe(b.band); });
   }
+  // phones: only the goo you can see plays. Each edge is watched on its own, and the strip under the sticky header
+  // (white once you scroll) counts as covered; a stopped edge stays drawn where it stopped.
+  var PHONE = !!(window.matchMedia && matchMedia('(max-width: 760px), (pointer: coarse)').matches), eio = null;
+  function watchEdges() {
+    if (!PHONE || !('IntersectionObserver' in window)) return;
+    if (eio) eio.disconnect();
+    var top = document.querySelector('.top'), h = top ? Math.round(top.getBoundingClientRect().height) : 0;
+    eio = new IntersectionObserver(function (es) {
+      es.forEach(function (en) { all.forEach(function (b) { b.edges.forEach(function (e) { if (e.el === en.target) e.seen = en.isIntersecting; }); }); });
+      sync();
+    }, { rootMargin: -h + 'px 0px 0px 0px' });
+    all.forEach(function (b) { b.edges.forEach(function (e) { eio.observe(e.el); }); });
+  }
+  watchEdges();
+  addEventListener('resize', watchEdges);
+  addEventListener('load', watchEdges);                    // again once the header's fonts and tabs have settled
   document.addEventListener('visibilitychange', sync);
   var head = document.querySelector('.top');
   function clear() { if (head) head.classList.toggle('is-clear', (window.scrollY || document.documentElement.scrollTop) < 2); }

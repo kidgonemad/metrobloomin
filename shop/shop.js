@@ -33,7 +33,7 @@
     if (next === 'shop' && !window.__mbLoading) splash();
     if (window.__mbVideos) { if (next === 'music') window.__mbVideos.open(); else window.__mbVideos.close(); }
     document.body.setAttribute('data-view', next);
-    if (nav) { nav.setCurrent(next); nav.setTone(next === 'music' ? 'auto' : 'dark'); }
+    if (nav) nav.setCurrent(next);   // the menu is inverted (tone auto) on every view
     var h = next === 'about' ? '' : '#' + next;
     if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search);
   }
@@ -56,7 +56,7 @@
         { label: 'music', onClick: function () { show('music'); } },
         { label: 'about', onClick: function () { show('about'); } }
       ],
-      current: 'about', tone: 'dark',
+      current: 'about', tone: 'auto',
       onToggle: function (o) { document.body.classList.toggle('mb-menu-open', o); }
     });
     nav.classList.add('mbn--site');

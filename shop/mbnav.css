@@ -4,9 +4,22 @@
 @media (min-width:768px){.mbn{top:54px;right:58px}}
 
 /* tones = the page behind the menu (no circle or pill): light page -> black text, dark page -> white text */
-.mbn[data-tone="light"]{--mbn-fg:#111}
-.mbn[data-tone="dark"]{--mbn-fg:#78b04a}   /* the green of the METRO BLOOMIN lettering */
-.mbn[data-tone="auto"]{--mbn-fg:#fff;mix-blend-mode:difference}
+.mbn[data-tone="light"]:not(.is-open){--mbn-fg:#111}
+.mbn[data-tone="dark"]:not(.is-open){--mbn-fg:#78b04a}   /* the green of the METRO BLOOMIN lettering */
+.mbn[data-tone="auto"]:not(.is-open){--mbn-fg:#fff;mix-blend-mode:difference}
+/* open: the page names sit on a white blob with a black outline (mbn__blob), so they're black on every view */
+.mbn.is-open{--mbn-fg:#111}
+
+/* the blob: grows out of the ••• button behind the names, wobbling; scaled away to the button when closed */
+.mbn__blob{position:absolute;top:-6px;bottom:-6px;left:-12px;right:-6px;background:#fff;border:2.5px solid #111;pointer-events:none;
+  border-radius:48% 52% 46% 54% / 62% 48% 52% 38%;transform-origin:calc(100% - 28px) 50%;transform:scale(0);opacity:0;
+  transition:transform .55s cubic-bezier(.3,1.5,.5,1),opacity .2s ease}
+.mbn.is-open .mbn__blob{transform:scale(1);opacity:1;animation:mbnBlobWobble 3.2s ease-in-out infinite}
+@keyframes mbnBlobWobble{
+  0%,100%{border-radius:48% 52% 46% 54% / 62% 48% 52% 38%}
+  33%{border-radius:55% 45% 52% 48% / 45% 60% 40% 58%}
+  66%{border-radius:44% 56% 50% 50% / 56% 40% 62% 46%}}
+.mbn__pill{position:relative}
 
 .mbn__btn{flex:none;display:flex;align-items:center;justify-content:center;gap:3px;width:44px;height:44px;margin:0;padding:0;border-radius:50%;
   background:none;color:var(--mbn-fg);border:0;cursor:pointer;position:relative;transition:color .3s ease;

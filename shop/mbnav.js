@@ -27,7 +27,8 @@
       links[it.label] = a;
       pill.appendChild(a);
     });
-    wrap.appendChild(pill); wrap.appendChild(btn);
+    var blob = document.createElement('span'); blob.className = 'mbn__blob'; blob.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(blob); wrap.appendChild(pill); wrap.appendChild(btn);
 
     function set(open) {
       wrap.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', String(open));

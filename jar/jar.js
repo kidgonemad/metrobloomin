@@ -34,10 +34,6 @@ export function mount(box) {
   panel(1.2, 6, '#ffffff', 4, [5, 1, 1], [0, 0, 0])
   panel(6, 3, '#ff1030', 0.9, [0, -4, 1], [0, 0, 0])   // a red bounce from below, not a red room
   panel(3, 2, '#ffffff', 1.5, [0, 2, 6], [0, 0, 0])
-  // a dim grey room and a big soft panel overhead, so brushed metal has something to reflect (pure black reads as plastic)
-  studio.background = new THREE.Color('#5a5a62')
-  panel(10, 10, '#ffffff', 2.2, [0, 6, 0], [0, 0, 0])
-  panel(10, 3, '#ffffff', 0.6, [0, 1, -6], [0, 0, 0])
   scene.environment = pm.fromScene(studio, 0.03).texture
 
   const tl = new THREE.TextureLoader()
@@ -46,28 +42,11 @@ export function mount(box) {
   // ---- the jar ----
   const R = 0.5, BODY_H = 1.28, LID_H = 0.3, LID_R = 0.525   // about 1 : 1.6 like the video's jar
   const jar = new THREE.Group(); scene.add(jar)
-  // brushed metal: a roughness map of fine horizontal streaks (around the jar), so the reflections smear sideways
-  const brushed = (() => {
-    const c = document.createElement('canvas'); c.width = 512; c.height = 512
-    const g = c.getContext('2d'); g.fillStyle = 'rgb(95,95,95)'; g.fillRect(0, 0, 512, 512)
-    for (let i = 0; i < 2600; i++) {
-      const y = Math.random() * 512, v = 70 + Math.random() * 60
-      g.fillStyle = `rgba(${v},${v},${v},0.55)`; g.fillRect(0, y, 512, 0.6 + Math.random() * 1.4)
-    }
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
-  })()
-  const metal = (map, metalMap) => {
-    const r = brushed.clone(); r.needsUpdate = true; r.repeat.set(1, 6)
-    // printed tin: bare gunmetal shines (brushed reflections), the printed ink is matte (metalnessMap), thin clear coat
-    const m = new THREE.MeshPhysicalMaterial({ color: map ? '#ffffff' : '#96989e', map, metalness: 1, roughness: 0.4, roughnessMap: r,
-      clearcoat: 0.3, clearcoatRoughness: 0.2, envMapIntensity: 1.6 })
-    if (metalMap) { const t = tl.load(BASE + metalMap); m.metalnessMap = t }
-    return m
-  }
-  const black = metal(null)
+  const gloss = (map) => new THREE.MeshPhysicalMaterial({ color: '#ffffff', map, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.1 })
+  const black = new THREE.MeshPhysicalMaterial({ color: '#0b0b0d', roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.04 })
 
   // label: the straight side, front of the art (u = 0.5) facing the camera
-  const side = new THREE.Mesh(new THREE.CylinderGeometry(R, R, BODY_H, 128, 1, true, -Math.PI, Math.PI * 2), metal(tex('label.webp'), 'label_metal.webp'))
+  const side = new THREE.Mesh(new THREE.CylinderGeometry(R, R, BODY_H, 128, 1, true, -Math.PI, Math.PI * 2), gloss(tex('label.webp')))
   side.position.y = BODY_H / 2; jar.add(side)
   // rounded base and shoulder (black glass)
   const lathe = (pts) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), 128)
@@ -90,13 +69,11 @@ export function mount(box) {
   lid.add(lidSide)
   const lidUnder = new THREE.Mesh(new THREE.CircleGeometry(R - 0.035, 64), new THREE.MeshStandardMaterial({ color: '#0a0a0c', roughness: 0.5 }))
   lidUnder.rotation.x = Math.PI / 2; lidUnder.position.y = 0.002; lid.add(lidUnder)   // the lid's underside, seen when it lifts
-  const lidTop = new THREE.Mesh(new THREE.CircleGeometry(0.44, 96), metal(tex('lid.webp'), 'lid_metal.webp'))
-  // the top faces the overhead light when the lid floats: darker metal, softer reflection, so it reads like the body
-  lidTop.material.envMapIntensity = 0.5; lidTop.material.color.set('#6a6a6e'); lidTop.material.clearcoat = 0.1
+  const lidTop = new THREE.Mesh(new THREE.CircleGeometry(0.44, 96), gloss(tex('lid.webp')))
   lidTop.rotation.x = -Math.PI / 2; lidTop.position.y = LID_H + 0.001; lid.add(lidTop)
   // ribs on the lid side
   const ribs = new THREE.Mesh(new THREE.CylinderGeometry(LID_R + 0.002, LID_R + 0.002, LID_H * 0.5, 96, 1, true),
-    new THREE.MeshPhysicalMaterial({ color: '#2a2b2e', metalness: 0.9, roughness: 0.5, transparent: true, opacity: 0.6, envMapIntensity: 1.5 }))
+    new THREE.MeshPhysicalMaterial({ color: '#0b0b0d', roughness: 0.45, clearcoat: 0.6, transparent: true, opacity: 0.6 }))
   ribs.position.y = LID_H * 0.42; lid.add(ribs)
   jar.position.y = -(BODY_H + LID_H) / 2
 

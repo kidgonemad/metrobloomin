@@ -116,8 +116,8 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   // the video is NOT added to the page: Safari pauses videos on the page that it thinks are invisible
   var v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true;
   v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = base + '.mp4?v=3'; v.load();
-  // if the phone blocks autoplay (Low Power Mode), play on the first tap or scroll; the still only after 6s of nothing
-  var EV = ['touchstart', 'pointerdown', 'scroll', 'keydown'], safety;
+  // if the phone blocks autoplay (Low Power Mode), play on the first tap; the still only after 6s of nothing
+  var EV = ['touchend', 'click', 'keydown'], safety;   // iPhone only lets video start at the end of a tap
   function go() { EV.forEach(function (e) { window.removeEventListener(e, go, true); }); clearTimeout(safety);
     var p2 = v.play(); if (p2 && p2.catch) p2.catch(showStill); }
   var pr = v.play(); if (pr && pr.catch) pr.catch(function () {

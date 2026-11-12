@@ -128,21 +128,21 @@
       v.preload = 'auto'; v.src = base + 'bg/' + name + '.mp4?v=' + CLIP_V; v.load();
       clips.push(v);
       // plays once; onTime(seconds) runs every frame, done() when it ends. If the phone blocks autoplay (Low Power
-      // Mode), it waits for the first tap or scroll and plays then; the still is only the last resort.
+      // Mode), it waits for the first tap and plays then; the still is only the last resort.
       return { video: v, play: function (onTime, done) {
         var over = false, fin = function () { if (!over) { over = true; done(); } };
         var showStill = function () { if (over) return; if (still.complete) paint(still); else still.onload = function () { paint(still); }; onTime(99); setTimeout(fin, 2500); };
         if (reduce) { showStill(); return; }
         var loop = function () { if (over) return; if (v.readyState >= 2) { paint(v); onTime(v.currentTime); }
           if (v.ended) { fin(); return; } requestAnimationFrame(loop); };
-        var waiting = false, safety = null, EV = ['touchstart', 'pointerdown', 'scroll', 'keydown'];
+        var waiting = false, safety = null, EV = ['touchend', 'click', 'keydown'];   // iPhone only lets video start on these (the end of a tap), not on touchstart or scroll
         var blocked = function () {
           if (over || waiting) return; waiting = true;
           var off = function () { EV.forEach(function (e) { window.removeEventListener(e, go, true); }); clearTimeout(safety); };
           var go = function () { off(); waiting = false; unlockAll();
             var p2 = v.play(); if (p2 && p2.catch) p2.catch(showStill); };
           EV.forEach(function (e) { window.addEventListener(e, go, { capture: true, passive: true }); });
-          safety = setTimeout(function () { off(); showStill(); }, 6000);
+          safety = setTimeout(function () { off(); showStill(); }, 20000);   // still picture only if nobody taps for 20s
         };
         v.__started = true; v.currentTime = 0;
         var pr = v.play(); if (pr && pr.catch) pr.catch(blocked);

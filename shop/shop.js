@@ -133,7 +133,8 @@
     document.body.setAttribute('data-view', 'about');
     // the site opens on the shop, unless a link asks for music (#videos = old links) or about
     var h = location.hash;
-    if (h === '#videos' || h === '#music') show('videos');   // #music: old links else if (h === '#about') show('about'); else show('shop');
+    if (h === '#videos' || h === '#music') show('videos');   // #music: old links
+    else if (h === '#about') show('about'); else show('shop');
   }
   // wait for DOMContentLoaded so videos.js (loaded after this file) is ready
   if (document.readyState === 'complete') wire(); else document.addEventListener('DOMContentLoaded', wire);

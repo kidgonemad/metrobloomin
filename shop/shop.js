@@ -122,12 +122,10 @@
         out.putImageData(c, 0, 0);
       };
       var still = new Image(); still.src = base + 'bg/' + (stillName || name) + '.webp?v=' + CLIP_V;
-      // the video sits in the page, invisible: iPhone Safari only decodes frames for videos that are in the document
+      // the video is NOT added to the page: Safari pauses videos on the page that it thinks are invisible
       var v = document.createElement('video');
       v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-      v.setAttribute('aria-hidden', 'true'); v.preload = 'auto';
-      v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;z-index:-1';
-      v.src = base + 'bg/' + name + '.mp4?v=' + CLIP_V; document.body.appendChild(v); v.load();
+      v.preload = 'auto'; v.src = base + 'bg/' + name + '.mp4?v=' + CLIP_V; v.load();
       clips.push(v);
       // plays once; onTime(seconds) runs every frame, done() when it ends. If the phone blocks autoplay (Low Power
       // Mode), it waits for the first tap or scroll and plays then; the still is only the last resort.

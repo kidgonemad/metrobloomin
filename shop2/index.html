@@ -113,11 +113,9 @@ th{font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   var still = new Image(); still.src = base + '.webp?v=3';
   function showStill() { if (still.complete && still.naturalWidth) paint(still); else still.onload = function () { paint(still); }; }
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { showStill(); return; }
-  // the video sits in the page, invisible (iPhone Safari only decodes videos that are in the document)
+  // the video is NOT added to the page: Safari pauses videos on the page that it thinks are invisible
   var v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true;
-  v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true'); v.preload = 'auto';
-  v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;z-index:-1';
-  v.src = base + '.mp4?v=3'; document.body.appendChild(v); v.load();
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = base + '.mp4?v=3'; v.load();
   // if the phone blocks autoplay (Low Power Mode), play on the first tap or scroll; the still only after 6s of nothing
   var EV = ['touchstart', 'pointerdown', 'scroll', 'keydown'], safety;
   function go() { EV.forEach(function (e) { window.removeEventListener(e, go, true); }); clearTimeout(safety);

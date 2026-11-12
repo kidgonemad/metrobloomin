@@ -1,0 +1,414 @@
+import { useMemo, useEffect, useState, useCallback } from 'react'
+import { RoundedBox } from '@react-three/drei'
+import { CanvasTexture, SRGBColorSpace, LinearFilter } from 'three'
+import useChannelStore from './store'
+import { playClick } from './sound'
+
+/**
+ * Procedural CRT-era TV remote. No external model — everything here is built
+ * from boxes and cylinders so the mesh ships with the bundle and carries no
+ * license of its own.
+ *
+ * Local space: X = width, Y = thickness, Z = length (tip at -Z, base at +Z).
+ * Unit length is ~2.4, so scale to taste at the call site.
+ */
+
+const BODY = { w: 0.86, h: 0.2, l: 2.4 }
+
+// Matched to the materials already in the TV/VCR GLB so the remote reads as
+// part of the same set: dark textured plastic shell, softer rubber buttons.
+const SHELL = { color: '#1f1f1f', roughness: 0.55, metalness: 0.08 }
+const RUBBER = { color: '#454545', roughness: 0.85, metalness: 0.0 }
+const RUBBER_LIGHT = { color: '#585858', roughness: 0.85, metalness: 0.0 }
+const POWER = { color: '#a82219', roughness: 0.6, metalness: 0.0 }
+const EMITTER = { color: '#3a2a12', roughness: 0.35, metalness: 0.1 }
+
+// Buttons sit just proud of the shell's top face.
+const FACE_Y = BODY.h / 2
+const BTN_H = 0.045
+
+const glyphCache = new Map()
+
+// Power and mute are drawn as paths rather than characters: the IEC power
+// symbol and a crossed speaker are not reliably present in system fonts, and
+// a missing glyph paints a tofu box on the button.
+function drawPower(c, S, color) {
+  const cx = S / 2
+  const cy = S / 2
+  const r = S * 0.25
+  c.strokeStyle = color
+  c.lineWidth = S * 0.085
+  c.lineCap = 'round'
+  // Ring with a gap at the top.
+  c.beginPath()
+  c.arc(cx, cy, r, -Math.PI / 2 + 0.6, -Math.PI / 2 - 0.6 + Math.PI * 2)
+  c.stroke()
+  // The stem through the gap.
+  c.beginPath()
+  c.moveTo(cx, cy - r * 1.3)
+  c.lineTo(cx, cy - r * 0.1)
+  c.stroke()
+}
+
+function drawMute(c, S, color) {
+  const cx = S / 2
+  const cy = S / 2
+  c.fillStyle = color
+  c.strokeStyle = color
+  // Speaker: back plate into a cone.
+  c.beginPath()
+  c.moveTo(cx - S * 0.26, cy - S * 0.09)
+  c.lineTo(cx - S * 0.15, cy - S * 0.09)
+  c.lineTo(cx - S * 0.01, cy - S * 0.22)
+  c.lineTo(cx - S * 0.01, cy + S * 0.22)
+  c.lineTo(cx - S * 0.15, cy + S * 0.09)
+  c.lineTo(cx - S * 0.26, cy + S * 0.09)
+  c.closePath()
+  c.fill()
+  // An x beside it. A single slash reads as a flag at button size; two
+  // crossed strokes are unambiguous.
+  c.lineWidth = S * 0.07
+  c.lineCap = 'round'
+  const ox = cx + S * 0.19
+  const d = S * 0.11
+  c.beginPath()
+  c.moveTo(ox - d, cy - d)
+  c.lineTo(ox + d, cy + d)
+  c.moveTo(ox + d, cy - d)
+  c.lineTo(ox - d, cy + d)
+  c.stroke()
+}
+
+function glyphTexture(ch, color = 'rgba(255,255,255,0.95)') {
+  const key = `${ch}|${color}`
+  if (glyphCache.has(key)) return glyphCache.get(key)
+  const S = 128
+  const cv = document.createElement('canvas')
+  cv.width = S
+  cv.height = S
+  const c = cv.getContext('2d')
+  c.clearRect(0, 0, S, S)
+
+  if (ch === 'power') {
+    drawPower(c, S, color)
+  } else if (ch === 'mute') {
+    drawMute(c, S, color)
+  } else {
+    c.fillStyle = color
+    c.font = `700 ${ch === '+' || ch === '−' ? 92 : 74}px "Helvetica Neue", Helvetica, Arial, sans-serif`
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.fillText(ch, S / 2, S / 2 + 4)
+  }
+
+  const t = new CanvasTexture(cv)
+  t.colorSpace = SRGBColorSpace
+  t.minFilter = LinearFilter
+  t.magFilter = LinearFilter
+  t.anisotropy = 4
+  glyphCache.set(key, t)
+  return t
+}
+
+const PRESS_DEPTH = 0.022
+const PRESS_MS = 130
+
+// The moulded buttons are small: at the size the remote is drawn on a phone
+// the keypad keys are about 20px across, well under the ~44px a thumb wants,
+// and the remote drifts as it is held. So nothing on the face is hit directly.
+// Every button carries an invisible slab instead, sized to the button's slot
+// on the face, and the buttons you can see don't raycast at all. The slabs
+// tile: a tap that lands between two keys hits the nearer one rather than
+// falling through to the scene behind.
+const HIT_DEPTH = 0.18
+
+// [width, length] of each button's hit area, in local units. Sized to the
+// space around the button so neighbours never overlap — overlapping slabs
+// would make which one you hit a matter of viewing angle. At the size the
+// remote is drawn on a 390x844 phone one unit is roughly 140px, so these come
+// out around 39px for power and mute, 42x22px for a rocker half, and 28x34px
+// for a keypad key — against 23px and 19px for the mouldings themselves.
+const HIT = {
+  power: [0.28, 0.28],
+  rocker: [0.30, 0.155],
+  key: [0.20, 0.24],
+}
+
+// A press fires on pointerdown, but the browser sends a click afterwards and
+// that is a separate event — stopping the first does nothing to the second.
+// Both have to be stopped by hand, or the press reaches the DOM click handler
+// on the canvas container as well as the button.
+const swallow = (e) => e.nativeEvent?.stopPropagation()
+
+function HitArea({ size, onPointerDown, ...rest }) {
+  return (
+    <mesh position={[0, HIT_DEPTH / 4, 0]} onPointerDown={onPointerDown} onClick={swallow} {...rest}>
+      <boxGeometry args={[size[0], HIT_DEPTH, size[1]]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+  )
+}
+
+// Shared press behaviour: sink the button, fire the action, pop back.
+function usePress(onPress) {
+  const [pressed, setPressed] = useState(false)
+
+  const down = useCallback(
+    (e) => {
+      // Keep the tap off the camera controls underneath. R3F's own
+      // stopPropagation only stops other objects in the scene; the native
+      // event has to be stopped separately. See swallow() for the click that
+      // follows this.
+      e.stopPropagation()
+      e.nativeEvent?.stopPropagation()
+      if (!onPress) return
+      setPressed(true)
+      playClick()
+      onPress()
+      setTimeout(() => setPressed(false), PRESS_MS)
+    },
+    [onPress],
+  )
+
+  return [pressed ? PRESS_DEPTH : 0, down, !!onPress]
+}
+
+function RoundButton({ position, r = 0.075, hit, mat = RUBBER, onPress, glyph, glyphColor, glyphSize }) {
+  const [sink, down, live] = usePress(onPress)
+  const [x, y, z] = position
+  const hover = live
+    ? {
+        onPointerOver: () => (document.body.style.cursor = 'pointer'),
+        onPointerOut: () => (document.body.style.cursor = 'auto'),
+      }
+    : {}
+
+  return (
+    <group position={[x, y - sink, z]}>
+      <HitArea size={hit ?? [r * 3, r * 3]} onPointerDown={down} {...hover} />
+
+      <mesh castShadow raycast={() => null}>
+        <cylinderGeometry args={[r, r * 0.92, BTN_H, 20]} />
+        <meshStandardMaterial {...mat} />
+      </mesh>
+
+      {glyph && (
+        <mesh position={[0, BTN_H / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+          <planeGeometry args={[glyphSize ?? r * 1.9, glyphSize ?? r * 1.9]} />
+          <meshBasicMaterial map={glyphTexture(glyph, glyphColor)} transparent depthWrite={false} />
+        </mesh>
+      )}
+    </group>
+  )
+}
+
+function PillButton({ position, w = 0.2, l = 0.12, hit, mat = RUBBER, onPress, glyph }) {
+  const [sink, down, live] = usePress(onPress)
+  const [x, y, z] = position
+  const hover = live
+    ? {
+        onPointerOver: () => (document.body.style.cursor = 'pointer'),
+        onPointerOut: () => (document.body.style.cursor = 'auto'),
+      }
+    : {}
+
+  return (
+    <group position={[x, y - sink, z]}>
+      <HitArea size={hit ?? [w * 1.2, l * 1.25]} onPointerDown={down} {...hover} />
+
+      <RoundedBox
+        args={[w, BTN_H, l]}
+        radius={BTN_H * 0.45}
+        smoothness={3}
+        castShadow
+        raycast={() => null}
+      >
+        <meshStandardMaterial {...mat} />
+      </RoundedBox>
+
+      {/* Printed on the button top rather than the shell, so it rides down
+          with the press instead of being occluded by the button. */}
+      {glyph && (
+        <mesh position={[0, BTN_H / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+          <planeGeometry args={[0.1, 0.1]} />
+          <meshBasicMaterial map={glyphTexture(glyph)} transparent depthWrite={false} />
+        </mesh>
+      )}
+    </group>
+  )
+}
+
+// Printed labels are drawn into a canvas and laid over the shell face as a
+// decal. It reads world coordinates straight off the button constants below,
+// so labels and buttons can never drift apart — move a button, the label moves.
+const LABEL_PX_PER_UNIT = 600
+
+function worldToCanvas(x, z) {
+  return [
+    ((x + BODY.w / 2) / BODY.w) * BODY.w * LABEL_PX_PER_UNIT,
+    ((z + BODY.l / 2) / BODY.l) * BODY.l * LABEL_PX_PER_UNIT,
+  ]
+}
+
+function buildLabelTexture() {
+  const W = Math.round(BODY.w * LABEL_PX_PER_UNIT)
+  const H = Math.round(BODY.l * LABEL_PX_PER_UNIT)
+  const cv = document.createElement('canvas')
+  cv.width = W
+  cv.height = H
+  const c = cv.getContext('2d')
+
+  c.clearRect(0, 0, W, H)
+  c.textAlign = 'center'
+  c.textBaseline = 'middle'
+
+  const text = (str, x, z, size, color = 'rgba(255,255,255,0.95)', weight = '600') => {
+    const [px, py] = worldToCanvas(x, z)
+    c.fillStyle = color
+    c.font = `${weight} ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`
+    c.fillText(str, px, py)
+  }
+
+  // Power / mute
+  text('POWER', -0.22, -0.79, 19)
+  text('MUTE', 0.22, -0.79, 19)
+
+  // Rockers: channel on the left, volume on the right. No up/down glyphs —
+  // the decal sits below the button tops, so anything drawn under a button
+  // is occluded by it.
+  text('CH', -0.21, -0.335, 21)
+  text('VOL', 0.21, -0.335, 21)
+
+  const tex = new CanvasTexture(cv)
+  tex.colorSpace = SRGBColorSpace
+  tex.minFilter = LinearFilter
+  tex.magFilter = LinearFilter
+  tex.anisotropy = 4
+  return tex
+}
+
+export default function Remote(props) {
+  // 3x4 keypad: 1-9 then blank/0/enter, laid out from the middle of the body.
+  const keypad = useMemo(() => {
+    const cols = [-0.21, 0, 0.21]
+    const rows = [-0.12, 0.13, 0.38, 0.63]
+    const labels = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], [null, '0', 'ENT']]
+    const keys = []
+    rows.forEach((z, r) => {
+      cols.forEach((x, c) => {
+        // bottom row is blank / 0 / enter — skip the blank slot
+        if (labels[r][c] === null) return
+        keys.push({ x, z, key: `${r}-${c}`, label: labels[r][c] })
+      })
+    })
+    return keys
+  }, [])
+
+  const labelTexture = useMemo(() => buildLabelTexture(), [])
+  useEffect(() => () => labelTexture.dispose(), [labelTexture])
+
+  // Every button drives the same store the keyboard shortcuts drive, so the
+  // remote, the keys and (later) a phone all stay in sync for free.
+  const togglePower = useChannelStore((s) => s.togglePower)
+  const nextChannel = useChannelStore((s) => s.nextChannel)
+  const prevChannel = useChannelStore((s) => s.prevChannel)
+  const volumeUp = useChannelStore((s) => s.volumeUp)
+  const volumeDown = useChannelStore((s) => s.volumeDown)
+  const toggleMute = useChannelStore((s) => s.toggleMute)
+  const enterChannelNumber = useChannelStore((s) => s.enterChannelNumber)
+
+  // Channel/volume only mean anything once the set is on.
+  const whenOn = useCallback(
+    (fn) => () => {
+      if (useChannelStore.getState().phase === 'off') return
+      fn()
+    },
+    [],
+  )
+
+  const pressDigit = useCallback(
+    (label) => () => {
+      if (useChannelStore.getState().phase === 'off') return
+      if (label === 'ENT') return
+      enterChannelNumber(Number(label))
+    },
+    [enterChannelNumber],
+  )
+
+  return (
+    <group {...props}>
+      {/* Shell */}
+      <RoundedBox
+        args={[BODY.w, BODY.h, BODY.l]}
+        radius={0.09}
+        smoothness={5}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial {...SHELL} />
+      </RoundedBox>
+
+      {/* Printed labels, laid on the face just under the button tops */}
+      <mesh position={[0, FACE_Y + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[BODY.w, BODY.l]} />
+        <meshBasicMaterial map={labelTexture} transparent depthWrite={false} />
+      </mesh>
+
+      {/* IR emitter window at the tip */}
+      <mesh position={[0, FACE_Y - 0.04, -BODY.l / 2 + 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.26, 0.1]} />
+        <meshStandardMaterial {...EMITTER} />
+      </mesh>
+
+      {/* Power, top-left; the one red button on the whole thing.
+          Nothing sits near it, so its hit area is the most generous on the
+          face — it's the button someone reaches for first. */}
+      <RoundButton
+        position={[-0.22, FACE_Y, -0.92]}
+        r={0.082}
+        hit={HIT.power}
+        mat={POWER}
+        onPress={togglePower}
+        glyph="power"
+        glyphColor="rgba(255,232,228,0.95)"
+      />
+
+      {/* Mute, top-right */}
+      <RoundButton
+        position={[0.22, FACE_Y, -0.92]}
+        r={0.072}
+        hit={HIT.power}
+        mat={RUBBER_LIGHT}
+        onPress={whenOn(toggleMute)}
+        glyph="mute"
+      />
+
+      {/* Channel rocker (left) and volume rocker (right) — two pills each,
+          split by a thin gap so they read as a single rocker switch. The hit
+          areas meet in that gap: up and down, never neither. */}
+      <PillButton position={[-0.21, FACE_Y, -0.62]} w={0.26} l={0.13} hit={HIT.rocker} mat={RUBBER_LIGHT} onPress={whenOn(nextChannel)} glyph="▲" />
+      <PillButton position={[-0.21, FACE_Y, -0.46]} w={0.26} l={0.13} hit={HIT.rocker} mat={RUBBER_LIGHT} onPress={whenOn(prevChannel)} glyph="▼" />
+      <PillButton position={[0.21, FACE_Y, -0.62]} w={0.26} l={0.13} hit={HIT.rocker} mat={RUBBER_LIGHT} onPress={whenOn(volumeUp)} glyph="+" />
+      <PillButton position={[0.21, FACE_Y, -0.46]} w={0.26} l={0.13} hit={HIT.rocker} mat={RUBBER_LIGHT} onPress={whenOn(volumeDown)} glyph="−" />
+
+      {/* Number pad. Hit areas fill the grid cell, so the pad has no gaps. */}
+      {keypad.map(({ x, z, key, label }) => (
+        <RoundButton
+          key={key}
+          position={[x, FACE_Y, z]}
+          r={0.068}
+          hit={HIT.key}
+          onPress={pressDigit(label)}
+          glyph={label}
+          glyphSize={0.105}
+        />
+      ))}
+
+      {/* Battery door seam on the underside */}
+      <mesh position={[0, -FACE_Y + 0.001, 0.72]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.52, 0.86]} />
+        <meshStandardMaterial color="#0e0e0e" roughness={0.7} />
+      </mesh>
+    </group>
+  )
+}

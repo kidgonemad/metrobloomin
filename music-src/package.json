@@ -1,0 +1,17 @@
+{
+  "name": "metrobloomin-music",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Music page (TV): trimmed from kidgonemad/lucki-tv. Build: npm install && npm run build -> ../music/",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.182.0",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": { "@vitejs/plugin-react": "^5.1.1", "vite": "^7.3.1" }
+}

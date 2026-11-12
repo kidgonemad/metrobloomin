@@ -62,7 +62,7 @@
     new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['class'] }); document.addEventListener('visibilitychange', sync);
   })();
 
-  // ---- one controller for the three views: about (the 3D page), shop, videos ----
+  // ---- one controller for the three views: about (the 3D page), shop, music ----
   var nav = null, view = 'about';
   function setShop(on) {
     el.classList.toggle('is-open', on);
@@ -74,9 +74,9 @@
     view = next;
     document.body.classList.remove('mb-scrolling');
     setShop(next === 'shop');
-    if (window.__mbVideos) { if (next === 'videos') window.__mbVideos.open(); else window.__mbVideos.close(); }
+    if (window.__mbVideos) { if (next === 'music') window.__mbVideos.open(); else window.__mbVideos.close(); }
     document.body.setAttribute('data-view', next);
-    if (nav) { nav.setCurrent(next); nav.setTone(next === 'videos' ? 'auto' : 'dark'); }
+    if (nav) { nav.setCurrent(next); nav.setTone(next === 'music' ? 'auto' : 'dark'); }
     var h = next === 'about' ? '' : '#' + next;
     if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search);
   }
@@ -96,7 +96,7 @@
     nav = window.MBNav.create({
       items: [
         { label: 'shop', onClick: function () { show('shop'); } },
-        { label: 'videos', onClick: function () { show('videos'); } },
+        { label: 'music', onClick: function () { show('music'); } },
         { label: 'about', onClick: function () { show('about'); } }
       ],
       current: 'about', tone: 'dark',
@@ -177,9 +177,9 @@
     };
     ['wheel', 'touchmove', 'scroll'].forEach(function (e) { window.addEventListener(e, scrolling, { passive: true, capture: true }); });
     document.body.setAttribute('data-view', 'about');
-    // the site opens on the shop, unless a link asks for videos or about
+    // the site opens on the shop, unless a link asks for music (#videos = old links) or about
     var h = location.hash;
-    if (h === '#videos') show('videos'); else if (h === '#about') show('about'); else show('shop');
+    if (h === '#music' || h === '#videos') show('music'); else if (h === '#about') show('about'); else show('shop');
   }
   // wait for DOMContentLoaded so videos.js (loaded after this file) is ready
   if (document.readyState === 'complete') wire(); else document.addEventListener('DOMContentLoaded', wire);

@@ -1,11 +1,11 @@
 // Loading screen for the shop: weed buds (shop/drop/bud*.svg) drop and stack until the screen is full to the
 // very top, then the whole pile falls off the bottom and the shop products, stacked above it, fall right behind
-// it, their blobs grow and the products pop in (shop.css .mb-drop-in). Only on a fresh visit that opens on the shop (not #videos/#about).
+// it, their blobs grow and the products pop in (shop.css .mb-drop-in). Only on a fresh visit that opens on the shop (not #music/#videos/#about).
 // Runs before shop.js (script order). html.mb-intro (inline script in <head>) keeps the page white until now.
 (function () {
   var html = document.documentElement;
   var h = location.hash;
-  if (h === '#videos' || h === '#about') { html.classList.remove('mb-intro'); return; }
+  if (h === '#music' || h === '#videos' || h === '#about') { html.classList.remove('mb-intro'); return; }
   window.__mbLoading = true;
   var root = document.createElement('div');
   root.className = 'mb-loader';

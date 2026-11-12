@@ -1,7 +1,7 @@
-// Videos view: the blob video app (shop/vapp/) as a full-screen layer on the one page.
+// Music view: the TV page (music/, built from music-src/) as a full-screen layer on the one page.
 // Opened and closed only by the view controller in shop.js (MBView.show).
 (function () {
-  var src = new URL('shop/vapp/', document.baseURI).href;
+  var src = new URL('music/', document.baseURI).href;
   var wrap = document.createElement('div');
   wrap.id = 'videoView';
   wrap.className = 'mb-vlayer';
@@ -10,10 +10,10 @@
   function open() {
     if (!frame) {
       frame = document.createElement('iframe');
-      frame.title = 'Metro Bloomin videos';
+      frame.title = 'Metro Bloomin music';
       frame.allow = 'autoplay; fullscreen';
       frame.setAttribute('allowfullscreen', '');
-      frame.src = src + '?embed=1';
+      frame.src = src;
       wrap.appendChild(frame);
     }
     wrap.classList.add('is-open');

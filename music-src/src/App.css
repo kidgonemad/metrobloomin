@@ -1,0 +1,3 @@
+#canvas-container { position: fixed; inset: 0; background: #ebebe8; }
+.loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #78b04a; font: 700 12px/1 Arial, sans-serif; letter-spacing: .3em; }
+

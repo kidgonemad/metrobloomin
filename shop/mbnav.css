@@ -11,7 +11,15 @@
 .mbn__btn{flex:none;display:flex;align-items:center;justify-content:center;gap:3px;width:44px;height:44px;margin:0;padding:0;border-radius:50%;
   background:none;color:var(--mbn-fg);border:0;cursor:pointer;position:relative;transition:color .3s ease;
   -webkit-tap-highlight-color:transparent;outline:none}
-.mbn__btn span{display:block;width:5px;height:5px;border-radius:50%;background:currentColor;transition:transform .3s,width .3s,height .3s,border-radius .3s,opacity .2s}
+.mbn__btn span{display:block;width:6px;height:6px;border-radius:50%;background:currentColor;transition:transform .3s,width .3s,height .3s,border-radius .3s,opacity .2s}
+/* closed: the three dots are little blobs, each wobbling and breathing out of step */
+.mbn:not(.is-open) .mbn__btn span{animation:mbnBlob 2.6s ease-in-out infinite}
+.mbn:not(.is-open) .mbn__btn span:nth-child(2){animation-duration:2.2s;animation-delay:-.7s}
+.mbn:not(.is-open) .mbn__btn span:nth-child(3){animation-duration:3s;animation-delay:-1.5s}
+@keyframes mbnBlob{
+  0%,100%{border-radius:52% 48% 45% 55% / 50% 55% 45% 50%;transform:scale(1)}
+  33%{border-radius:40% 60% 58% 42% / 58% 42% 60% 40%;transform:scale(1.18,1.04)}
+  66%{border-radius:60% 40% 44% 56% / 42% 60% 40% 58%;transform:scale(.94,1.16)}}
 .mbn.is-open .mbn__btn span:nth-child(1){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(45deg)}
 .mbn.is-open .mbn__btn span:nth-child(2){opacity:0}
 .mbn.is-open .mbn__btn span:nth-child(3){position:absolute;width:16px;height:3px;border-radius:2px;transform:rotate(-45deg)}

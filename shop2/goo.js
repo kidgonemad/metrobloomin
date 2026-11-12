@@ -20,26 +20,21 @@
   function unit() { return bands[0].getBoundingClientRect().height / 240 * 16; }   // px per original rem
 
   var all = [];   // every band's state
-  var TILE = 500;   // the band's leaf tile size (background: center/500px)
   bands.forEach(function (band, n) {
     // one layer per edge: the strip and its bubbles, each with its own goo filter (same values as the original,
-    // blur scaled with the bubbles) that fills the goo with the band's leaf pattern and draws a dark green outline
+    // blur scaled with the bubbles) that fills the goo plain green and draws a dark green outline
     function layer(top) {
       var id = 'mbGoo' + n + (top ? 't' : 'b');
       var f = document.createElementNS(NS, 'filter');
       f.setAttribute('id', id);
       ['x', '-10%', 'y', '-10%', 'width', '120%', 'height', '135%',   // the area the goo reaches: less to filter each frame
         'color-interpolation-filters', 'sRGB'].forEach(function (v, i, a) { if (i % 2 === 0) f.setAttribute(v, a[i + 1]); });
-      // the bottom layer is turned upside down, so it takes an upside-down copy of the pattern (reads right way up)
-      var img = top ? 'leaf-pattern.webp?v=1' : 'leaf-pattern-flip.webp?v=1';
       f.innerHTML = '<feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>' +
         '<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="blob"/>' +
         '<feColorMatrix in="blur" mode="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 19 -4.6" result="fat"/>' +   // a lower cut: the same shape, a little bigger and still round
         '<feFlood flood-color="#37582a" result="ink"/><feComposite in="ink" in2="fat" operator="in" result="line"/>' +
-        '<feFlood flood-color="#55925a" result="base"/>' +
-        '<feImage href="' + img + '" x="0" y="0" width="' + TILE + '" height="' + TILE + '" preserveAspectRatio="none" result="one"/>' +
-        '<feTile in="one" result="tiles"/><feMerge result="leaf"><feMergeNode in="base"/><feMergeNode in="tiles"/></feMerge>' +
-        '<feComposite in="leaf" in2="blob" operator="in" result="goo"/>' +
+        '<feFlood flood-color="#55925a" result="base"/>' +                       // plain green (no leaf drawing on the goo)
+        '<feComposite in="base" in2="blob" operator="in" result="goo"/>' +
         '<feMerge><feMergeNode in="line"/><feMergeNode in="goo"/></feMerge>';
       svg.appendChild(f);
       var el = document.createElement('div');
@@ -53,7 +48,7 @@
       }
       el.innerHTML = html;
       band.appendChild(el);
-      return { el: el, top: top, blur: f.querySelector('feGaussianBlur'), img: f.querySelector('feImage'),
+      return { el: el, top: top, blur: f.querySelector('feGaussianBlur'),
         cur: el.querySelector('.goo-cursor'), x: 0, d: 0, sx: 0, sd: 0, r: 0, target: 0 };
     }
     var want = band.getAttribute('data-goo').split(/\s+/);
@@ -63,7 +58,6 @@
     all.push({ band: band, edges: edges, visible: true });
   });
 
-  function mod(a, m) { return ((a % m) + m) % m; }
   function size() {
     var u = unit(), root = document.documentElement.style;
     root.setProperty('--goo-rem', u + 'px');
@@ -71,15 +65,7 @@
     root.setProperty('--goo-out-top', Math.round(u * 4) + 'px');        // white room above the top band (taller drops go under the tabs)
     root.setProperty('--goo-out-bottom', Math.round(u * 5) + 'px');     // and below it (longer drips go behind "6 products")
     all.forEach(function (b) {
-      var W = b.band.clientWidth, H = b.band.clientHeight, L = u * 12;   // L: the layer's height (CSS: 12 x --goo-rem)
-      var bx = (W - TILE) / 2, by = (H - TILE) / 2;                       // where the band's centred tile starts
-      b.edges.forEach(function (e) {
-        e.blur.setAttribute('stdDeviation', (10 * u / 16).toFixed(2));
-        // line the pattern up with the band's, so the drawing runs on into the goo without a jump
-        var y = e.top ? by + L : H + L - by - TILE;                       // the bottom layer is drawn flipped
-        e.img.setAttribute('x', (mod(bx, TILE) - TILE).toFixed(2));
-        e.img.setAttribute('y', (mod(y, TILE) - TILE).toFixed(2));
-      });
+      b.edges.forEach(function (e) { e.blur.setAttribute('stdDeviation', (10 * u / 16).toFixed(2)); });
     });
   }
 

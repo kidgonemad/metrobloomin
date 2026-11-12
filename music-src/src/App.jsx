@@ -5,6 +5,7 @@ import { Box3, Vector3, MathUtils } from 'three'
 import Model from './Model'
 import RemoteHud from './RemoteHud'
 import CrashIn from './CrashIn'
+import Ashtray from './Ashtray'
 import useChannelStore from './store'
 import './App.css'
 
@@ -66,7 +67,7 @@ function useFrameTv(controlsRef, boxRef) {
   }, [camera, size, controlsRef, boxRef])
 }
 
-function Rig({ controlsRef, onReady, onLanded }) {
+function Rig({ controlsRef, onReady, onLanded, landed }) {
   const boxRef = useRef(null)
   const frameTv = useFrameTv(controlsRef, boxRef)
   const [rest, setRest] = useState(null)
@@ -86,6 +87,8 @@ function Rig({ controlsRef, onReady, onLanded }) {
         })
       }} />
     </CrashIn>
+    {/* the ashtray slides in from the left once the TV has landed */}
+    <Ashtray rest={rest} landed={landed} />
     </>
   )
 }
@@ -122,7 +125,7 @@ export default function App() {
         gl={{ antialias: !mobile(), toneMapping: 3 }}>
         <color attach="background" args={['#ebebe8']} />
         <Suspense fallback={null}>
-          <Rig controlsRef={controlsRef} onReady={() => setLoaded(true)} onLanded={() => setLanded(true)} />
+          <Rig controlsRef={controlsRef} onReady={() => setLoaded(true)} onLanded={() => setLanded(true)} landed={landed} />
         </Suspense>
         <CameraControls ref={controlsRef} makeDefault smoothTime={0.35} draggingSmoothTime={0.15}
           mouseButtons={{ left: 1, middle: 0, right: 0, wheel: 0 }} touches={{ one: 32, two: 0, three: 0 }} />

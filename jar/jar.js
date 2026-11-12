@@ -100,8 +100,9 @@ export function mount(box) {
 
   // ---- logo above (from the video's last frames) ----
   const logoTex = tex('logo.png')
-  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95 * 129 / 372), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }))
-  logo.position.y = (BODY_H + LID_H) / 2 + 0.42; scene.add(logo)
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95 * 129 / 372), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0, depthWrite: false, depthTest: false, toneMapped: false }))
+  const LOGO_Y = (BODY_H + LID_H) / 2 + 0.42
+  logo.position.y = LOGO_Y; logo.renderOrder = 10; scene.add(logo)   // drawn on top: the lifted lid never cuts into it
 
   // ---- buds (owner's model): inside the jar, fly out to hover around it when it opens ----
   const draco = new DRACOLoader().setDecoderPath(BASE + 'draco/')
@@ -161,7 +162,7 @@ export function mount(box) {
   function frameFit() {
     const vf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
     distClosed = Math.max(1.5 / vf, 0.75 / (vf * camera.aspect)) + 0.6
-    distOpen = Math.max(1.65 / vf, 1.25 / (vf * camera.aspect)) + 0.6    // room for the buds either side
+    distOpen = Math.max(1.9 / vf, 1.25 / (vf * camera.aspect)) + 0.6    // room for the buds either side
     camTo.set(0, 0.55, distClosed)
   }
   frameFit(); new ResizeObserver(frameFit).observe(box)
@@ -201,6 +202,7 @@ export function mount(box) {
     shadow.scale.setScalar(1 - 0.06 * Math.sin(t * 1.1) * f)
     // lid: unscrews (twist), lifts off and floats above, tilted; reverses to close
     const lk = THREE.MathUtils.clamp(ok * 1.4, 0, 1)
+    logo.position.y = LOGO_Y + 0.5 * lk           // rises clear of the floating lid
     lid.position.y = BODY_H + 0.04 + 0.62 * lk + 0.03 * Math.sin(t * 1.6) * lk
     lid.rotation.set(0.32 * lk, -2.4 * lk, -0.18 * lk)
     // buds: from their spot inside the jar up out of the opening, then out to their hover spot; bob and turn

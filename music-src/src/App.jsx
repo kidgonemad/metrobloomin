@@ -53,11 +53,16 @@ function useFrameTv(controlsRef, boxRef) {
     // phones: the remote fills the bottom of the screen, so the TV sits in the top part
     const visH = 2 * dist * Math.tan(MathUtils.degToRad(camera.fov / 2))
     const dy = aspect < 1 ? visH * 0.17 : 0
+    // free the limits first, so a re-frame (resize) isn't clamped to the old locked spot
+    ctrl.minAzimuthAngle = -Infinity; ctrl.maxAzimuthAngle = Infinity
+    ctrl.minPolarAngle = 0; ctrl.maxPolarAngle = Math.PI
+    ctrl.minDistance = 0; ctrl.maxDistance = Infinity
     ctrl.setLookAt(c.x, c.y + s.y * 0.05 - dy, c.z + dist, c.x, c.y - dy, c.z, false)
-    ctrl.minAzimuthAngle = ctrl.azimuthAngle - MathUtils.degToRad(25)
-    ctrl.maxAzimuthAngle = ctrl.azimuthAngle + MathUtils.degToRad(25)
-    ctrl.minPolarAngle = ctrl.polarAngle - MathUtils.degToRad(10)
-    ctrl.maxPolarAngle = ctrl.polarAngle + MathUtils.degToRad(8)
+    // a little side-to-side tilt only: no up/down, no zoom
+    ctrl.minAzimuthAngle = ctrl.azimuthAngle - MathUtils.degToRad(12)
+    ctrl.maxAzimuthAngle = ctrl.azimuthAngle + MathUtils.degToRad(12)
+    ctrl.minPolarAngle = ctrl.maxPolarAngle = ctrl.polarAngle
+    ctrl.minDistance = ctrl.maxDistance = ctrl.distance
   }, [camera, size, controlsRef, boxRef])
 }
 

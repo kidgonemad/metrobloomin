@@ -89,7 +89,7 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=34'
+import { mount } from './jar.js?v=35'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 // QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
 // the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video
@@ -103,7 +103,21 @@ const word = (() => {
   const still = new Image(); still.src = '../shop/bg/word-sm.webp?v=3'
   const v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true
   v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = '../shop/bg/word-sm.mp4?v=3'
-  const showStill = () => { if (still.complete && still.naturalWidth) paint(still); else still.onload = () => paint(still) }
+  // once it has played: wipe the loose sparkle dots left on the last frame (any bit smaller than a letter piece)
+  const tidy = () => {
+    const img = out.getImageData(0, 0, W, H), d = img.data, seen = new Uint8Array(W * H), stack = []
+    for (let i = 0; i < W * H; i++) {
+      if (seen[i] || d[i * 4 + 3] < 40) continue
+      const bit = []; stack.push(i); seen[i] = 1
+      while (stack.length) { const j = stack.pop(); bit.push(j); const x = j % W, y = (j / W) | 0
+        for (const k of [j - 1, j + 1, j - W, j + W]) { if (k < 0 || k >= W * H || seen[k] || d[k * 4 + 3] < 40) continue
+          if ((k === j - 1 && x === 0) || (k === j + 1 && x === W - 1)) continue; seen[k] = 1; stack.push(k) } }
+      if (bit.length < 60) bit.forEach((j) => { d[j * 4 + 3] = 0 })
+    }
+    out.putImageData(img, 0, 0)
+  }
+  v.addEventListener('ended', () => { paint(v); tidy() })
+  const showStill = () => { if (still.complete && still.naturalWidth) { paint(still); tidy() } else still.onload = () => { paint(still); tidy() } }
   let last = -1, raf = 0
   const loop = () => { if (v.readyState >= 2 && v.currentTime !== last) { last = v.currentTime; paint(v) }   // only new frames
     if (!v.ended && !v.paused) raf = requestAnimationFrame(loop) }

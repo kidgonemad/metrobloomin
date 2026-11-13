@@ -15,20 +15,20 @@ const BASE = new URL('./', import.meta.url).href
 
 // each collab's look. kencarson: the original jar. qrome: from the owner's QRÖME video (artwork baked from its frames):
 // the real jar's matte cream / black / lime swirl print (graded to the owner's photo), chrome logo above, the green METRO
-// BLOOMIN lettering under the jar, green rim light, and its own motion (motion: 'orbit', below).
+// BLOOMIN name at the bottom of the page (like Ken Carson's), green rim light, and its own motion (motion: 'orbit', below).
 export const COLLABS = {
   kencarson: {
     label: 'label.webp', labelMetal: 'label_metal.webp', lid: 'lid.webp', lidMetal: 'lid_metal.webp', roughness: 0.4,
     background: '#050103', backdrop: 'bg.webp', accent: '#ff1030', ground: '#401018',
     glow: ['rgba(255,20,40,0.6)', 'rgba(200,0,25,0.22)', 'rgba(120,0,10,0)'],
-    logo: 'logo.png', logoW: 0.95, logoAspect: 129 / 372, letters: null, rim: false, motion: 'float',
+    logo: 'logo.png', logoW: 0.95, logoAspect: 129 / 372, rim: false, motion: 'float',
   },
   qrome: {
     label: 'qrome_label.webp?v=4', labelMetal: null, lid: 'qrome_lid.webp?v=2', lidMetal: null, roughness: 0.42, printMetal: 0,
     background: '#010201', backdrop: null, accent: '#62ff2a', ground: '#0f2a0a',
     glow: ['rgba(110,255,50,0.5)', 'rgba(60,200,20,0.18)', 'rgba(20,90,0,0)'],
     logo: 'qrome_logo.png?v=1', logoW: 1.2, logoAspect: 121 / 496,
-    letters: 'qrome_letters.png?v=1', lettersW: 0.78, lettersAspect: 162 / 376, rim: true, motion: 'orbit',
+    rim: true, motion: 'orbit',   // its METRO BLOOMIN name sits at the bottom of the page, like Ken Carson's
   },
 }
 
@@ -145,12 +145,6 @@ export function mount(box, collab = 'kencarson') {
   })()
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 4.5), new THREE.MeshBasicMaterial({ map: glow, transparent: true, depthWrite: false, toneMapped: false }))
   floor.rotation.x = -Math.PI / 2; floor.position.y = jar.position.y - 0.07; scene.add(floor)
-  // QRÖME: the green METRO BLOOMIN lettering under the jar, facing you
-  if (C.letters) {
-    const letters = new THREE.Mesh(new THREE.PlaneGeometry(C.lettersW, C.lettersW * C.lettersAspect),
-      new THREE.MeshBasicMaterial({ map: tex(C.letters), transparent: true, depthWrite: false, toneMapped: false }))
-    letters.position.set(0, jar.position.y - 0.2, 0.62); letters.renderOrder = 5; scene.add(letters)
-  }
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 48), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.55, depthWrite: false }))
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = floor.position.y + 0.002; scene.add(shadow)
   scene.add(new THREE.HemisphereLight('#ffffff', C.ground, 0.12))

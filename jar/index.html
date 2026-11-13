@@ -54,7 +54,8 @@ html,body{overflow:hidden}
 <a class="back" href="../" aria-label="Back to Metro Bloomin"><canvas width="384" height="384"></canvas></a>
 <div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
 <div class="pick" role="tablist" aria-label="Collabs"><button type="button" data-c="kencarson">Ken Carson</button><button type="button" data-c="qrome">QRÖME</button></div>
-<div class="collab"><img src="kencarson.png?v=1" alt="Ken Carson" width="1215" height="579"></div>
+<div class="collab" data-c="kencarson"><img src="kencarson.png?v=1" alt="Ken Carson" width="1215" height="579"></div>
+<div class="collab off" data-c="qrome"><img src="qrome_letters.png?v=1" alt="Metro Bloomin" width="376" height="162"></div>
 <audio id="song" src="rock-n-roll.mp3?v=1" loop preload="auto"></audio>
 <button class="snd" id="snd" type="button" aria-label="Play music">
   <svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z"/></svg>
@@ -88,7 +89,7 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=28'
+import { mount } from './jar.js?v=29'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 const SONGS = { kencarson: 'rock-n-roll.mp3?v=1', qrome: 'qrome.mp3?v=1' }
 function pick(c) {
@@ -96,7 +97,7 @@ function pick(c) {
   if (window.__jar) window.__jar.destroy()
   window.__jar = mount(document.getElementById('jar'), c)
   document.querySelectorAll('.pick button').forEach((b) => { const on = b.dataset.c === c; b.classList.toggle('on', on); b.setAttribute('aria-selected', on) })
-  document.querySelector('.collab').classList.toggle('off', c !== 'kencarson')   // QRÖME's name is the logo above its jar
+  document.querySelectorAll('.collab').forEach((n) => n.classList.toggle('off', n.dataset.c !== c))   // each collab's name at the bottom
   if (window.MBSong) window.MBSong(SONGS[c])
   history.replaceState(null, '', c === 'qrome' ? '#qrome' : location.pathname + location.search)
 }

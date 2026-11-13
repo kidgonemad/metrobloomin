@@ -109,10 +109,22 @@ export function mount(box, collab = 'kencarson') {
 
   // lid: rolled edge + red-symbol top
   const lid = new THREE.Group(); lid.position.y = BODY_H + 0.04; jar.add(lid)
-  const lidSide = new THREE.Mesh(lathe([[R - 0.04, 0], [LID_R, 0.02], ...arc(LID_R - 0.05, LID_H - 0.05, 0.05, 0, Math.PI / 2, 10), [0.38, LID_H]]), black)
+  const lidSide = new THREE.Mesh(lathe([[R - 0.025, 0], [LID_R, 0.02], ...arc(LID_R - 0.05, LID_H - 0.05, 0.05, 0, Math.PI / 2, 10), [0.38, LID_H]]), black)
   lid.add(lidSide)
-  const lidUnder = new THREE.Mesh(new THREE.CircleGeometry(R - 0.035, 64), new THREE.MeshStandardMaterial({ color: '#0a0a0c', roughness: 0.5 }))
-  lidUnder.rotation.x = Math.PI / 2; lidUnder.position.y = 0.002; lid.add(lidUnder)   // the lid's underside, seen when it lifts
+  // the lid's underside, seen when it lifts: a hollow cap, not a solid puck. A thin rim at the bottom edge, the
+  // inside wall with screw threads, and the inner ceiling (the liner) set up inside it
+  const LID_IN = R - 0.025, LID_IN_H = LID_H - 0.045
+  const capIn = new THREE.MeshStandardMaterial({ color: '#141417', roughness: 0.55, metalness: 0.2, side: THREE.DoubleSide })
+  const lidRim = new THREE.Mesh(new THREE.RingGeometry(LID_IN, LID_R, 96), capIn)
+  lidRim.rotation.x = Math.PI / 2; lidRim.position.y = 0.001; lid.add(lidRim)
+  const lidWall = new THREE.Mesh(new THREE.CylinderGeometry(LID_IN, LID_IN, LID_IN_H, 96, 1, true), capIn)
+  lidWall.position.y = LID_IN_H / 2; lid.add(lidWall)
+  for (let k = 0; k < 3; k++) {                           // screw threads inside the wall
+    const th = new THREE.Mesh(new THREE.TorusGeometry(LID_IN - 0.004, 0.006, 6, 96), capIn)
+    th.rotation.x = Math.PI / 2; th.position.y = 0.05 + k * 0.06; lid.add(th)
+  }
+  const liner = new THREE.Mesh(new THREE.CircleGeometry(LID_IN, 96), new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.8 }))
+  liner.rotation.x = Math.PI / 2; liner.position.y = LID_IN_H; lid.add(liner)   // faces down, into the cap
   const lidTop = new THREE.Mesh(new THREE.CircleGeometry(0.44, 96), metal(tex(C.lid), C.lidMetal))
   // the top faces the overhead light when the lid floats: darker metal, softer reflection, so it reads like the body
   lidTop.material.envMapIntensity = 0.5; lidTop.material.color.set('#6a6a6e'); lidTop.material.clearcoat = 0.1

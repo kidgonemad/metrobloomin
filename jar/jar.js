@@ -279,10 +279,11 @@ export function mount(box, collab = 'kencarson') {
     tmpA.set(0, 0.7, -0.78).applyAxisAngle(up, -yaw)      // world "up and behind", in the jar's turning frame
     lid.rotation.order = 'YXZ'
     if (ORBIT) {
-      // QRÖME: pops straight up (springy overshoot), does a full flip on the way, then hangs above the jar,
-      // tipped toward you and slowly turning
+      // QRÖME: pops up (springy overshoot) and back, does a full flip on the way, then hangs up and behind the
+      // jar, tipped toward you and slowly turning: the opening stays clear, so the buds go back in without hitting it
       const pop = THREE.MathUtils.clamp(lp, 0, 1), sp = pop >= 1 ? 1 : 1 - Math.exp(-6 * pop) * Math.cos(9 * pop)
-      lid.position.set(0, BODY_H + 0.04 + 0.5 * sp + 0.03 * Math.sin(t * 1.4) * pop, 0)
+      tmpA.set(0, 0, -0.95).applyAxisAngle(up, -yaw)      // world "behind", in the jar's turning frame
+      lid.position.set(tmpA.x * sp, BODY_H + 0.04 + 0.5 * sp + 0.03 * Math.sin(t * 1.4) * pop, tmpA.z * sp)
       lid.rotation.set(Math.PI * 2 * easeOut(pop) + 0.45 * pop, t * 0.6 * pop - yaw * pop, 0)
       logo.position.y = LOGO_Y + 0.5 * pop           // rises clear of the lid (as much as Ken Carson's)
     } else {
@@ -305,7 +306,7 @@ export function mount(box, collab = 'kencarson') {
       const hov = tmpD.copy(b.hover).add(tmpC.set(0.02 * Math.sin(t * 0.9 + b.ph), 0.05 * Math.sin(t * 1.3 + b.ph), 0.02 * Math.cos(t * 0.8 + b.ph)))
       // 1) straight up out of the opening until clear of the rim, 2) outward, away from the jar, then down onto
       // the spot. (A single curve cut forward through the jar's wall while the bud was still inside.)
-      const above = mouth.clone().add(tmpC.set(0, 0.42, 0))
+      const above = mouth.clone().add(tmpC.set(0, ORBIT ? 0.24 : 0.42, 0))   // QRÖME: lower, passing under its hanging lid
       const out = tmpC.set(hov.x - mouth.x, 0, hov.z - mouth.z).normalize()
       if (ORBIT) {
         // QRÖME: up out of the jar, then out onto a ring that circles the jar at three heights (a slow swirl)

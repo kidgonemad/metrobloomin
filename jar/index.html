@@ -19,7 +19,7 @@ html,body{overflow:hidden}
 /* the song: starts on the first tap (phones only allow sound after one); this button mutes / unmutes it */
 .collab{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));z-index:2;width:min(56vw,360px);transform:translateX(-50%);
   pointer-events:none;opacity:0;animation:collabIn 1.2s ease 3.6s forwards}
-.collab img{display:block;width:100%;height:auto}
+.collab img,.collab canvas{display:block;width:100%;height:auto}
 @keyframes collabIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (min-width:761px){.collab{bottom:14px;width:250px}}
 /* the song button: a white wobbling blob with a black outline, like the menu's; ▶ before it plays, moving bars while
@@ -55,7 +55,7 @@ html,body{overflow:hidden}
 <div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
 <div class="pick" role="tablist" aria-label="Collabs"><button type="button" data-c="kencarson">Ken Carson</button><button type="button" data-c="qrome">QRÖME</button></div>
 <div class="collab" data-c="kencarson"><img src="kencarson.png?v=1" alt="Ken Carson" width="1215" height="579"></div>
-<div class="collab off" data-c="qrome"><img src="qrome_letters.png?v=1" alt="Metro Bloomin" width="376" height="162"></div>
+<div class="collab off" data-c="qrome"><canvas id="word" width="480" height="260" role="img" aria-label="Metro Bloomin"></canvas></div>
 <audio id="song" src="rock-n-roll.mp3?v=1" loop preload="auto"></audio>
 <button class="snd" id="snd" type="button" aria-label="Play music">
   <svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z"/></svg>
@@ -89,8 +89,28 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=29'
+import { mount } from './jar.js?v=30'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
+// QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
+// the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video
+const word = (() => {
+  const cv = document.getElementById('word'), out = cv.getContext('2d'), W = 480, H = 260
+  const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H * 2
+  const tx = tmp.getContext('2d', { willReadFrequently: true })
+  const paint = (src) => { tx.clearRect(0, 0, W, H * 2); tx.drawImage(src, 0, 0, W, H * 2)
+    const c = tx.getImageData(0, 0, W, H), m = tx.getImageData(0, H, W, H).data, d = c.data
+    for (let k = 3; k < d.length; k += 4) d[k] = m[k - 3]; out.putImageData(c, 0, 0) }
+  const still = new Image(); still.src = '../shop/bg/word-sm.webp?v=3'
+  const v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.playsInline = true
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = '../shop/bg/word-sm.mp4?v=3'
+  const showStill = () => { if (still.complete && still.naturalWidth) paint(still); else still.onload = () => paint(still) }
+  let last = -1, raf = 0
+  const loop = () => { if (v.readyState >= 2 && v.currentTime !== last) { last = v.currentTime; paint(v) }   // only new frames
+    if (!v.ended && !v.paused) raf = requestAnimationFrame(loop) }
+  return { play() { cancelAnimationFrame(raf); out.clearRect(0, 0, W, H); last = -1; v.currentTime = 0
+    const p = v.play(); if (p && p.then) p.then(() => { raf = requestAnimationFrame(loop) }).catch(showStill); else raf = requestAnimationFrame(loop) } }
+})()
+function playWord() { word.play() }
 const SONGS = { kencarson: 'rock-n-roll.mp3?v=1', qrome: 'wow-wow.mp3?v=1' }
 function pick(c) {
   if (window.__jar && window.__jar.collab === c) return
@@ -99,6 +119,7 @@ function pick(c) {
   document.querySelectorAll('.pick button').forEach((b) => { const on = b.dataset.c === c; b.classList.toggle('on', on); b.setAttribute('aria-selected', on) })
   document.querySelectorAll('.collab').forEach((n) => n.classList.toggle('off', n.dataset.c !== c))   // each collab's name at the bottom
   if (window.MBSong) window.MBSong(SONGS[c])
+  if (c === 'qrome') playWord()
   history.replaceState(null, '', c === 'qrome' ? '#qrome' : location.pathname + location.search)
 }
 document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => pick(b.dataset.c)))

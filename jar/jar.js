@@ -25,7 +25,8 @@ export const COLLABS = {
   },
   qrome: {
     label: 'qrome_label.webp?v=4', labelMetal: null, lid: 'qrome_lid.webp?v=2', lidMetal: null, roughness: 0.42, printMetal: 0,
-    background: '#010201', backdrop: null, accent: '#62ff2a', ground: '#0f2a0a',
+    background: '#010201', backdrop: 'qrome_bg.webp?v=3',   // its swirl in green, drifting like Ken Carson's
+    accent: '#62ff2a', ground: '#0f2a0a',
     glow: ['rgba(110,255,50,0.5)', 'rgba(60,200,20,0.18)', 'rgba(20,90,0,0)'],
     logo: 'qrome_logo.png?v=1', logoW: 1.2, logoAspect: 121 / 496,
     rim: true, motion: 'orbit',   // its METRO BLOOMIN name sits at the bottom of the page, like Ken Carson's
@@ -136,7 +137,6 @@ export function mount(box, collab = 'kencarson') {
   jar.position.y = -(BODY_H + LID_H) / 2
 
   // ---- backdrop: dim red symbol pattern far behind, red light pool on the floor ----
-  // (QRÖME: plain black, like its video)
   const bgTex = C.backdrop ? tex(C.backdrop) : null, bgTex2 = bgTex ? bgTex.clone() : null
   let bg = null, bg2 = null
   if (bgTex) {

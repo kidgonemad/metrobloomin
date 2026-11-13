@@ -36,12 +36,24 @@ html,body{overflow:hidden}
 .snd .bars i:nth-child(2){animation-delay:-.3s}.snd .bars i:nth-child(3){animation-delay:-.6s}.snd .bars i:nth-child(4){animation-delay:-.15s}
 .snd.playing .bars{display:flex}.snd.playing .play{display:none}
 @keyframes sndBar{0%,100%{height:25%}50%{height:100%}}
+/* collab switch (top centre): white wobbling blobs with a black outline like the menu; the chosen one is black */
+.pick{position:fixed;top:calc(30px + env(safe-area-inset-top));left:50%;z-index:3;transform:translateX(-50%);display:flex;gap:8px}
+.pick button{position:relative;border:0;background:none;padding:9px 14px;font:600 11px/1 Arial,Helvetica,sans-serif;letter-spacing:.1em;
+  text-transform:uppercase;color:#111;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.pick button:before{content:"";position:absolute;inset:0;z-index:-1;background:#fff;border:2px solid #111;border-radius:48% 52% 46% 54% / 62% 48% 52% 38%;
+  animation:mbnBlobWobble 3.2s ease-in-out infinite}
+.pick button:nth-child(2):before{animation-delay:-1.4s}
+.pick{isolation:isolate}
+.pick button.on{color:#fff}.pick button.on:before{background:#111;border-color:#fff}
+.collab.off{display:none}
+@media (min-width:761px){.pick{top:34px}.pick button{font-size:12px;padding:11px 18px}}
 @keyframes mbnBlobWobble{0%,100%{border-radius:48% 52% 46% 54% / 62% 48% 52% 38%}33%{border-radius:55% 45% 52% 48% / 45% 60% 40% 58%}66%{border-radius:44% 56% 50% 50% / 56% 40% 62% 46%}}
 </style>
 </head>
 <body>
 <a class="back" href="../" aria-label="Back to Metro Bloomin"><canvas width="384" height="384"></canvas></a>
 <div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
+<div class="pick" role="tablist" aria-label="Collabs"><button type="button" data-c="kencarson">Ken Carson</button><button type="button" data-c="qrome">QRÖME</button></div>
 <div class="collab"><img src="kencarson.png?v=1" alt="Ken Carson" width="1215" height="579"></div>
 <audio id="song" src="rock-n-roll.mp3?v=1" loop preload="auto"></audio>
 <button class="snd" id="snd" type="button" aria-label="Play music">
@@ -61,6 +73,8 @@ html,body{overflow:hidden}
   b.addEventListener('click', function () { if (a.paused) { wanted = true; play() } else { wanted = false; a.pause(); ui() } })
   a.addEventListener('play', ui); a.addEventListener('pause', ui)
   document.addEventListener('visibilitychange', function () { if (document.hidden) a.pause(); else if (wanted && a.currentTime > 0) play() })
+  // each collab has its own song (Ken Carson: rock-n-roll; QRÖME: the QRÖME video's track)
+  window.MBSong = function (src) { if (a.getAttribute('src') === src) return; var was = !a.paused; a.setAttribute('src', src); a.load(); if (was || wanted) play() }
   play()   // desktop browsers may allow it straight away
 })()
 </script>
@@ -74,8 +88,20 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=22'
-window.__jar = mount(document.getElementById('jar'))
+import { mount } from './jar.js?v=28'
+// two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
+const SONGS = { kencarson: 'rock-n-roll.mp3?v=1', qrome: 'qrome.mp3?v=1' }
+function pick(c) {
+  if (window.__jar && window.__jar.collab === c) return
+  if (window.__jar) window.__jar.destroy()
+  window.__jar = mount(document.getElementById('jar'), c)
+  document.querySelectorAll('.pick button').forEach((b) => { const on = b.dataset.c === c; b.classList.toggle('on', on); b.setAttribute('aria-selected', on) })
+  document.querySelector('.collab').classList.toggle('off', c !== 'kencarson')   // QRÖME's name is the logo above its jar
+  if (window.MBSong) window.MBSong(SONGS[c])
+  history.replaceState(null, '', c === 'qrome' ? '#qrome' : location.pathname + location.search)
+}
+document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => pick(b.dataset.c)))
+pick(location.hash === '#qrome' ? 'qrome' : 'kencarson')
 // header leaf: the site's stacked-alpha still (colour on top, mask below) painted into the canvas
 const im = new Image(); im.onload = () => {
   const cv = document.querySelector('.back canvas'), g = cv.getContext('2d'), t = document.createElement('canvas'); t.width = 384; t.height = 768

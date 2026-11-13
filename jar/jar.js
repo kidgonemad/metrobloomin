@@ -1,6 +1,7 @@
 // The Metro Bloomin jar: a glossy black weed jar wrapped in the skinned-leaf artwork (label.webp, baked from
 // the owner's art), red-symbol lid (lid.webp), on a dim red symbol backdrop, like the end of the owner's video.
-// Self-contained: MBJar.mount(container) puts the 3D jar into any element.
+// Self-contained: MBJar.mount(container, collab) puts the 3D jar into any element. `collab` picks the artwork,
+// light colour, backdrop and logo (COLLABS below; Ken Carson by default); the returned destroy() removes it.
 //   - entrance: starts close on the lid and pulls back to the whole jar; then the logo fades in above it
 //   - idle: slow turn, gentle float and tilt; the backdrop drifts
 //   - drag sideways: spin it (with momentum); drag up/down (or scroll): tilt the view
@@ -12,7 +13,27 @@ import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
 const BASE = new URL('./', import.meta.url).href
 
-export function mount(box) {
+// each collab's look. kencarson: the original jar. qrome: from the owner's QRÖME video (artwork baked from its frames):
+// the real jar's matte cream / black / lime swirl print (graded to the owner's photo), chrome logo above, the green METRO
+// BLOOMIN lettering under the jar, green rim light, and its own motion (motion: 'orbit', below).
+export const COLLABS = {
+  kencarson: {
+    label: 'label.webp', labelMetal: 'label_metal.webp', lid: 'lid.webp', lidMetal: 'lid_metal.webp', roughness: 0.4,
+    background: '#050103', backdrop: 'bg.webp', accent: '#ff1030', ground: '#401018',
+    glow: ['rgba(255,20,40,0.6)', 'rgba(200,0,25,0.22)', 'rgba(120,0,10,0)'],
+    logo: 'logo.png', logoW: 0.95, logoAspect: 129 / 372, letters: null, rim: false, motion: 'float',
+  },
+  qrome: {
+    label: 'qrome_label.webp?v=4', labelMetal: null, lid: 'qrome_lid.webp?v=2', lidMetal: null, roughness: 0.42, printMetal: 0,
+    background: '#010201', backdrop: null, accent: '#62ff2a', ground: '#0f2a0a',
+    glow: ['rgba(110,255,50,0.5)', 'rgba(60,200,20,0.18)', 'rgba(20,90,0,0)'],
+    logo: 'qrome_logo.png?v=1', logoW: 1.2, logoAspect: 121 / 496,
+    letters: 'qrome_letters.png?v=1', lettersW: 0.78, lettersAspect: 162 / 376, rim: true, motion: 'orbit',
+  },
+}
+
+export function mount(box, collab = 'kencarson') {
+  const C = COLLABS[collab] || COLLABS.kencarson
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
@@ -20,7 +41,7 @@ export function mount(box) {
   renderer.outputColorSpace = THREE.SRGBColorSpace
   box.appendChild(renderer.domElement)
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color('#050103')
+  scene.background = new THREE.Color(C.background)
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 60)
 
   // ---- reflections: a little studio of light panels (white key top-left, white rim right, red floor) ----
@@ -32,7 +53,8 @@ export function mount(box) {
   }
   panel(6, 3, '#ffffff', 7, [-4, 5, 3], [0, 0, 0])
   panel(1.2, 6, '#ffffff', 4, [5, 1, 1], [0, 0, 0])
-  panel(6, 3, '#ff1030', 0.9, [0, -4, 1], [0, 0, 0])   // a red bounce from below, not a red room
+  panel(6, 3, C.accent, 0.9, [0, -4, 1], [0, 0, 0])   // a coloured bounce from below (red / green), not a coloured room
+  if (C.rim) panel(1.4, 6, C.accent, 2.2, [4.5, 0.5, -2], [0, 0, 0])   // QRÖME: the video's green rim light from the right
   panel(3, 2, '#ffffff', 1.5, [0, 2, 6], [0, 0, 0])
   // a dim grey room and a big soft panel overhead, so brushed metal has something to reflect (pure black reads as plastic)
   studio.background = new THREE.Color('#5a5a62')
@@ -56,18 +78,19 @@ export function mount(box) {
     }
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
   })()
-  const metal = (map, metalMap) => {
+  const metal = (map, metalMap) => {   // printMetal (QRÖME): how metallic the printed art is (the swirl's whites stay white)
     const r = brushed.clone(); r.needsUpdate = true; r.repeat.set(1, 6)
     // printed tin: bare gunmetal shines (brushed reflections), the printed ink is matte (metalnessMap), thin clear coat
-    const m = new THREE.MeshPhysicalMaterial({ color: map ? '#ffffff' : '#222226', map, metalness: 1, roughness: 0.4, roughnessMap: r,
+    const m = new THREE.MeshPhysicalMaterial({ color: map ? '#ffffff' : '#222226', map, metalness: 1, roughness: C.roughness, roughnessMap: r,
       clearcoat: 0.3, clearcoatRoughness: 0.2, envMapIntensity: 1.6 })
     if (metalMap) { const t = tl.load(BASE + metalMap); m.metalnessMap = t }
+    else if (map && C.printMetal != null) m.metalness = C.printMetal
     return m
   }
   const black = metal(null)
 
   // label: the straight side, front of the art (u = 0.5) facing the camera
-  const side = new THREE.Mesh(new THREE.CylinderGeometry(R, R, BODY_H, 128, 1, true, -Math.PI, Math.PI * 2), metal(tex('label.webp'), 'label_metal.webp'))
+  const side = new THREE.Mesh(new THREE.CylinderGeometry(R, R, BODY_H, 128, 1, true, -Math.PI, Math.PI * 2), metal(tex(C.label), C.labelMetal))
   side.position.y = BODY_H / 2; jar.add(side)
   // rounded base and shoulder (black glass)
   const lathe = (pts) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), 128)
@@ -90,7 +113,7 @@ export function mount(box) {
   lid.add(lidSide)
   const lidUnder = new THREE.Mesh(new THREE.CircleGeometry(R - 0.035, 64), new THREE.MeshStandardMaterial({ color: '#0a0a0c', roughness: 0.5 }))
   lidUnder.rotation.x = Math.PI / 2; lidUnder.position.y = 0.002; lid.add(lidUnder)   // the lid's underside, seen when it lifts
-  const lidTop = new THREE.Mesh(new THREE.CircleGeometry(0.44, 96), metal(tex('lid.webp'), 'lid_metal.webp'))
+  const lidTop = new THREE.Mesh(new THREE.CircleGeometry(0.44, 96), metal(tex(C.lid), C.lidMetal))
   // the top faces the overhead light when the lid floats: darker metal, softer reflection, so it reads like the body
   lidTop.material.envMapIntensity = 0.5; lidTop.material.color.set('#6a6a6e'); lidTop.material.clearcoat = 0.1
   lidTop.rotation.x = -Math.PI / 2; lidTop.position.y = LID_H + 0.001; lid.add(lidTop)
@@ -101,29 +124,40 @@ export function mount(box) {
   jar.position.y = -(BODY_H + LID_H) / 2
 
   // ---- backdrop: dim red symbol pattern far behind, red light pool on the floor ----
-  const bgTex = tex('bg.webp'); bgTex.wrapS = bgTex.wrapT = THREE.RepeatWrapping; bgTex.repeat.set(3, 3)
-  const bg = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ map: bgTex, color: new THREE.Color(0.38, 0.38, 0.38), toneMapped: false }))
-  bg.position.set(0, 0.4, -6); scene.add(bg)
-  // a second, closer and darker layer drifting the other way (depth as the backdrop moves)
-  const bgTex2 = bgTex.clone(); bgTex2.repeat.set(2, 2); bgTex2.needsUpdate = true
-  const bg2 = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ map: bgTex2, color: new THREE.Color(0.22, 0.22, 0.22), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }))
-  bg2.position.set(0, 0.4, -4.5); scene.add(bg2)
+  // (QRÖME: plain black, like its video)
+  const bgTex = C.backdrop ? tex(C.backdrop) : null, bgTex2 = bgTex ? bgTex.clone() : null
+  let bg = null, bg2 = null
+  if (bgTex) {
+    bgTex.wrapS = bgTex.wrapT = THREE.RepeatWrapping; bgTex.repeat.set(3, 3)
+    bg = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ map: bgTex, color: new THREE.Color(0.38, 0.38, 0.38), toneMapped: false }))
+    bg.position.set(0, 0.4, -6); scene.add(bg)
+    // a second, closer and darker layer drifting the other way (depth as the backdrop moves)
+    bgTex2.repeat.set(2, 2); bgTex2.needsUpdate = true
+    bg2 = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ map: bgTex2, color: new THREE.Color(0.22, 0.22, 0.22), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }))
+    bg2.position.set(0, 0.4, -4.5); scene.add(bg2)
+  }
   const glow = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256
     const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128)
-    gr.addColorStop(0, 'rgba(255,20,40,0.6)'); gr.addColorStop(0.45, 'rgba(200,0,25,0.22)'); gr.addColorStop(1, 'rgba(120,0,10,0)')
+    gr.addColorStop(0, C.glow[0]); gr.addColorStop(0.45, C.glow[1]); gr.addColorStop(1, C.glow[2])
     g.fillStyle = gr; g.fillRect(0, 0, 256, 256)
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t
   })()
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 4.5), new THREE.MeshBasicMaterial({ map: glow, transparent: true, depthWrite: false, toneMapped: false }))
   floor.rotation.x = -Math.PI / 2; floor.position.y = jar.position.y - 0.07; scene.add(floor)
+  // QRÖME: the green METRO BLOOMIN lettering under the jar, facing you
+  if (C.letters) {
+    const letters = new THREE.Mesh(new THREE.PlaneGeometry(C.lettersW, C.lettersW * C.lettersAspect),
+      new THREE.MeshBasicMaterial({ map: tex(C.letters), transparent: true, depthWrite: false, toneMapped: false }))
+    letters.position.set(0, jar.position.y - 0.2, 0.62); letters.renderOrder = 5; scene.add(letters)
+  }
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 48), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.55, depthWrite: false }))
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = floor.position.y + 0.002; scene.add(shadow)
-  scene.add(new THREE.HemisphereLight('#ffffff', '#401018', 0.12))
+  scene.add(new THREE.HemisphereLight('#ffffff', C.ground, 0.12))
 
   // ---- logo above (from the video's last frames) ----
-  const logoTex = tex('logo.png')
-  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95 * 129 / 372), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0, depthWrite: false, depthTest: false, toneMapped: false }))
+  const logoTex = tex(C.logo)
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(C.logoW, C.logoW * C.logoAspect), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0, depthWrite: false, depthTest: false, toneMapped: false }))
   const LOGO_Y = (BODY_H + LID_H) / 2 + 0.42
   logo.position.y = LOGO_Y; logo.renderOrder = 10; scene.add(logo)   // drawn on top: the lifted lid never cuts into it
 
@@ -154,6 +188,8 @@ export function mount(box) {
   const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeInOut = (x) => (x < 0.5 ? 4 * x ** 3 : 1 - Math.pow(-2 * x + 2, 3) / 2)
 
   // ---- interaction ----
+  const ORBIT = C.motion === 'orbit'
+  let spinBase = 0
   let spinV = 0, dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, tilt = 0, tiltTarget = 0
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2()
   const el = renderer.domElement
@@ -183,7 +219,7 @@ export function mount(box) {
     const w = box.clientWidth, h = box.clientHeight
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix()
   }
-  new ResizeObserver(size).observe(box); size()
+  const ro = new ResizeObserver(size); ro.observe(box); size()
 
   // ---- loop ----
   const camFrom = new THREE.Vector3(0, 1.9, 0.9), camTo = new THREE.Vector3(0, 0.55, 4.1)
@@ -195,13 +231,15 @@ export function mount(box) {
     distOpen = Math.max(1.9 / vf, 1.25 / (vf * camera.aspect)) + 0.6    // room for the buds either side
     camTo.set(0, 0.55, distClosed)
   }
-  frameFit(); new ResizeObserver(frameFit).observe(box)
+  frameFit(); const ro2 = new ResizeObserver(frameFit); ro2.observe(box)
   const lookFrom = new THREE.Vector3(0, 0.6, 0), lookTo = new THREE.Vector3(0, 0.18, 0)
   const ease = (k) => 1 - Math.pow(1 - k, 3)
   let t = 0, last = performance.now(), visible = true
-  new IntersectionObserver((es) => { visible = es[0].isIntersecting }).observe(box)
+  const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting }); io.observe(box)
+  let rafId = 0, dead = false
   function frame(now) {
-    requestAnimationFrame(frame)
+    if (dead) return
+    rafId = requestAnimationFrame(frame)
     const dt = Math.min(0.05, (now - last) / 1000); last = now
     if (!visible || document.hidden) return
     t += dt
@@ -223,13 +261,20 @@ export function mount(box) {
       * (1 - THREE.MathUtils.clamp((tilt - 0.15) / 0.35, 0, 1))   // fades when you tilt overhead (it would sit on the lid)
     logo.lookAt(camera.position)
     // turn: idle spin plus drag momentum
-    if (!dragging) { spinV *= Math.pow(0.04, dt); jar.rotation.y += (reduce ? 0 : 0.63) * dt + spinV * dt }
+    if (!dragging) {
+      spinV *= Math.pow(0.04, dt)
+      if (ORBIT) {                                  // QRÖME: a quarter turn, a beat to look, the next quarter (eased)
+        const P = 2.4, step = Math.floor(t / P), ph = (t % P) / P, e = ph < 0.45 ? easeInOut(ph / 0.45) : 1
+        const want = (reduce ? 0 : (step + e) * Math.PI / 2)
+        jar.rotation.y += (want - spinBase) + spinV * dt; spinBase = want
+      } else jar.rotation.y += (reduce ? 0 : 0.63) * dt + spinV * dt
+    }
     // backdrop drifts (two layers, opposite ways)
-    if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
+    if (!reduce && bgTex) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
     // float and tilt
     const f = reduce ? 0 : 1
-    jar.position.y = -(BODY_H + LID_H) / 2 + f * 0.035 * Math.sin(t * 1.1)
+    jar.position.y = -(BODY_H + LID_H) / 2 + f * (ORBIT ? 0.06 * Math.sin(t * 0.8) : 0.035 * Math.sin(t * 1.1))
     jar.rotation.z = f * 0.035 * Math.sin(t * 0.7); jar.rotation.x = f * 0.03 * Math.sin(t * 0.9 + 1)
     shadow.scale.setScalar(1 - 0.06 * Math.sin(t * 1.1) * f)
     // lid: unscrews (two turns' worth of twist while rising a little), then floats up and back, tilting its top
@@ -238,10 +283,19 @@ export function mount(box) {
     const u1 = easeInOut(THREE.MathUtils.clamp(lp / 0.4, 0, 1)), u2 = easeInOut(THREE.MathUtils.clamp((lp - 0.3) / 0.7, 0, 1))
     const yaw = jar.rotation.y
     tmpA.set(0, 0.7, -0.78).applyAxisAngle(up, -yaw)      // world "up and behind", in the jar's turning frame
-    lid.position.set(tmpA.x * u2, BODY_H + 0.04 + 0.07 * u1 + tmpA.y * u2 + 0.025 * Math.sin(t * 1.6) * u2, tmpA.z * u2)
     lid.rotation.order = 'YXZ'
-    lid.rotation.set(0.62 * u2, -1.9 * u1 * (1 - u2) - yaw * u2, 0.06 * Math.sin(t * 1.2) * u2)
-    logo.position.y = LOGO_Y + 0.5 * u2           // rises clear of the floating lid
+    if (ORBIT) {
+      // QRÖME: pops straight up (springy overshoot), does a full flip on the way, then hangs above the jar,
+      // tipped toward you and slowly turning
+      const pop = THREE.MathUtils.clamp(lp, 0, 1), sp = pop >= 1 ? 1 : 1 - Math.exp(-6 * pop) * Math.cos(9 * pop)
+      lid.position.set(0, BODY_H + 0.04 + 0.5 * sp + 0.03 * Math.sin(t * 1.4) * pop, 0)
+      lid.rotation.set(Math.PI * 2 * easeOut(pop) + 0.45 * pop, t * 0.6 * pop - yaw * pop, 0)
+      logo.position.y = LOGO_Y + 0.5 * pop           // rises clear of the lid (as much as Ken Carson's)
+    } else {
+      lid.position.set(tmpA.x * u2, BODY_H + 0.04 + 0.07 * u1 + tmpA.y * u2 + 0.025 * Math.sin(t * 1.6) * u2, tmpA.z * u2)
+      lid.rotation.set(0.62 * u2, -1.9 * u1 * (1 - u2) - yaw * u2, 0.06 * Math.sin(t * 1.2) * u2)
+      logo.position.y = LOGO_Y + 0.5 * u2           // rises clear of the floating lid
+    }
     // buds: each pops out of the jar on an arc (straight up over the rim, then out and over to its spot), spinning
     // fast and slowing, growing as it clears the rim, then settles with a little bounce and hovers; reversed to go back in
     jar.updateMatrixWorld()
@@ -259,7 +313,13 @@ export function mount(box) {
       // the spot. (A single curve cut forward through the jar's wall while the bud was still inside.)
       const above = mouth.clone().add(tmpC.set(0, 0.42, 0))
       const out = tmpC.set(hov.x - mouth.x, 0, hov.z - mouth.z).normalize()
-      if (u < 0.28) b.obj.position.lerpVectors(home, above, easeInOut(u / 0.28))
+      if (ORBIT) {
+        // QRÖME: up out of the jar, then out onto a ring that circles the jar at three heights (a slow swirl)
+        const n = buds.length, ang = i / n * Math.PI * 2 + t * 0.7, ry = jar.position.y + 0.25 + (i % 3) * 0.42 + 0.04 * Math.sin(t * 1.5 + b.ph)
+        const ring = tmpD.set(Math.sin(ang) * 0.95, ry, Math.cos(ang) * 0.95)
+        if (u < 0.3) b.obj.position.lerpVectors(home, above, easeInOut(u / 0.3))
+        else b.obj.position.lerpVectors(above, ring, easeInOut((u - 0.3) / 0.7))
+      } else if (u < 0.28) b.obj.position.lerpVectors(home, above, easeInOut(u / 0.28))
       else {
         const v = (u - 0.28) / 0.72
         const c1 = above.clone().addScaledVector(out, 0.7).add(new THREE.Vector3(0, 0.3, 0))
@@ -267,7 +327,7 @@ export function mount(box) {
         bez(b.obj.position, above, c1, c2, hov, v)
       }
       // settle: once there, a small damped bounce
-      b.settle = bp >= 1 ? (b.settle || 0) + dt : 0
+      b.settle = bp >= 1 && !ORBIT ? (b.settle || 0) + dt : 0
       if (b.settle > 0) b.obj.position.y += 0.07 * Math.exp(-4 * b.settle) * Math.sin(11 * b.settle)
       const s0 = b.obj.userData.s || (b.obj.userData.s = b.obj.scale.x)
       b.obj.scale.setScalar(s0 * (0.55 + 0.45 * Math.min(1, u * 2.2)))
@@ -277,8 +337,13 @@ export function mount(box) {
     jar.position.y -= 0.025 * Math.min(1, kick)
     renderer.render(scene, camera)
   }
-  requestAnimationFrame(frame)
-  return { jar, lid, toggle: () => { open = !open }, get open() { return open } }
+  rafId = requestAnimationFrame(frame)
+  function destroy() {                            // stop and remove this jar (the page swaps collabs)
+    dead = true; cancelAnimationFrame(rafId); ro.disconnect(); ro2.disconnect(); io.disconnect()
+    scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach((m) => { Object.values(m).forEach((v) => { if (v && v.isTexture) v.dispose() }); m.dispose() }) })
+    scene.environment.dispose(); pm.dispose(); renderer.dispose(); renderer.domElement.remove()
+  }
+  return { jar, lid, collab, destroy, toggle: () => { open = !open }, get open() { return open } }
 }
 
-window.MBJar = { mount }
+window.MBJar = { mount, COLLABS }

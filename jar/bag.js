@@ -298,6 +298,7 @@ export function mount(box, variant = '35') {
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
     // the collab's own dance (dance.js) on its song's beat (index.html MBBeat: playback time on the song's beat grid);
     // it fades in when the song plays and out when it stops
+    const W = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
     const s = !reduce && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
     if (s) lastDance = danceFn(s)
     beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))
@@ -341,6 +342,11 @@ export function mount(box, variant = '35') {
       b.obj.scale.setScalar(s0 * Math.min(1, u / 0.3))                 // grows out of the opening (never pokes through the bag)
       const spin = 6 * Math.pow(1 - u, 2)
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
+      // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
+      if (W && W.n % buds.length === i && u >= 1) {
+        const pop = Math.exp(-W.since * 7) * beatAmt
+        b.obj.position.y += 0.14 * pop; b.obj.scale.multiplyScalar(1 + 0.28 * pop); b.obj.rotation.z += 0.7 * pop * (W.n % 2 ? 1 : -1)
+      }
     })
     // how full: every bud inside = full; empty = slack (the jolt eases off)
     const target = 1 - 0.72 * (outCount / HOVER.length)
@@ -348,6 +354,7 @@ export function mount(box, variant = '35') {
     wob *= Math.pow(0.02, dt)
     shape(fill, mouth, zipT, wob, t)
     applyDance(THREE, dancer, lastDance, beatAmt, FLOOR_Y)
+    if (W) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-W.since * 8) * beatAmt)   // and the package pulses a touch on each word
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

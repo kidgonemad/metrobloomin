@@ -280,6 +280,7 @@ export function mount(box, collab = 'kencarson') {
     // turn: idle spin plus drag momentum
     // the collab's own dance (dance.js) on its song's beat (index.html MBBeat: playback time on the song's beat grid);
     // it fades in when the song plays and out when it stops
+    const W = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
     const s = !reduce && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
     if (s) lastDance = danceFn(s)
     beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))
@@ -356,9 +357,15 @@ export function mount(box, collab = 'kencarson') {
       b.obj.scale.setScalar(s0 * (0.55 + 0.45 * Math.min(1, u * 2.2)))
       const spin = 7 * Math.pow(1 - u, 2)                  // fast while flying, calm when hovering
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
+      // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
+      if (W && W.n % buds.length === i && u >= 1) {
+        const pop = Math.exp(-W.since * 7) * beatAmt
+        b.obj.position.y += 0.14 * pop; b.obj.scale.multiplyScalar(1 + 0.28 * pop); b.obj.rotation.z += 0.7 * pop * (W.n % 2 ? 1 : -1)
+      }
     })
     jar.position.y -= 0.025 * Math.min(1, kick)
     applyDance(THREE, dancer, lastDance, beatAmt, floor.position.y)
+    if (W) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-W.since * 8) * beatAmt)   // and the package pulses a touch on each word
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

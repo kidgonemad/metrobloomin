@@ -93,6 +93,18 @@ html,body{overflow:hidden}
     while (lo < hi - 1) { var m = (lo + hi) >> 1; if (b[m] <= t) lo = m; else hi = m }
     return { i: lo, ph: (t - b[lo]) / (b[lo + 1] - b[lo]), bar: ((lo - g.bar) % 4 + 4) % 4, len: b[lo + 1] - b[lo] }
   } }
+  // the lyrics: every word's start and end (words.json, timed from the song), so the buds pop on each word said
+  var lyr = {}
+  beat.word = function () {
+    var w = lyr[(a.getAttribute('src') || '').split('?')[0]]
+    if (!w || !w.length || a.paused) return null
+    var t = a.currentTime, lo = 0, hi = w.length - 1
+    if (t < w[0][0]) return null
+    while (lo < hi) { var m = (lo + hi + 1) >> 1; if (w[m][0] <= t) lo = m; else hi = m - 1 }
+    var since = t - w[lo][0]; if (since > 0.6) return null                      // only while a word has just been said
+    return { n: lo, since: since, text: w[lo][2] }
+  }
+  fetch('words.json?v=1').then(function (r) { return r.json() }).then(function (j) { lyr = j }).catch(function () {})
   fetch('beats.json?v=1').then(function (r) { return r.json() }).then(function (j) { grid = j }).catch(function () {})
   window.MBSong = function (src) { if (a.getAttribute('src') === src) return; var was = !a.paused; a.setAttribute('src', src); a.load(); if (was || wanted) play() }
   play()   // desktop browsers may allow it straight away
@@ -108,8 +120,8 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=41'
-import { mount as mountBag } from './bag.js?v=20'
+import { mount } from './jar.js?v=42'
+import { mount as mountBag } from './bag.js?v=21'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 // QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
 // the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video

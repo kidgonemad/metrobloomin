@@ -44,8 +44,9 @@ html,body{overflow:hidden}
   animation:mbnBlobWobble 3.2s ease-in-out infinite}
 .pick button:nth-child(2):before{animation-delay:-1.4s}.pick button:nth-child(3):before{animation-delay:-2.2s}.pick button:nth-child(4):before{animation-delay:-.7s}
 /* phones: four collabs in one row between the leaf and the menu */
-/* phones: the eight collabs sit under the leaf and the menu, two rows of four across the screen */
-@media (max-width:760px){.pick{top:calc(92px + env(safe-area-inset-top));gap:6px 5px;width:calc(100vw - 24px)}.pick button{padding:8px 9px;font-size:9.5px;letter-spacing:.05em}}
+/* phones: the eight collabs sit between the leaf and the menu, in two compact rows */
+@media (max-width:760px){.pick{top:calc(24px + env(safe-area-inset-top));gap:5px 3px;width:calc(100vw - 168px)}.pick button{padding:6px 5px;font-size:8px;letter-spacing:.02em}}
+@media (max-width:360px){.pick{gap:4px 2px;width:calc(100vw - 160px)}.pick button{padding:5px 3px;font-size:6.5px;letter-spacing:0}}
 .pick button:nth-child(n+5):before{animation-delay:-1.9s}
 .pick{isolation:isolate}
 .pick button.on{color:#fff}.pick button.on:before{background:#111;border-color:#fff}

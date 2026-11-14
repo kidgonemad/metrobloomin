@@ -21,8 +21,8 @@ export const BAGS = {
     bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
     glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },
   // TSUNAMI (Wheezy): the orange / yellow wave bag, a squarer pouch
-  tsu: { front: 'tsu_front.webp?v=2', back: 'tsu_back.webp?v=2', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8,
-    bg: 'tsu_bg.webp?v=2', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=2', bottomAt: [0.04, 0.12, 0.4],
+  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8,
+    bg: 'tsu_bg.webp?v=2', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=3', bottomAt: [0.04, 0.12, 0.4],
     glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
   // GELATO 41: the purple "Premium Cannabis" bag
   gel: { front: 'gel_front.webp?v=3', back: 'gel_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,

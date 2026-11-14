@@ -19,7 +19,19 @@ export const BAGS = {
   // SKYBOX: the blue / purple "Premium Cannabis" bag from the owner's video (printed the same both sides)
   sky: { front: 'sky_front.webp?v=1', back: 'sky_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
     bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
-    glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },     // oval bottom's depth
+    glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },
+  // TSUNAMI (Wheezy): the orange / yellow wave bag, a squarer pouch
+  tsu: { front: 'tsu_front.webp?v=1', back: 'tsu_back.webp?v=1', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8,
+    bg: 'tsu_bg.webp?v=1', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=1', bottomAt: [0.04, 0.12, 0.4],
+    glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
+  // GELATO 41: the purple "Premium Cannabis" bag
+  gel: { front: 'gel_front.webp?v=1', back: 'gel_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=1', bottomAt: [0.05, 0.3, 0.5],
+    glow: ['rgba(180,120,255,0.45)', 'rgba(240,120,220,0.15)', 'rgba(60,20,90,0)'] },
+  // NIGHTSHADE (Lil Baby): white snakeskin with the two snakes
+  ns: { front: 'ns_front.webp?v=1', back: 'ns_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'ns_bg.webp?v=1', bgColor: '#040404', bounce: '#e8e4dc', ground: '#1c1c1c', bottom: 'ns_front.webp?v=1', bottomAt: [0.05, 0.05, 0.45],
+    glow: ['rgba(235,230,220,0.35)', 'rgba(160,160,160,0.12)', 'rgba(30,30,30,0)'] },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05
 
@@ -335,5 +347,5 @@ export function mount(box, variant = '35') {
     scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach((m) => { Object.values(m).forEach((v) => { if (v && v.isTexture) v.dispose() }); m.dispose() }) })
     scene.environment.dispose(); pm.dispose(); renderer.dispose(); renderer.domElement.remove()
   }
-  return { bag, collab: variant === 'sky' ? 'sky' : 'bag', variant: String(variant), destroy, toggle: () => { open = !open }, get open() { return open }, get torn() { return torn } }
+  return { bag, collab: /^(35|28)$/.test(String(variant)) ? 'bag' : String(variant), variant: String(variant), destroy, toggle: () => { open = !open }, get open() { return open }, get torn() { return torn } }
 }

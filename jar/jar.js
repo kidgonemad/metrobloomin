@@ -31,6 +31,14 @@ export const COLLABS = {
     logo: 'qrome_logo.png?v=1', logoW: 1.2, logoAspect: 121 / 496,
     rim: true, motion: 'orbit',   // its METRO BLOOMIN name sits at the bottom of the page, like Ken Carson's
   },
+  // Connected x Metro Bloomin "Gelato 41" (owner's screenshot): the blue skull / pink smoke label unrolled from the two
+  // jars in the photo (front with the logo, back with the strain scale), matte black lid, blue night with a pink bounce
+  con: {
+    label: 'con_label.webp?v=1', labelMetal: null, lid: 'con_lid.webp?v=1', lidMetal: null, roughness: 0.45, printMetal: 0.1,
+    background: '#02040c', backdrop: 'con_bg.webp?v=1', accent: '#ff4fa8', ground: '#0a1430',
+    glow: ['rgba(90,140,255,0.45)', 'rgba(255,80,170,0.14)', 'rgba(20,20,90,0)'],
+    logo: 'none.png', logoW: 0.1, logoAspect: 1, rim: true, motion: 'float',
+  },
 }
 
 export function mount(box, collab = 'kencarson') {

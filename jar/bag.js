@@ -21,16 +21,16 @@ export const BAGS = {
     bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
     glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },
   // TSUNAMI (Wheezy): the orange / yellow wave bag, a squarer pouch
-  tsu: { front: 'tsu_front.webp?v=1', back: 'tsu_back.webp?v=1', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8,
-    bg: 'tsu_bg.webp?v=1', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=1', bottomAt: [0.04, 0.12, 0.4],
+  tsu: { front: 'tsu_front.webp?v=2', back: 'tsu_back.webp?v=2', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8,
+    bg: 'tsu_bg.webp?v=2', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=2', bottomAt: [0.04, 0.12, 0.4],
     glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
   // GELATO 41: the purple "Premium Cannabis" bag
-  gel: { front: 'gel_front.webp?v=1', back: 'gel_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
-    bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=1', bottomAt: [0.05, 0.3, 0.5],
+  gel: { front: 'gel_front.webp?v=2', back: 'gel_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=2', bottomAt: [0.05, 0.3, 0.5],
     glow: ['rgba(180,120,255,0.45)', 'rgba(240,120,220,0.15)', 'rgba(60,20,90,0)'] },
   // NIGHTSHADE (Lil Baby): white snakeskin with the two snakes
-  ns: { front: 'ns_front.webp?v=1', back: 'ns_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
-    bg: 'ns_bg.webp?v=1', bgColor: '#040404', bounce: '#e8e4dc', ground: '#1c1c1c', bottom: 'ns_front.webp?v=1', bottomAt: [0.05, 0.05, 0.45],
+  ns: { front: 'ns_front.webp?v=2', back: 'ns_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'ns_bg.webp?v=1', bgColor: '#040404', bounce: '#e8e4dc', ground: '#1c1c1c', bottom: 'ns_front.webp?v=2', bottomAt: [0.05, 0.05, 0.45],
     glow: ['rgba(235,230,220,0.35)', 'rgba(160,160,160,0.12)', 'rgba(30,30,30,0)'] },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05
@@ -273,6 +273,7 @@ export function mount(box, variant = '35') {
   let t = 0, last = performance.now(), visible = true
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting }); io.observe(box)
   let rafId = 0, dead = false
+  let lastBeat = (window.MBBeat && window.MBBeat.n) || 0, beatDir = 1, pulse = 0
   function frame(now) {
     if (dead) return
     rafId = requestAnimationFrame(frame)
@@ -293,6 +294,10 @@ export function mount(box, variant = '35') {
     camera.position.lerpVectors(camFrom, new THREE.Vector3(0, look.y + Math.sin(el0) * d, Math.cos(el0) * d), k)
     camera.lookAt(look)
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
+    // the song's kick drum (index.html MBBeat): each kick gives it a twist and a bounce, as hard as the kick
+    const B = window.MBBeat
+    if (B && B.n !== lastBeat) { lastBeat = B.n; if (!reduce) { beatDir = -beatDir; spinV += beatDir * (2.2 + 3 * B.hit); pulse = Math.max(pulse, 0.5 + 0.5 * B.hit) } }
+    pulse *= Math.pow(0.0005, dt)
     if (!dragging) {
       spinV *= Math.pow(0.04, dt)
       // no spin: it stands facing you; after a drag it eases back to the nearest face (front or back)
@@ -339,6 +344,7 @@ export function mount(box, variant = '35') {
     fill += (target - fill) * (1 - Math.pow(0.02, dt))
     wob *= Math.pow(0.02, dt)
     shape(fill, mouth, zipT, wob, t)
+    bag.scale.setScalar(1 + 0.07 * pulse)                // bounce on the kick
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

@@ -14,7 +14,7 @@ import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 const BASE = new URL('./', import.meta.url).href
 // sizes in scene units (bagmarks.py prints the zip / tear line at the same STRIP / ZIP / SEAM)
 export const BAGS = {
-  35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27 },   // G: half the
+  35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27 },   // G: half the
   28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24 },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05

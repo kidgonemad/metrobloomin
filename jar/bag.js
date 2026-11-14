@@ -1,7 +1,8 @@
 // The Metro Bloomin mylar bags (jspaaydesign's packaging, art baked from the owner's screenshots), for the
 // collabs page. Same interface as jar.js: mount(container, variant) -> { destroy, toggle, collab }.
 //   variant '35': the tall 3.5 g bag; '28': the wide 28 g bag
-//   - a pillow-shaped pouch: two printed faces sealed at the sides and bottom, puffed out by how full it is
+//   - a stand-up pouch (doypack): two printed faces sealed at the sides, a folded oval bottom (gusset) it stands on,
+//     tapering up to the flat top seal; puffed out by how full it is; bare silver inside
 //   - idle: quarter turns (front, side, back), gentle float; drag to spin, drag up/down to tilt the view
 //   - tap: the first time, the tear strip rips off from the notch; then the zip opens left to right, the mouth
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
@@ -13,13 +14,13 @@ import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 const BASE = new URL('./', import.meta.url).href
 // sizes in scene units (bagmarks.py prints the zip / tear line at the same STRIP / ZIP / SEAM)
 export const BAGS = {
-  35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=2', W: 1.21, H: 1.62, T: 0.2 },
-  28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.19 },
+  35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27 },   // G: half the
+  28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24 },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05
 
 export function mount(box, variant = '35') {
-  const V = BAGS[variant] || BAGS[35], { W, H, T } = V
+  const V = BAGS[variant] || BAGS[35], { W, H, T, G } = V
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
@@ -47,7 +48,7 @@ export function mount(box, variant = '35') {
   const BODY_TOP = H / 2 - STRIP, ZIP_Y = BODY_TOP - ZIP, BOT = -H / 2
   // soft-touch print: matte with a slight sheen; the inside is bare silver mylar
   const print = (map) => new THREE.MeshPhysicalMaterial({ map, roughness: 0.55, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.35, envMapIntensity: 1.1 })
-  const inner = new THREE.MeshStandardMaterial({ color: '#b8bcc0', metalness: 1, roughness: 0.32, side: THREE.BackSide, envMapIntensity: 1.2 })
+  const inner = new THREE.MeshStandardMaterial({ color: '#dfe3e6', metalness: 1, roughness: 0.24, side: THREE.BackSide, envMapIntensity: 1.5 })
   const faces = []                                  // { geo, base: Float32Array of (x, y), mesh, back }
   function face(map, back) {
     const geo = new THREE.PlaneGeometry(W, BODY_TOP - BOT, 44, 64)
@@ -77,6 +78,13 @@ export function mount(box, variant = '35') {
     for (let i = 0; i < p.count; i++) { b[i * 2] = p.getX(i); b[i * 2 + 1] = p.getY(i) }
     strips.push({ geo, base: b })
   }
+  // the folded bottom (gusset): an oval the two faces open out to at the base, printed in the bag's border green
+  // outside, silver inside
+  const GK = 0.92                                                       // the bottom corners fold in a little
+  const oval = new THREE.Shape(); oval.absellipse(0, 0, W / 2 * GK, G, 0, Math.PI * 2, false, 0)
+  const ovalGeo = new THREE.ShapeGeometry(oval, 48); ovalGeo.rotateX(Math.PI / 2); ovalGeo.translate(0, BOT, 0)
+  bag.add(new THREE.Mesh(ovalGeo, new THREE.MeshPhysicalMaterial({ color: '#5f9e45', roughness: 0.6, clearcoat: 0.3, clearcoatRoughness: 0.4 })))
+  const ovalIn = new THREE.Mesh(ovalGeo, inner); ovalIn.position.y = 0.004; bag.add(ovalIn)   // faces down: its back (silver) shows from inside
   bag.position.y = -0.02
 
   // ---- shape: puffed by `fill`, the mouth opened by `mouth` (the zip runs open left to right with `zipT`) ----
@@ -91,7 +99,9 @@ export function mount(box, variant = '35') {
         const ty = THREE.MathUtils.clamp((y - BOT - SEAM) / (ZIP_Y - BOT - SEAM), 0, 1)       // 0 bottom seam .. 1 zip
         const px = Math.pow(Math.sin(ex * Math.PI / 2), 0.7)
         const pyz = ty >= 1 ? 0 : Math.pow(Math.sin(ty * Math.PI), 0.55) * (1 - 0.25 * ty)   // full low, pinched at the zip and the bottom seam
-        let z = f * T * px * pyz
+        // stand-up pouch: the faces open out to the oval bottom (an ellipse across), narrowing up to the top seal
+        const gx = Math.sqrt(Math.max(0, 1 - (x / (W / 2 * GK)) ** 2)), gy = Math.pow(Math.cos(THREE.MathUtils.clamp((y - BOT) / (BODY_TOP - BOT), 0, 1) * Math.PI / 2), 0.9)   // full most of the way, pinched at the top
+        let z = G * gx * gy + f * T * px * pyz
         // slack and crinkly when (nearly) empty
         z += (1 - f) * 0.012 * px * pyz * Math.sin(x * 23 + y * 17 + (F.back ? 1.7 : 0)) * Math.sin(y * 31 - x * 9)
         // the mouth: from below the zip up to the top edge, the two lips spread apart (an oval: sealed at the seams)
@@ -101,7 +111,7 @@ export function mount(box, variant = '35') {
         // filling wobble (a bud just dropped in)
         z *= 1 + wob * 0.08 * Math.sin(t * 22 + y * 4) * px
         // filled pouches pull their sides in and their bottom up a little
-        const xs = x * (1 - 0.06 * f * pyz), ys = y + 0.03 * f * px * (1 - ty) * (y < 0 ? 1 : 0)
+        const xs = x * (1 - 0.06 * f * pyz) * (1 - (1 - GK) * Math.pow(1 - THREE.MathUtils.clamp((y - BOT) / 0.35, 0, 1), 2)), ys = y
         p.setXYZ(i, xs, ys, z)
       }
       p.needsUpdate = true; F.geo.computeVertexNormals()
@@ -134,11 +144,11 @@ export function mount(box, variant = '35') {
     g.fillStyle = gr; g.fillRect(0, 0, 256, 256)
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t
   })()
-  const FLOOR_Y = bag.position.y + BOT - 0.12
+  const FLOOR_Y = bag.position.y + BOT - 0.004
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 4.5), new THREE.MeshBasicMaterial({ map: glow, transparent: true, depthWrite: false, toneMapped: false }))
   floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; scene.add(floor)
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 48), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.5, depthWrite: false }))
-  shadow.rotation.x = -Math.PI / 2; shadow.scale.set(W / 1.1, 0.45, 1); shadow.position.y = FLOOR_Y + 0.002; scene.add(shadow)
+  shadow.rotation.x = -Math.PI / 2; shadow.scale.set(W / 1.1, (G + 0.08) / 0.6, 1); shadow.position.y = FLOOR_Y + 0.002; scene.add(shadow)
   scene.add(new THREE.HemisphereLight('#ffffff', '#123a0a', 0.15))
 
   // ---- buds (the jars' model): inside the bag; float up out of the mouth and hover around it ----
@@ -234,9 +244,9 @@ export function mount(box, variant = '35') {
     if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
     const fl = reduce ? 0 : 1
-    bag.position.y = -0.02 + fl * 0.045 * Math.sin(t * 0.9)
-    bag.rotation.z = fl * 0.03 * Math.sin(t * 0.7)
-    shadow.scale.set(W / 1.1 * (1 - 0.05 * Math.sin(t * 0.9) * fl), 0.45, 1)
+    // it stands on its bottom (no float): only the jolt when a bud lands
+    bag.position.y = -0.02 - 0.015 * wob * fl
+    shadow.rotation.z = bag.rotation.y                                 // the oval shadow turns with the bag
     // tear strip: peels, then flies up and away, spinning, and is gone
     tear(easeInOut(tearT))
     if (torn) {

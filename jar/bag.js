@@ -25,8 +25,8 @@ export const BAGS = {
     bg: 'tsu_bg.webp?v=2', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=2', bottomAt: [0.04, 0.12, 0.4],
     glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
   // GELATO 41: the purple "Premium Cannabis" bag
-  gel: { front: 'gel_front.webp?v=2', back: 'gel_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
-    bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=2', bottomAt: [0.05, 0.3, 0.5],
+  gel: { front: 'gel_front.webp?v=3', back: 'gel_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=3', bottomAt: [0.05, 0.3, 0.5],
     glow: ['rgba(180,120,255,0.45)', 'rgba(240,120,220,0.15)', 'rgba(60,20,90,0)'] },
   // NIGHTSHADE (Lil Baby): white snakeskin with the two snakes
   ns: { front: 'ns_front.webp?v=2', back: 'ns_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,

@@ -82,8 +82,31 @@ export function mount(box, variant = '35') {
   // outside, silver inside
   const GK = 0.92                                                       // the bottom corners fold in a little
   const oval = new THREE.Shape(); oval.absellipse(0, 0, W / 2 * GK, G, 0, Math.PI * 2, false, 0)
-  const ovalGeo = new THREE.ShapeGeometry(oval, 48); ovalGeo.rotateX(Math.PI / 2); ovalGeo.translate(0, BOT, 0)
-  bag.add(new THREE.Mesh(ovalGeo, new THREE.MeshPhysicalMaterial({ color: '#5f9e45', roughness: 0.6, clearcoat: 0.3, clearcoatRoughness: 0.4 })))
+  const ovalGeo = new THREE.ShapeGeometry(oval, 48)
+  { const uv = ovalGeo.attributes.uv, pp = ovalGeo.attributes.position, RX = W / 2 * GK
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (pp.getX(i) / RX + 1) / 2, (pp.getY(i) / G + 1) / 2) }
+  ovalGeo.rotateX(Math.PI / 2); ovalGeo.translate(0, BOT, 0)
+  // the bottom's print: the bag's skull pattern, the fold across the middle (where the gusset tucks in), the curved
+  // seals at both ends (where it's welded to the sides) and its border
+  const bc = document.createElement('canvas'); bc.width = 1024; bc.height = Math.round(1024 * G / (W / 2 * GK))
+  const bottomTex = new THREE.CanvasTexture(bc); bottomTex.colorSpace = THREE.SRGBColorSpace; bottomTex.anisotropy = 8
+  const art = new Image(); art.onload = () => {
+    const g = bc.getContext('2d'), w = bc.width, h = bc.height
+    // plain skulls and smoke at the sides' print scale: the 28 g front's top right (under its zip, right of the big leaf)
+    const ppu = art.width / BAGS[28].W, sw = Math.min(art.width * 0.62, W * GK * ppu)
+    g.drawImage(art, art.width - sw - 40, 0.2 * ppu, sw, sw * h / w, 0, 0, w, h)
+    g.lineCap = 'round'
+    const line = (y, c, lw) => { g.strokeStyle = c; g.lineWidth = lw; g.beginPath(); g.moveTo(w * 0.1, y); g.lineTo(w * 0.9, y); g.stroke() }
+    line(h / 2 - 4, 'rgba(0,0,0,0.6)', 7); line(h / 2 + 4, 'rgba(255,255,255,0.32)', 5)          // the fold
+    for (const sx of [1, -1]) {                                                                      // the end seals
+      g.strokeStyle = 'rgba(95,158,69,0.95)'; g.lineWidth = 26; g.beginPath()
+      g.ellipse(sx > 0 ? w * 0.03 : w * 0.97, h / 2, w * 0.12, h * 0.52, 0, sx > 0 ? -Math.PI / 2 : Math.PI / 2, sx > 0 ? Math.PI / 2 : Math.PI * 1.5); g.stroke()
+    }
+    g.strokeStyle = '#5f9e45'; g.lineWidth = 22; g.beginPath(); g.ellipse(w / 2, h / 2, w / 2 - 11, h / 2 - 11, 0, 0, Math.PI * 2); g.stroke()
+    g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 4; g.beginPath(); g.ellipse(w / 2, h / 2, w / 2 - 22, h / 2 - 22, 0, 0, Math.PI * 2); g.stroke()
+    bottomTex.needsUpdate = true
+  }; art.src = BASE + BAGS[28].front
+  bag.add(new THREE.Mesh(ovalGeo, new THREE.MeshPhysicalMaterial({ map: bottomTex, roughness: 0.55, clearcoat: 0.35, clearcoatRoughness: 0.35 })))
   const ovalIn = new THREE.Mesh(ovalGeo, inner); ovalIn.position.y = 0.004; bag.add(ovalIn)   // faces down: its back (silver) shows from inside
   bag.position.y = -0.02
 

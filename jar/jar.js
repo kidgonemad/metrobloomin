@@ -8,6 +8,7 @@
 //   - tap it: the lid lifts off and floats, the buds (owner's model) fly out and each hovers in its own spot;
 //     tap again: they fly back in and the lid closes
 import * as THREE from 'three'
+import { DANCES, applyDance } from './dance.js?v=2'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -76,7 +77,8 @@ export function mount(box, collab = 'kencarson') {
 
   // ---- the jar ----
   const R = 0.5, BODY_H = 1.28, LID_H = 0.3, LID_R = 0.525   // about 1 : 1.6 like the video's jar
-  const jar = new THREE.Group(); scene.add(jar)
+  const dancer = new THREE.Group(); scene.add(dancer)      // does the collab's dance (dance.js) round the base
+  const jar = new THREE.Group(); dancer.add(jar)
   // brushed metal: a roughness map of fine horizontal streaks (around the jar), so the reflections smear sideways
   const brushed = (() => {
     const c = document.createElement('canvas'); c.width = 512; c.height = 512
@@ -251,7 +253,7 @@ export function mount(box, collab = 'kencarson') {
   let t = 0, last = performance.now(), visible = true
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting }); io.observe(box)
   let rafId = 0, dead = false
-  let beatAmt = 0, twistNow = 0
+  let beatAmt = 0, lastDance = null
   function frame(now) {
     if (dead) return
     rafId = requestAnimationFrame(frame)
@@ -276,17 +278,11 @@ export function mount(box, collab = 'kencarson') {
       * (1 - THREE.MathUtils.clamp((tilt - 0.15) / 0.35, 0, 1))   // fades when you tilt overhead (it would sit on the lid)
     logo.lookAt(camera.position)
     // turn: idle spin plus drag momentum
-    // on the song's beat (index.html MBBeat: the song's playback time on its beat grid): a twist that flips direction on
-    // every beat, a bounce that hits on the beat and dies before the next, and a bigger hit on the first beat of the bar
-    const s = !reduce && window.MBBeat && window.MBBeat.get()
-    let twist = 0, bounce = 0
-    if (s) {
-      const dir = s.i % 2 ? 1 : -1, ease = 1 - Math.pow(1 - Math.min(1, s.ph * 3), 3), down = s.bar === 0 ? 1 : 0.6
-      twist = dir * 0.17 * (2 * ease - 1) * down
-      bounce = Math.exp(-s.ph * 5) * down
-    }
-    beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))    // eases in when the song starts, out when it stops
-    twist *= beatAmt; bounce *= beatAmt
+    // the collab's own dance (dance.js) on its song's beat (index.html MBBeat: playback time on the song's beat grid);
+    // it fades in when the song plays and out when it stops
+    const s = !reduce && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
+    if (s) lastDance = danceFn(s)
+    beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))
     if (!dragging) {
       spinV *= Math.pow(0.04, dt)
       if (ORBIT) {                                  // QRÖME: a quarter turn, a beat to look, the next quarter (eased)
@@ -362,9 +358,7 @@ export function mount(box, collab = 'kencarson') {
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
     })
     jar.position.y -= 0.025 * Math.min(1, kick)
-    jar.rotation.y += twist - twistNow; twistNow = twist           // the beat's twist, on top of its own turn
-    jar.scale.setScalar(1 + 0.06 * bounce)                     // and the bounce
-    jar.position.y += 0.05 * bounce
+    applyDance(THREE, dancer, lastDance, beatAmt, floor.position.y)
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

@@ -107,8 +107,8 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=39'
-import { mount as mountBag } from './bag.js?v=18'
+import { mount } from './jar.js?v=41'
+import { mount as mountBag } from './bag.js?v=20'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 // QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
 // the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video
@@ -147,19 +147,20 @@ function playWord() { word.play() }
 // the third collab: jspaaydesign's big Metro Bloomin bag (bag.js); its song: Keep Goin (Lil Baby)
 // every collab: what it mounts, its song and its link
 const C = {
-  kencarson: { song: 'rock-n-roll.mp3?v=1', hash: '' },
-  qrome: { song: 'wow-wow.mp3?v=1', hash: '#qrome', word: true },
-  bag: { bag: true, song: 'keep-goin.mp3?v=1', hash: '#bag', word: true },
-  sky: { bag: 'sky', song: 'skybox.mp3?v=1', hash: '#skybox', word: true },
-  tsu: { bag: 'tsu', song: 'young-wheezy.mp3?v=1', hash: '#tsunami', word: true },
-  gel: { bag: 'gel', song: 'show-of-hands.mp3?v=1', hash: '#gelato41', word: true },
-  con: { song: 'bally-baby.mp3?v=1', hash: '#connected', word: true },
-  ns: { bag: 'ns', song: 'lets-do-it.mp3?v=1', hash: '#nightshade', word: true },
+  kencarson: { song: 'rock-n-roll.mp3?v=1', hash: '', dance: 'headbang' },
+  qrome: { song: 'wow-wow.mp3?v=1', hash: '#qrome', word: true, dance: 'hop' },
+  bag: { bag: true, song: 'keep-goin.mp3?v=1', hash: '#bag', word: true, dance: 'sway' },
+  sky: { bag: 'sky', song: 'skybox.mp3?v=1', hash: '#skybox', word: true, dance: 'snap' },
+  tsu: { bag: 'tsu', song: 'young-wheezy.mp3?v=1', hash: '#tsunami', word: true, dance: 'wave' },
+  gel: { bag: 'gel', song: 'show-of-hands.mp3?v=1', hash: '#gelato41', word: true, dance: 'bop' },
+  con: { song: 'bally-baby.mp3?v=1', hash: '#connected', word: true, dance: 'rock' },
+  ns: { bag: 'ns', song: 'lets-do-it.mp3?v=1', hash: '#nightshade', word: true, dance: 'slither' },
 }
 function pick(c, force) {
   if (!C[c]) c = 'kencarson'
   if (!force && window.__jar && window.__jar.collab === c) return
   if (window.__jar) window.__jar.destroy()
+  window.MBDance = C[c].dance            // each collab dances its own way (dance.js)
   const box = document.getElementById('jar'), k = C[c]
   window.__jar = k.bag === true ? mountBag(box, '28') : k.bag ? mountBag(box, k.bag) : mount(box, c)
   document.querySelectorAll('.pick button').forEach((b) => { const on = b.dataset.c === c; b.classList.toggle('on', on); b.setAttribute('aria-selected', on) })

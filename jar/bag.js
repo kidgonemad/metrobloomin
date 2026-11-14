@@ -15,19 +15,25 @@ const BASE = new URL('./', import.meta.url).href
 // sizes in scene units (bagmarks.py prints the zip / tear line at the same STRIP / ZIP / SEAM)
 export const BAGS = {
   35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6 },   // G: half the
-  28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24, buds: 12 },     // oval bottom's depth
+  28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24, buds: 12 },
+  // SKYBOX: the blue / purple "Premium Cannabis" bag from the owner's video (printed the same both sides)
+  sky: { front: 'sky_front.webp?v=1', back: 'sky_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
+    glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05
 
 export function mount(box, variant = '35') {
-  const V = BAGS[variant] || BAGS[35], { W, H, T, G } = V
+  const V0 = BAGS[variant] || BAGS[35], { W, H, T, G } = V0
+  const V = Object.assign({ bg: 'bag_bg.webp?v=1', bgColor: '#030402', bounce: '#7cff4a', ground: '#123a0a', bottom: BAGS[28].front, bottomAt: null,
+    glow: ['rgba(120,230,60,0.45)', 'rgba(70,170,30,0.16)', 'rgba(20,80,0,0)'] }, V0)
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.outputColorSpace = THREE.SRGBColorSpace
   box.appendChild(renderer.domElement)
-  const scene = new THREE.Scene(); scene.background = new THREE.Color('#030402')
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(V.bgColor)
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 60)
 
   // ---- reflections: the jars' studio (white key, white rim, green bounce) ----
@@ -37,7 +43,7 @@ export function mount(box, variant = '35') {
     m.position.set(...pos); m.lookAt(0, 0, 0); studio.add(m)
   }
   studio.background = new THREE.Color('#4a4a50')
-  panel(6, 3, '#ffffff', 6, [-4, 5, 3]); panel(1.2, 6, '#ffffff', 3.5, [5, 1, 1]); panel(6, 3, '#7cff4a', 0.8, [0, -4, 1])
+  panel(6, 3, '#ffffff', 6, [-4, 5, 3]); panel(1.2, 6, '#ffffff', 3.5, [5, 1, 1]); panel(6, 3, V.bounce, 0.8, [0, -4, 1])
   panel(3, 2, '#ffffff', 1.4, [0, 2, 6]); panel(10, 10, '#ffffff', 2, [0, 6, 0])
   scene.environment = pm.fromScene(studio, 0.03).texture
   const tl = new THREE.TextureLoader()
@@ -94,8 +100,13 @@ export function mount(box, variant = '35') {
   const art = new Image(); art.onload = () => {
     const g = bc.getContext('2d'), w = bc.width, h = bc.height
     // plain skulls and smoke at the sides' print scale: the 28 g front's top right (under its zip, right of the big leaf)
-    const ppu = art.width / BAGS[28].W, sw = Math.min(art.width * 0.62, W * GK * ppu)
-    g.drawImage(art, art.width - sw - 40, 0.2 * ppu, sw, sw * h / w, 0, 0, w, h)
+    if (V.bottomAt) {                                                    // a given patch: [x, y, width] as fractions of the art
+      const [fx, fy, fw] = V.bottomAt, sw = art.width * fw
+      g.drawImage(art, art.width * fx, art.height * fy, sw, sw * h / w, 0, 0, w, h)
+    } else {
+      const ppu = art.width / BAGS[28].W, sw = Math.min(art.width * 0.62, W * GK * ppu)
+      g.drawImage(art, art.width - sw - 40, 0.2 * ppu, sw, sw * h / w, 0, 0, w, h)
+    }
     g.lineCap = 'round'
     const line = (y, c, lw) => { g.strokeStyle = c; g.lineWidth = lw; g.beginPath(); g.moveTo(w * 0.1, y); g.lineTo(w * 0.9, y); g.stroke() }
     line(h / 2 - 4, 'rgba(0,0,0,0.6)', 7); line(h / 2 + 4, 'rgba(255,255,255,0.32)', 5)          // the fold
@@ -106,7 +117,7 @@ export function mount(box, variant = '35') {
     g.strokeStyle = '#5f9e45'; g.lineWidth = 22; g.beginPath(); g.ellipse(w / 2, h / 2, w / 2 - 11, h / 2 - 11, 0, 0, Math.PI * 2); g.stroke()
     g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 4; g.beginPath(); g.ellipse(w / 2, h / 2, w / 2 - 22, h / 2 - 22, 0, 0, Math.PI * 2); g.stroke()
     bottomTex.needsUpdate = true
-  }; art.src = BASE + BAGS[28].front
+  }; art.src = BASE + V.bottom
   bag.add(new THREE.Mesh(ovalGeo, new THREE.MeshPhysicalMaterial({ map: bottomTex, roughness: 0.55, clearcoat: 0.35, clearcoatRoughness: 0.35 })))
   const ovalIn = new THREE.Mesh(ovalGeo, inner); ovalIn.position.y = 0.004; bag.add(ovalIn)   // faces down: its back (silver) shows from inside
   bag.position.y = -0.02
@@ -159,7 +170,7 @@ export function mount(box, variant = '35') {
   }
 
   // ---- backdrop: the bags' skull / leaf pattern, dim, drifting in two layers (like the jars') ----
-  const bgTex = tex('bag_bg.webp?v=1'), bgTex2 = bgTex.clone()
+  const bgTex = tex(V.bg), bgTex2 = bgTex.clone()
   bgTex.wrapS = bgTex.wrapT = THREE.RepeatWrapping; bgTex.repeat.set(3, 3)
   const bg = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ map: bgTex, color: new THREE.Color(0.38, 0.38, 0.38), toneMapped: false }))
   bg.position.set(0, 0.4, -6); scene.add(bg)
@@ -169,7 +180,7 @@ export function mount(box, variant = '35') {
   const glow = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256
     const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128)
-    gr.addColorStop(0, 'rgba(120,230,60,0.45)'); gr.addColorStop(0.45, 'rgba(70,170,30,0.16)'); gr.addColorStop(1, 'rgba(20,80,0,0)')
+    gr.addColorStop(0, V.glow[0]); gr.addColorStop(0.45, V.glow[1]); gr.addColorStop(1, V.glow[2])
     g.fillStyle = gr; g.fillRect(0, 0, 256, 256)
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t
   })()
@@ -178,7 +189,7 @@ export function mount(box, variant = '35') {
   floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; scene.add(floor)
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 48), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.5, depthWrite: false }))
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(W / 1.1, (G + 0.08) / 0.6, 1); shadow.position.y = FLOOR_Y + 0.002; scene.add(shadow)
-  scene.add(new THREE.HemisphereLight('#ffffff', '#123a0a', 0.15))
+  scene.add(new THREE.HemisphereLight('#ffffff', V.ground, 0.15))
 
   // ---- buds (the jars' model): inside the bag; float up out of the mouth and hover around it ----
   const draco = new DRACOLoader().setDecoderPath(BASE + 'draco/')
@@ -324,5 +335,5 @@ export function mount(box, variant = '35') {
     scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach((m) => { Object.values(m).forEach((v) => { if (v && v.isTexture) v.dispose() }); m.dispose() }) })
     scene.environment.dispose(); pm.dispose(); renderer.dispose(); renderer.domElement.remove()
   }
-  return { bag, collab: 'bag', variant: String(variant), destroy, toggle: () => { open = !open }, get open() { return open }, get torn() { return torn } }
+  return { bag, collab: variant === 'sky' ? 'sky' : 'bag', variant: String(variant), destroy, toggle: () => { open = !open }, get open() { return open }, get torn() { return torn } }
 }

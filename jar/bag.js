@@ -273,7 +273,7 @@ export function mount(box, variant = '35') {
   let t = 0, last = performance.now(), visible = true
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting }); io.observe(box)
   let rafId = 0, dead = false
-  let lastBeat = (window.MBBeat && window.MBBeat.n) || 0, beatDir = 1, pulse = 0
+  let beatAmt = 0, twistNow = 0
   function frame(now) {
     if (dead) return
     rafId = requestAnimationFrame(frame)
@@ -294,15 +294,22 @@ export function mount(box, variant = '35') {
     camera.position.lerpVectors(camFrom, new THREE.Vector3(0, look.y + Math.sin(el0) * d, Math.cos(el0) * d), k)
     camera.lookAt(look)
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
-    // the song's kick drum (index.html MBBeat): each kick gives it a twist and a bounce, as hard as the kick
-    const B = window.MBBeat
-    if (B && B.n !== lastBeat) { lastBeat = B.n; if (!reduce) { beatDir = -beatDir; spinV += beatDir * (2.2 + 3 * B.hit); pulse = Math.max(pulse, 0.5 + 0.5 * B.hit) } }
-    pulse *= Math.pow(0.0005, dt)
+    // on the song's beat (index.html MBBeat: the song's playback time on its beat grid): a twist that flips direction on
+    // every beat, a bounce that hits on the beat and dies before the next, and a bigger hit on the first beat of the bar
+    const s = !reduce && window.MBBeat && window.MBBeat.get()
+    let twist = 0, bounce = 0
+    if (s) {
+      const dir = s.i % 2 ? 1 : -1, ease = 1 - Math.pow(1 - Math.min(1, s.ph * 3), 3), down = s.bar === 0 ? 1 : 0.6
+      twist = dir * 0.17 * (2 * ease - 1) * down
+      bounce = Math.exp(-s.ph * 5) * down
+    }
+    beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))    // eases in when the song starts, out when it stops
+    twist *= beatAmt; bounce *= beatAmt
     if (!dragging) {
       spinV *= Math.pow(0.04, dt)
       // no spin: it stands facing you; after a drag it eases back to the nearest face (front or back)
-      const tgt = Math.round(bag.rotation.y / Math.PI) * Math.PI
-      bag.rotation.y += (tgt - bag.rotation.y) * (1 - Math.pow(0.05, dt)) + spinV * dt
+      const own = bag.rotation.y - twistNow, tgt = Math.round(own / Math.PI) * Math.PI   // its own turn, without the beat's twist
+      bag.rotation.y += (tgt - own) * (1 - Math.pow(0.05, dt)) + spinV * dt
     }
     if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
@@ -344,7 +351,9 @@ export function mount(box, variant = '35') {
     fill += (target - fill) * (1 - Math.pow(0.02, dt))
     wob *= Math.pow(0.02, dt)
     shape(fill, mouth, zipT, wob, t)
-    bag.scale.setScalar(1 + 0.07 * pulse)                // bounce on the kick
+    bag.rotation.y += twist - twistNow; twistNow = twist           // the beat's twist, on top of its own turn
+    bag.scale.setScalar(1 + 0.06 * bounce)                     // and the bounce
+    bag.position.y += 0.05 * bounce
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

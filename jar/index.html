@@ -72,45 +72,27 @@ html,body{overflow:hidden}
   a.volume = 0.7
   function ui() { var on = !a.paused; b.classList.toggle('playing', on); b.setAttribute('aria-label', on ? 'Pause music' : 'Play music') }
   function play() { var p = a.play(); if (p && p.then) p.then(ui).catch(ui); else ui() }
-  ;['pointerdown', 'keydown'].forEach(function (e) { window.addEventListener(e, function first(ev) {
-    if (ev.target.closest && ev.target.closest('#snd')) return
-    window.removeEventListener(e, first, true); if (wanted && a.paused) play() }, true) })
+  // the first taps start it (phones only allow sound after one); keeps trying on each tap until it's really playing
+  var EVS = ['pointerdown', 'touchend', 'click', 'keydown']
+  function first(ev) { if (ev.target.closest && ev.target.closest('#snd')) return; if (wanted && a.paused) play() }
+  EVS.forEach(function (e) { window.addEventListener(e, first, true) })
+  a.addEventListener('playing', function () { EVS.forEach(function (e) { window.removeEventListener(e, first, true) }) })
   b.addEventListener('click', function () { if (a.paused) { wanted = true; play() } else { wanted = false; a.pause(); ui() } })
   a.addEventListener('play', ui); a.addEventListener('pause', ui)
   document.addEventListener('visibilitychange', function () { if (document.hidden) a.pause(); else if (wanted && a.currentTime > 0) play() })
   // each collab has its own song (Ken Carson: rock-n-roll; QRÖME: the QRÖME video's track)
-  // the beat: the song runs through an analyser (set up on the first tap; phones need one for audio processing). Each
-  // kick drum (a jump in the low end, 40-150 Hz, over its recent average) bumps MBBeat.n and sets MBBeat.hit to its
-  // strength (0..1); the 3D jars and bags twist and bounce on it
-  // the beat: the song runs through an analyser so the 3D jars / bags can move to the kick drum (window.MBBeat).
-  // Phones (iPhone) only start the audio engine at the END of a tap, and a song routed into an engine that isn't running
-  // is silent. So the engine is started on a tap, and the song is only routed through it once it is actually running;
-  // until then (or if it never runs) the song plays straight out as before, just without the beat.
-  var beat = window.MBBeat = { n: 0, hit: 0 }, ctx = null, an = null, buf = null, avg = 0, lastKick = 0, lo = 1, hi = 4
-  function connect() {
-    if (an || !ctx || ctx.state !== 'running') return
-    try {
-      var src = ctx.createMediaElementSource(a); an = ctx.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.2
-      src.connect(an); an.connect(ctx.destination); buf = new Uint8Array(an.frequencyBinCount)
-      lo = Math.max(1, Math.floor(40 / (ctx.sampleRate / an.fftSize))); hi = Math.ceil(150 / (ctx.sampleRate / an.fftSize))
-      ;(function tick() {
-        requestAnimationFrame(tick)
-        if (a.paused || ctx.state !== 'running') { avg *= 0.95; return }
-        an.getByteFrequencyData(buf); var e = 0; for (var i = lo; i <= hi; i++) e += buf[i]; e /= (hi - lo + 1) * 255
-        var now = performance.now()
-        if (e > 0.42 && e > avg * 1.22 && now - lastKick > 200) { lastKick = now; beat.n++; beat.hit = Math.min(1, (e - avg) * 3 + 0.35) }
-        avg = avg * 0.9 + e * 0.1
-      })()
-    } catch (err) { an = null }
-  }
-  function wake() {                                   // on every tap: start (or restart) the engine, then route the song
-    try {
-      if (!ctx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ctx = new AC() }
-      if (ctx.state !== 'running') { var r = ctx.resume(); if (r && r.then) r.then(connect, function () {}) } else connect()
-    } catch (err) {}
-  }
-  ;['touchend', 'click', 'keydown'].forEach(function (ev) { window.addEventListener(ev, wake, true) })
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && ctx && ctx.state !== 'running') ctx.resume() })
+  // the beat: every song's beat grid is worked out ahead (beats.json: each beat's time, the tempo, which beat starts
+  // the bar). MBBeat.get() reads the song's own playback time against it, so the 3D jars / bags move exactly on the
+  // beat of what's playing (no live audio processing)
+  var grid = {}, beat = window.MBBeat = { get: function () {
+    var g = grid[(a.getAttribute('src') || '').split('?')[0]]
+    if (!g || a.paused) return null
+    var b = g.beats, t = a.currentTime, lo = 0, hi = b.length - 1
+    if (t < b[0] || t > b[hi]) return null
+    while (lo < hi - 1) { var m = (lo + hi) >> 1; if (b[m] <= t) lo = m; else hi = m }
+    return { i: lo, ph: (t - b[lo]) / (b[lo + 1] - b[lo]), bar: ((lo - g.bar) % 4 + 4) % 4, len: b[lo + 1] - b[lo] }
+  } }
+  fetch('beats.json?v=1').then(function (r) { return r.json() }).then(function (j) { grid = j }).catch(function () {})
   window.MBSong = function (src) { if (a.getAttribute('src') === src) return; var was = !a.paused; a.setAttribute('src', src); a.load(); if (was || wanted) play() }
   play()   // desktop browsers may allow it straight away
 })()
@@ -125,8 +107,8 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=38'
-import { mount as mountBag } from './bag.js?v=17'
+import { mount } from './jar.js?v=39'
+import { mount as mountBag } from './bag.js?v=18'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 // QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
 // the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video

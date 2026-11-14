@@ -251,7 +251,7 @@ export function mount(box, collab = 'kencarson') {
   let t = 0, last = performance.now(), visible = true
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting }); io.observe(box)
   let rafId = 0, dead = false
-  let lastBeat = (window.MBBeat && window.MBBeat.n) || 0, beatDir = 1, pulse = 0
+  let beatAmt = 0, twistNow = 0
   function frame(now) {
     if (dead) return
     rafId = requestAnimationFrame(frame)
@@ -276,10 +276,17 @@ export function mount(box, collab = 'kencarson') {
       * (1 - THREE.MathUtils.clamp((tilt - 0.15) / 0.35, 0, 1))   // fades when you tilt overhead (it would sit on the lid)
     logo.lookAt(camera.position)
     // turn: idle spin plus drag momentum
-    // the song's kick drum (index.html MBBeat): each kick gives it a twist and a bounce, as hard as the kick
-    const B = window.MBBeat
-    if (B && B.n !== lastBeat) { lastBeat = B.n; if (!reduce) { beatDir = -beatDir; spinV += beatDir * (2.2 + 3 * B.hit); pulse = Math.max(pulse, 0.5 + 0.5 * B.hit) } }
-    pulse *= Math.pow(0.0005, dt)
+    // on the song's beat (index.html MBBeat: the song's playback time on its beat grid): a twist that flips direction on
+    // every beat, a bounce that hits on the beat and dies before the next, and a bigger hit on the first beat of the bar
+    const s = !reduce && window.MBBeat && window.MBBeat.get()
+    let twist = 0, bounce = 0
+    if (s) {
+      const dir = s.i % 2 ? 1 : -1, ease = 1 - Math.pow(1 - Math.min(1, s.ph * 3), 3), down = s.bar === 0 ? 1 : 0.6
+      twist = dir * 0.17 * (2 * ease - 1) * down
+      bounce = Math.exp(-s.ph * 5) * down
+    }
+    beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))    // eases in when the song starts, out when it stops
+    twist *= beatAmt; bounce *= beatAmt
     if (!dragging) {
       spinV *= Math.pow(0.04, dt)
       if (ORBIT) {                                  // QRÖME: a quarter turn, a beat to look, the next quarter (eased)
@@ -355,7 +362,9 @@ export function mount(box, collab = 'kencarson') {
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
     })
     jar.position.y -= 0.025 * Math.min(1, kick)
-    jar.scale.setScalar(1 + 0.07 * pulse)                // bounce on the kick
+    jar.rotation.y += twist - twistNow; twistNow = twist           // the beat's twist, on top of its own turn
+    jar.scale.setScalar(1 + 0.06 * bounce)                     // and the bounce
+    jar.position.y += 0.05 * bounce
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

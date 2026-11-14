@@ -131,7 +131,7 @@ export function mount(box, variant = '35') {
         // the mouth: from below the zip up to the top edge, the two lips spread apart (an oval: sealed at the seams)
         const lip = sm(ZIP_Y - 0.42, BODY_TOP, y)
         const zp = THREE.MathUtils.clamp(zipT * 1.5 - (x / W + 0.5) * 0.5, 0, 1)            // the zip opens left to right
-        z += mouth * 0.24 * Math.pow(ex, 0.45) * lip * zp
+        z += mouth * 0.42 * Math.pow(ex, 0.4) * lip * lip * zp
         // filling wobble (a bud just dropped in)
         z *= 1 + wob * 0.08 * Math.sin(t * 22 + y * 4) * px
         // filled pouches pull their sides in and their bottom up a little
@@ -141,18 +141,18 @@ export function mount(box, variant = '35') {
       p.needsUpdate = true; F.geo.computeVertexNormals()
     }
   }
-  // the rip: from the notch (left) the tear runs along the perforation to the right; behind it the torn-off end is
-  // pulled up and peels over toward you, curling, while the part ahead of the tear is still attached
+  // the rip: from the notch (left) across the top along the perforation; behind the tear the strip is pulled up off
+  // the bag (a clean gap opens under it, its torn edge ragged), bending up and back a little
   function tear(tT) {
-    const front = -W / 2 + tT * W * 1.15                                 // where the tear has got to (world x)
+    const front = -W / 2 + tT * W * 1.2
     for (const S of strips) {
       const p = S.geo.attributes.position, b = S.base, sg = S.back ? -1 : 1
       for (let i = 0; i < p.count; i++) {
-        const x = b[i * 2], y = b[i * 2 + 1], xw = sg * x               // the back strip's x runs the other way
-        const pr = THREE.MathUtils.clamp((front - xw) / 0.45, 0, 1)    // 0 still attached .. 1 torn well behind the tear
-        const a = pr * 2.1 + pr * pr * 0.8 * (y / STRIP)                 // folds over the tear line, the far edge curling more
-        const lift = 0.07 * pr * pr
-        p.setXYZ(i, x - sg * 0.06 * pr * pr, y * Math.cos(a) + lift, sg * y * Math.sin(a) * 1 + sg * 0.02 * pr)
+        const x = b[i * 2], y = b[i * 2 + 1], xw = sg * x
+        const pr = THREE.MathUtils.clamp((front - xw) / 0.5, 0, 1)
+        const rag = y < 0.002 ? 0.008 * Math.sin(x * 97) * pr : 0          // the torn bottom edge, ragged
+        const lift = pr * (0.05 + 0.1 * pr) + rag
+        p.setXYZ(i, x, y + lift, -sg * 0.04 * pr * pr * (y / STRIP + 0.3))
       }
       p.needsUpdate = true; S.geo.computeVertexNormals()
     }
@@ -212,8 +212,7 @@ export function mount(box, variant = '35') {
   const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3()
 
   // ---- interaction (as the jars) ----
-  let tIdle = 0
-  let spinV = 0, spinBase = 0, dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, tilt = 0, tiltTarget = 0
+  let spinV = 0, dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, tilt = 0, tiltTarget = 0
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), el = renderer.domElement
   el.style.touchAction = 'none'
   const TILT_MIN = -0.25, TILT_MAX = 0.75
@@ -273,16 +272,9 @@ export function mount(box, variant = '35') {
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
     if (!dragging) {
       spinV *= Math.pow(0.04, dt)
-      const busy = open || clock > 0 || (tearT > 0 && !torn) || (torn && flyT < 1.3)
-      if (busy) {                                   // opening, open or closing: turn to face you and hold still
-        const tgt = Math.round(bag.rotation.y / (Math.PI * 2)) * Math.PI * 2
-        bag.rotation.y += (tgt - bag.rotation.y) * (1 - Math.pow(0.01, dt)) + spinV * dt
-      } else {                                      // closed: quarter turns with a beat to look
-        tIdle += dt
-        const P = 2.6, step = Math.floor(tIdle / P), ph = (tIdle % P) / P, e = ph < 0.45 ? easeInOut(ph / 0.45) : 1
-        const want = reduce ? 0 : (step + e) * Math.PI / 2
-        bag.rotation.y += (want - spinBase) + spinV * dt; spinBase = want
-      }
+      // no spin: it stands facing you; after a drag it eases back to the nearest face (front or back)
+      const tgt = Math.round(bag.rotation.y / Math.PI) * Math.PI
+      bag.rotation.y += (tgt - bag.rotation.y) * (1 - Math.pow(0.05, dt)) + spinV * dt
     }
     if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
@@ -294,8 +286,8 @@ export function mount(box, variant = '35') {
     tear(easeInOut(tearT))
     if (torn) {
       const fT = Math.min(1, flyT / 1.3)
-      strip.position.set(-0.7 * fT, BODY_TOP + 0.7 * fT - 2.6 * fT * fT, 0.35 * fT)
-      strip.rotation.set(0.9 * fT, 0, 1.6 * fT); strip.visible = fT < 1
+      strip.position.set(0.25 * fT, BODY_TOP + 1.6 * fT * fT, 0.1 * fT)
+      strip.rotation.set(-0.4 * fT, 0, -0.5 * fT); strip.visible = fT < 1
     }
     // buds out / in; each one landing back inside puffs the bag up a step
     bag.updateMatrixWorld()

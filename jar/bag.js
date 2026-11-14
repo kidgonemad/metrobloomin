@@ -14,8 +14,8 @@ import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 const BASE = new URL('./', import.meta.url).href
 // sizes in scene units (bagmarks.py prints the zip / tear line at the same STRIP / ZIP / SEAM)
 export const BAGS = {
-  35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27 },   // G: half the
-  28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24 },     // oval bottom's depth
+  35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6 },   // G: half the
+  28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24, buds: 12 },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05
 
@@ -47,7 +47,8 @@ export function mount(box, variant = '35') {
   const bag = new THREE.Group(); scene.add(bag)
   const BODY_TOP = H / 2 - STRIP, ZIP_Y = BODY_TOP - ZIP, BOT = -H / 2
   // soft-touch print: matte with a slight sheen; the inside is bare silver mylar
-  const print = (map) => new THREE.MeshPhysicalMaterial({ map, roughness: 0.55, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.35, envMapIntensity: 1.1 })
+  // printed silver mylar: the ink sits on metallic foil, so the whole bag has a silver sheen, with a glossy coat
+  const print = (map) => new THREE.MeshPhysicalMaterial({ map, roughness: 0.3, metalness: 0.55, clearcoat: 0.7, clearcoatRoughness: 0.18, envMapIntensity: 1.5 })
   const inner = new THREE.MeshStandardMaterial({ color: '#dfe3e6', metalness: 1, roughness: 0.24, side: THREE.BackSide, envMapIntensity: 1.5 })
   const faces = []                                  // { geo, base: Float32Array of (x, y), mesh, back }
   function face(map, back) {
@@ -76,7 +77,7 @@ export function mount(box, variant = '35') {
     g.add(new THREE.Mesh(geo, print(map)), new THREE.Mesh(geo, inner)); strip.add(g)
     const p = geo.attributes.position, b = new Float32Array(p.count * 2)
     for (let i = 0; i < p.count; i++) { b[i * 2] = p.getX(i); b[i * 2 + 1] = p.getY(i) }
-    strips.push({ geo, base: b })
+    strips.push({ geo, base: b, back })
   }
   // the folded bottom (gusset): an oval the two faces open out to at the base, printed in the bag's border green
   // outside, silver inside
@@ -140,13 +141,18 @@ export function mount(box, variant = '35') {
       p.needsUpdate = true; F.geo.computeVertexNormals()
     }
   }
-  function tear(tT) {                                // the strip peels up from the notch side, curling as it goes
+  // the rip: from the notch (left) the tear runs along the perforation to the right; behind it the torn-off end is
+  // pulled up and peels over toward you, curling, while the part ahead of the tear is still attached
+  function tear(tT) {
+    const front = -W / 2 + tT * W * 1.15                                 // where the tear has got to (world x)
     for (const S of strips) {
-      const p = S.geo.attributes.position, b = S.base
+      const p = S.geo.attributes.position, b = S.base, sg = S.back ? -1 : 1
       for (let i = 0; i < p.count; i++) {
-        const x = b[i * 2], y = b[i * 2 + 1], pr = THREE.MathUtils.clamp(tT * 1.6 - (x / W + 0.5), 0, 1)
-        const vy = y / STRIP
-        p.setXYZ(i, x + 0.02 * pr, y + 0.09 * pr * (0.4 + vy), 0.07 * pr * Math.sin(vy * 2.4) )
+        const x = b[i * 2], y = b[i * 2 + 1], xw = sg * x               // the back strip's x runs the other way
+        const pr = THREE.MathUtils.clamp((front - xw) / 0.45, 0, 1)    // 0 still attached .. 1 torn well behind the tear
+        const a = pr * 2.1 + pr * pr * 0.8 * (y / STRIP)                 // folds over the tear line, the far edge curling more
+        const lift = 0.07 * pr * pr
+        p.setXYZ(i, x - sg * 0.06 * pr * pr, y * Math.cos(a) + lift, sg * y * Math.sin(a) * 1 + sg * 0.02 * pr)
       }
       p.needsUpdate = true; S.geo.computeVertexNormals()
     }
@@ -178,28 +184,35 @@ export function mount(box, variant = '35') {
   const draco = new DRACOLoader().setDecoderPath(BASE + 'draco/')
   const buds = []
   const HW = W / 2 + 0.38
-  const HOVER = [[-HW, 0.75, 0.4], [HW, 0.62, 0.38], [-HW - 0.05, 0.05, 0.45], [HW + 0.05, -0.08, 0.42], [-HW + 0.1, -0.62, 0.5], [HW - 0.1, -0.68, 0.48]]
+  // where each bud hovers: down both sides of the bag (the 28 g has twice as many, in two columns each side)
+  const NB = V.buds, rows = Math.ceil(NB / 2), HOVER = []
+  for (let i = 0; i < NB; i++) {
+    const side = i % 2 ? 1 : -1, r = i >> 1, far = NB > 6 && r % 2 ? 0.36 : 0
+    HOVER.push([side * (HW + far + (r % 3) * 0.04), 0.78 - r * (1.46 / Math.max(1, rows - 1)), 0.38 + 0.05 * (r % 3)])
+  }
+  const HWMAX = HW + (NB > 6 ? 0.44 : 0.1)
   new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud.glb', (g) => {
     const src = g.scene, b = new THREE.Box3().setFromObject(src), sz = b.getSize(new THREE.Vector3())
-    const k = 0.44 / Math.max(sz.x, sz.y, sz.z)
+    const k = (NB > 6 ? 0.38 : 0.44) / Math.max(sz.x, sz.y, sz.z)
     src.position.sub(b.getCenter(new THREE.Vector3()))
     HOVER.forEach((hp, i) => {
       const holder = new THREE.Group(), o = src.clone(true); holder.add(o); holder.scale.setScalar(k * (0.85 + 0.3 * ((i * 37) % 10) / 10))
       o.traverse((m) => { if (m.isMesh) m.material.envMapIntensity = 1.3 })
-      buds.push({ obj: holder, home: new THREE.Vector3((i % 3 - 1) * W * 0.22, BOT + 0.3 + (i >> 1) * 0.18, 0), hover: new THREE.Vector3(...hp),
+      buds.push({ obj: holder, hover: new THREE.Vector3(...hp),
         rot: new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6), ph: i * 1.3, wasIn: true })
       holder.visible = false; scene.add(holder)
     })
   })
 
   // ---- the open / close clock: (first time) tear, then zip + mouth, then the buds one by one ----
-  const TEAR_S = 1.1, ZIP_S = 0.9, BUD_START = 0.85, BUD_GAP = 0.22, BUD_S = 1.1
+  const TEAR_S = 1.4, ZIP_S = 0.9, BUD_START = 0.85, BUD_GAP = NB > 6 ? 0.14 : 0.22, BUD_S = 1.1
   const C_MAX = BUD_START + (HOVER.length - 1) * BUD_GAP + BUD_S
   let open = false, clock = 0, tearT = 0, torn = false, flyT = 0, fill = 1, wob = 0
   const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeInOut = (x) => (x < 0.5 ? 4 * x ** 3 : 1 - Math.pow(-2 * x + 2, 3) / 2)
   const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3()
 
   // ---- interaction (as the jars) ----
+  let tIdle = 0
   let spinV = 0, spinBase = 0, dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, tilt = 0, tiltTarget = 0
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), el = renderer.domElement
   el.style.touchAction = 'none'
@@ -230,7 +243,7 @@ export function mount(box, variant = '35') {
   function frameFit() {
     const vf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), hw = W / 2 + 0.2
     distClosed = Math.max(1.5 / vf, hw / (vf * camera.aspect)) + 0.6
-    distOpen = Math.max(1.9 / vf, (HW + 0.3) / (vf * camera.aspect)) + 0.6
+    distOpen = Math.max(1.9 / vf, (HWMAX + 0.3) / (vf * camera.aspect)) + 0.6
     camTo.set(0, 0.55, distClosed)
   }
   frameFit(); const ro2 = new ResizeObserver(frameFit); ro2.observe(box)
@@ -260,9 +273,16 @@ export function mount(box, variant = '35') {
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
     if (!dragging) {
       spinV *= Math.pow(0.04, dt)
-      const P = 2.6, step = Math.floor(t / P), ph = (t % P) / P, e = ph < 0.45 ? easeInOut(ph / 0.45) : 1
-      const want = reduce ? 0 : (step + e) * Math.PI / 2 * (1 - 0.85 * ok)
-      bag.rotation.y += (want - spinBase) + spinV * dt; spinBase = want
+      const busy = open || clock > 0 || (tearT > 0 && !torn) || (torn && flyT < 1.3)
+      if (busy) {                                   // opening, open or closing: turn to face you and hold still
+        const tgt = Math.round(bag.rotation.y / (Math.PI * 2)) * Math.PI * 2
+        bag.rotation.y += (tgt - bag.rotation.y) * (1 - Math.pow(0.01, dt)) + spinV * dt
+      } else {                                      // closed: quarter turns with a beat to look
+        tIdle += dt
+        const P = 2.6, step = Math.floor(tIdle / P), ph = (tIdle % P) / P, e = ph < 0.45 ? easeInOut(ph / 0.45) : 1
+        const want = reduce ? 0 : (step + e) * Math.PI / 2
+        bag.rotation.y += (want - spinBase) + spinV * dt; spinBase = want
+      }
     }
     if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
@@ -274,8 +294,8 @@ export function mount(box, variant = '35') {
     tear(easeInOut(tearT))
     if (torn) {
       const fT = Math.min(1, flyT / 1.3)
-      strip.position.set(0.9 * fT, BODY_TOP + 0.6 * fT - 2.4 * fT * fT, 0.3 * fT)
-      strip.rotation.set(1.4 * fT, 0, -2.6 * fT); strip.visible = fT < 1
+      strip.position.set(-0.7 * fT, BODY_TOP + 0.7 * fT - 2.6 * fT * fT, 0.35 * fT)
+      strip.rotation.set(0.9 * fT, 0, 1.6 * fT); strip.visible = fT < 1
     }
     // buds out / in; each one landing back inside puffs the bag up a step
     bag.updateMatrixWorld()
@@ -289,13 +309,13 @@ export function mount(box, variant = '35') {
       if (isIn) return
       outCount += Math.min(1, bp * 2)
       const u = easeOut(bp)
-      const home = tmpA.copy(b.home).applyMatrix4(bag.matrixWorld)
+      const inside = mouthW.clone().add(new THREE.Vector3(0, -0.12, 0))
       const hov = tmpC.copy(b.hover).add(new THREE.Vector3(0.02 * Math.sin(t * 0.9 + b.ph), 0.05 * Math.sin(t * 1.3 + b.ph), 0.02 * Math.cos(t * 0.8 + b.ph)))
       const above = mouthW.clone().add(new THREE.Vector3(0, 0.35, 0))
-      if (u < 0.3) b.obj.position.lerpVectors(home, above, easeInOut(u / 0.3))   // straight up out of the mouth
+      if (u < 0.3) b.obj.position.lerpVectors(inside, above, easeInOut(u / 0.3))   // straight up out of the mouth
       else b.obj.position.lerpVectors(above, hov, easeInOut((u - 0.3) / 0.7))   // then out to its spot
       const s0 = b.obj.userData.s || (b.obj.userData.s = b.obj.scale.x)
-      b.obj.scale.setScalar(s0 * (0.5 + 0.5 * Math.min(1, u * 2.2)))
+      b.obj.scale.setScalar(s0 * Math.min(1, u / 0.3))                 // grows out of the opening (never pokes through the bag)
       const spin = 6 * Math.pow(1 - u, 2)
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
     })

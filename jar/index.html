@@ -46,6 +46,14 @@ html,body{overflow:hidden}
 .pick{isolation:isolate}
 .pick button.on{color:#fff}.pick button.on:before{background:#111;border-color:#fff}
 .collab.off{display:none}
+/* the bag collab's size switch (3.5 g / 28 g): the same blobs, smaller, under the collab switch */
+.size{position:fixed;top:calc(78px + env(safe-area-inset-top));left:50%;z-index:3;transform:translateX(-50%);display:flex;gap:6px;isolation:isolate}
+.size.off{display:none}
+.size button{position:relative;border:0;background:none;padding:7px 11px;font:600 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.1em;color:#111;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.size button:before{content:"";position:absolute;inset:0;z-index:-1;background:#fff;border:2px solid #111;border-radius:48% 52% 46% 54% / 62% 48% 52% 38%;animation:mbnBlobWobble 3.2s ease-in-out infinite}
+.size button:nth-child(2):before{animation-delay:-1.6s}
+.size button.on{color:#fff}.size button.on:before{background:#111;border-color:#fff}
+@media (min-width:761px){.size{top:86px}}
 @media (min-width:761px){.pick{top:34px}.pick button{font-size:12px;padding:11px 18px}}
 @keyframes mbnBlobWobble{0%,100%{border-radius:48% 52% 46% 54% / 62% 48% 52% 38%}33%{border-radius:55% 45% 52% 48% / 45% 60% 40% 58%}66%{border-radius:44% 56% 50% 50% / 56% 40% 62% 46%}}
 </style>
@@ -53,9 +61,10 @@ html,body{overflow:hidden}
 <body>
 <a class="back" href="../" aria-label="Back to Metro Bloomin"><canvas width="384" height="384"></canvas></a>
 <div class="mb-jar" id="jar" aria-label="Metro Bloomin jar, 3D"></div>
-<div class="pick" role="tablist" aria-label="Collabs"><button type="button" data-c="kencarson">X41</button><button type="button" data-c="qrome">QRÖME</button></div>
+<div class="pick" role="tablist" aria-label="Collabs"><button type="button" data-c="kencarson">X41</button><button type="button" data-c="qrome">QRÖME</button><button type="button" data-c="bag">JSPAAY</button></div>
+<div class="size off" aria-label="Bag size"><button type="button" data-v="35">3.5G</button><button type="button" data-v="28">28G</button></div>
 <div class="collab" data-c="kencarson"><img src="kencarson.png?v=1" alt="Ken Carson" width="1215" height="579"></div>
-<div class="collab off" data-c="qrome"><canvas id="word" width="480" height="260" role="img" aria-label="Metro Bloomin"></canvas></div>
+<div class="collab off" data-c="qrome bag"><canvas id="word" width="480" height="260" role="img" aria-label="Metro Bloomin"></canvas></div>
 <audio id="song" src="rock-n-roll.mp3?v=1" loop preload="auto"></audio>
 <button class="snd" id="snd" type="button" aria-label="Play music">
   <svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z"/></svg>
@@ -90,6 +99,7 @@ document.body.appendChild(MBNav.create({
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
 import { mount } from './jar.js?v=35'
+import { mount as mountBag } from './bag.js?v=3'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 // QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
 // the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video
@@ -125,19 +135,25 @@ const word = (() => {
     const p = v.play(); if (p && p.then) p.then(() => { raf = requestAnimationFrame(loop) }).catch(showStill); else raf = requestAnimationFrame(loop) } }
 })()
 function playWord() { word.play() }
-const SONGS = { kencarson: 'rock-n-roll.mp3?v=1', qrome: 'wow-wow.mp3?v=1' }
-function pick(c) {
-  if (window.__jar && window.__jar.collab === c) return
+// the third collab: jspaaydesign's Metro Bloomin bags (bag.js), 3.5 g or 28 g (the size switch); X41's song for now
+const SONGS = { kencarson: 'rock-n-roll.mp3?v=1', qrome: 'wow-wow.mp3?v=1', bag: 'rock-n-roll.mp3?v=1' }
+let bagSize = location.hash === '#bag28' ? '28' : '35'
+function pick(c, force) {
+  if (!force && window.__jar && window.__jar.collab === c) return
   if (window.__jar) window.__jar.destroy()
-  window.__jar = mount(document.getElementById('jar'), c)
+  const box = document.getElementById('jar')
+  window.__jar = c === 'bag' ? mountBag(box, bagSize) : mount(box, c)
+  document.querySelector('.size').classList.toggle('off', c !== 'bag')
+  document.querySelectorAll('.size button').forEach((b) => b.classList.toggle('on', b.dataset.v === bagSize))
   document.querySelectorAll('.pick button').forEach((b) => { const on = b.dataset.c === c; b.classList.toggle('on', on); b.setAttribute('aria-selected', on) })
-  document.querySelectorAll('.collab').forEach((n) => n.classList.toggle('off', n.dataset.c !== c))   // each collab's name at the bottom
+  document.querySelectorAll('.collab').forEach((n) => n.classList.toggle('off', !n.dataset.c.split(' ').includes(c)))   // each collab's name at the bottom
   if (window.MBSong) window.MBSong(SONGS[c])
-  if (c === 'qrome') playWord()
-  history.replaceState(null, '', c === 'qrome' ? '#qrome' : location.pathname + location.search)
+  if ((c === 'qrome' || c === 'bag') && !force) playWord()
+  history.replaceState(null, '', c === 'qrome' ? '#qrome' : c === 'bag' ? (bagSize === '28' ? '#bag28' : '#bag') : location.pathname + location.search)
 }
 document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => pick(b.dataset.c)))
-pick(location.hash === '#qrome' ? 'qrome' : 'kencarson')
+document.querySelectorAll('.size button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.v === bagSize) return; bagSize = b.dataset.v; pick('bag', true) }))
+pick(location.hash === '#qrome' ? 'qrome' : /^#bag/.test(location.hash) ? 'bag' : 'kencarson')
 // header leaf: the site's stacked-alpha still (colour on top, mask below) painted into the canvas
 const im = new Image(); im.onload = () => {
   const cv = document.querySelector('.back canvas'), g = cv.getContext('2d'), t = document.createElement('canvas'); t.width = 384; t.height = 768

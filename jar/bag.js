@@ -299,22 +299,7 @@ export function mount(box, variant = '35') {
       fragmentShader: NOISE + SCENES[V.scene] })
     bg.material.dispose(); bg.material = skyMat; bg2.visible = false
   }
-  // SKYBOX: a hot-air balloon far off in the sky, drifting slowly across and bobbing
   let hotAir = null
-  if (V.scene === 'sky') {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 360; const g = c.getContext('2d')
-    g.save(); g.beginPath(); g.moveTo(128, 300); g.bezierCurveTo(30, 230, 10, 120, 40, 70); g.bezierCurveTo(70, 10, 186, 10, 216, 70)
-    g.bezierCurveTo(246, 120, 226, 230, 128, 300); g.closePath(); g.clip()
-    const cols = ['#e2392b', '#f4d23c', '#2f7fd8', '#f4f1e8', '#e2392b', '#f4d23c', '#2f7fd8']
-    for (let k = 0; k < 7; k++) { g.fillStyle = cols[k]; g.fillRect(k * 256 / 7, 0, 256 / 7 + 1, 360) }
-    const sh = g.createLinearGradient(0, 0, 256, 0); sh.addColorStop(0, 'rgba(0,0,0,0.35)'); sh.addColorStop(0.45, 'rgba(255,255,255,0.15)'); sh.addColorStop(1, 'rgba(0,0,0,0.45)')
-    g.fillStyle = sh; g.fillRect(0, 0, 256, 360); g.restore()
-    g.strokeStyle = '#3a2a1a'; g.lineWidth = 3; [[96, 290], [160, 290]].forEach(([x, y]) => { g.beginPath(); g.moveTo(x, y); g.lineTo(x + (x < 128 ? 10 : -10), 330); g.stroke() })
-    g.fillStyle = '#7a4a22'; g.fillRect(104, 326, 48, 30); g.strokeStyle = '#3a2410'; g.strokeRect(104, 326, 48, 30)
-    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace
-    hotAir = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.77), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, toneMapped: false }))
-    hotAir.position.set(-3, 2.4, -5.6); scene.add(hotAir)
-  }
   // TSUNAMI: a wave puppet theatre between the background and the bag. Three rows of wave flats (cut-out waves that
   // slide side to side) and, behind each, Japanese-style wave puppets on wooden sticks that pop up from behind the row,
   // rock back and forth, then sink and disappear

@@ -8,7 +8,7 @@
 //   - tap it: the lid lifts off and floats, the buds (owner's model) fly out and each hovers in its own spot;
 //     tap again: they fly back in and the lid closes
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=7'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=8'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -280,7 +280,7 @@ export function mount(box, collab = 'kencarson') {
     // turn: idle spin plus drag momentum
     // the collab's own dance (dance.js) on its song's beat (index.html MBBeat: playback time on the song's beat grid);
     // it fades in when the song plays and out when it stops
-    const W = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
+    const WD = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
     const s = !reduce && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
     if (s) lastDance = danceFn(s)
     beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))
@@ -322,6 +322,8 @@ export function mount(box, collab = 'kencarson') {
     }
     // buds: each pops out of the jar on an arc (straight up over the rim, then out and over to its spot), spinning
     // fast and slowing, growing as it clears the rim, then settles with a little bounce and hovers; reversed to go back in
+    applyDance(THREE, dancer, lastDance, beatAmt, floor.position.y)
+    dancer.updateMatrixWorld()
     jar.updateMatrixWorld()
     const mouth = tmpB.set(0, BODY_H + 0.1, 0).applyMatrix4(jar.matrixWorld).clone()
     let kick = 0
@@ -375,27 +377,26 @@ export function mount(box, collab = 'kencarson') {
         b.obj.rotation.x += (bd.rx || 0) * beatAmt; b.obj.rotation.y += (bd.ry || 0) * beatAmt; b.obj.rotation.z += (bd.rz || 0) * beatAmt
         if (bd.sc) b.obj.scale.multiplyScalar(1 + (bd.sc - 1) * beatAmt)
       }
-      if (W && u >= 1) {
-        const k = Math.exp(-W.since * 6) * beatAmt
-        if (W.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick
-          b.obj.position.y += 0.32 * Math.sin(Math.min(1, W.since / 0.35) * Math.PI) * beatAmt
-          b.obj.scale.multiplyScalar(1 + 0.6 * k); b.obj.rotation.y += 2.2 * k * (W.n % 2 ? 1 : -1)
+      if (WD && u >= 1) {
+        const k = Math.exp(-WD.since * 6) * beatAmt
+        if (WD.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick
+          b.obj.position.y += 0.32 * Math.sin(Math.min(1, WD.since / 0.35) * Math.PI) * beatAmt
+          b.obj.scale.multiplyScalar(1 + 0.6 * k); b.obj.rotation.y += 2.2 * k * (WD.n % 2 ? 1 : -1)
         } else b.obj.position.y += 0.04 * k               // the rest bob along with every word
       }
-      if (u >= 1) {          // never inside the package
-        const r = Math.hypot(b.obj.position.x, b.obj.position.z), lo = jar.position.y - 0.1, hi = jar.position.y + 1.75
-        if (r < 0.78 && b.obj.position.y > lo && b.obj.position.y < hi) { const k2 = 0.78 / Math.max(r, 1e-3); b.obj.position.x *= k2; b.obj.position.z = r < 1e-3 ? 0.78 : b.obj.position.z * k2 }
+      if (u >= 0.3) {        // never inside the package (once out of the opening)
+        const L = jar.worldToLocal(b.obj.position.clone()), r = Math.hypot(L.x, L.z), R0 = 0.85   // in the jar's own frame
+        if (r < R0 && L.y > -0.2 && L.y < 1.85) { const k2 = R0 / Math.max(r, 1e-3); L.x *= k2; L.z = r < 1e-3 ? R0 : L.z * k2; b.obj.position.copy(jar.localToWorld(L)) }
       }
     })
     jar.position.y -= 0.025 * Math.min(1, kick)
-    applyDance(THREE, dancer, lastDance, beatAmt, floor.position.y)
     // a word that sets off its own move (dance.js WORD_MOVES): "roll" spins X41 a full turn
-    if (W && W.n !== lastWord) {
-      lastWord = W.n
-      for (const [re, mv] of (WORD_MOVES[window.MBDance] || [])) if (mv === 'spin' && re.test(W.text) && wordSpin >= 1) wordSpin = 0
+    if (WD && WDD.n !== lastWord) {
+      lastWord = WD.n
+      for (const [re, mv] of (WORD_MOVES[window.MBDance] || [])) if (mv === 'spin' && re.test(WD.text) && wordSpin >= 1) wordSpin = 0
     }
     if (wordSpin < 1) { wordSpin = Math.min(1, wordSpin + dt / 0.9); dancer.rotation.y += Math.PI * 2 * (1 - Math.pow(1 - wordSpin, 3)) }
-    if (W) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-W.since * 8) * beatAmt)   // and the package pulses a touch on each word
+    if (WD) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-WD.since * 8) * beatAmt)   // and the package pulses a touch on each word
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)

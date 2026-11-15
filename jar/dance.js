@@ -71,19 +71,19 @@ export const ROUTINES = {
   hop: null,                                                         // QRÖME: simple, popcorn hops in place
   // SKYBOX: balloons, rising slowly up past the package in front, drifting, then fading out at the top and coming
   // back from the bottom
-  snap: (B, i, n, hw) => { const f = (B * 0.06 + i / n) % 1, side = (i % 2 ? 1 : -1) * (hw + 0.35 + 0.25 * ((i * 5) % 3) / 2)
-    return { x: side + 0.12 * Math.sin(B * 0.8 + i), y: -1.0 + f * 2.8, z: 0.55 + 0.25 * Math.sin(i * 2.1), sc: Math.min(1, f * 6, (1 - f) * 6) } },
+  snap: (B, i, n, hw) => { const f = (B * 0.06 + i / n) % 1, side = (i % 2 ? 1 : -1) * (hw + 0.45 + 0.2 * ((i * 5) % 3) / 2)
+    return { x: side + 0.12 * Math.sin(B * 0.8 + i), y: -1.0 + f * 2.8, z: 1.0 + 0.2 * Math.sin(i * 2.1), sc: Math.min(1, f * 6, (1 - f) * 6) } },
   // TSUNAMI: surfing, a line of buds riding a travelling wave across the front, left to right, again and again
   wave: (B, i, n, hw) => { const f = (B * 0.07 + i / n) % 1, x = -2.1 + f * 4.2
     return { x, y: 0.15 + 0.38 * Math.sin(x * 2.4 - B * Math.PI / 2), z: 0.85, sc: Math.min(1, f * 7, (1 - f) * 7) } },
   // GELATO 41: carousel, a level ring round the package turning slowly, buds rising and falling on alternate beats
-  bop: (B, i, n, hw) => { const a = B * TAU / 32 + i / n * TAU, r = hw + 0.6
+  bop: (B, i, n, hw) => { const a = B * TAU / 32 + i / n * TAU, r = hw + 0.85
     return { x: Math.sin(a) * r, y: 0.35 + 0.16 * Math.sin(B * Math.PI + (i % 2) * Math.PI), z: Math.cos(a) * r, sc: 1 } },
   // CONNECTED: a ferris wheel in front of the package, turning, every bud linked on one ring
   rock: (B, i, n, hw) => { const a = B * TAU / 32 + i / n * TAU
     return { x: Math.sin(a) * (hw + 0.55), y: 0.3 + Math.cos(a) * 1.0, z: 0.75, sc: 1 } },
   // NIGHTSHADE: a snake, every bud following the one in front along a weaving loop round the package
-  slither: (B, i, n, hw) => { const p = B * TAU / 24 - i * 0.32, rx = hw + 0.5, rz = 0.95
+  slither: (B, i, n, hw) => { const p = B * TAU / 24 - i * 0.32, rx = hw + 0.8, rz = 1.2
     return { x: Math.sin(p) * rx, y: 0.25 + 0.28 * Math.sin(2 * p), z: Math.cos(p) * rz, sc: 1 - i / (n * 2.2) } },
 }
 export function routine(dance, s, i, n, hw) { const f = ROUTINES[dance]; return f ? f(s.i + s.ph, i, n, hw) : null }

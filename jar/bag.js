@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=7'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=8'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -448,7 +448,7 @@ export function mount(box, variant = '35') {
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
     // the collab's own dance (dance.js) on its song's beat (index.html MBBeat: playback time on the song's beat grid);
     // it fades in when the song plays and out when it stops
-    const W = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
+    const WD = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
     const s = !reduce && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
     if (s) lastDance = danceFn(s)
     beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))
@@ -487,6 +487,8 @@ export function mount(box, variant = '35') {
       strip.rotation.set(-0.4 * fT, 0, -0.5 * fT); strip.visible = fT < 1
     }
     // buds out / in; each one landing back inside puffs the bag up a step
+    applyDance(THREE, dancer, lastDance, beatAmt, FLOOR_Y)
+    dancer.updateMatrixWorld()
     bag.updateMatrixWorld()
     const mouthW = tmpB.set(0, BODY_TOP + 0.05, 0).applyMatrix4(bag.matrixWorld).clone()
     let outCount = 0
@@ -499,11 +501,15 @@ export function mount(box, variant = '35') {
       if (isIn) return
       outCount += Math.min(1, bp * 2)
       const u = easeOut(bp)
+      b.u = u
       const inside = mouthW.clone().add(new THREE.Vector3(0, -0.12, 0))
       const hov = tmpC.copy(b.hover).add(new THREE.Vector3(0.02 * Math.sin(t * 0.9 + b.ph), 0.05 * Math.sin(t * 1.3 + b.ph), 0.02 * Math.cos(t * 0.8 + b.ph)))
       const above = mouthW.clone().add(new THREE.Vector3(0, 0.35, 0))
       if (u < 0.3) b.obj.position.lerpVectors(inside, above, easeInOut(u / 0.3))   // straight up out of the mouth
-      else b.obj.position.lerpVectors(above, hov, easeInOut((u - 0.3) / 0.7))   // then out to its spot
+      else {                                                                     // then out sideways first, down after (clear of the bag)
+        const v = (u - 0.3) / 0.7, vx = easeInOut(Math.min(1, v * 1.8)), vy = easeInOut(Math.max(0, v * 1.6 - 0.6))
+        b.obj.position.set(above.x + (hov.x - above.x) * vx, above.y + (hov.y - above.y) * vy, above.z + (hov.z - above.z) * vx)
+      }
       const s0 = b.obj.userData.s || (b.obj.userData.s = b.obj.scale.x)
       b.obj.scale.setScalar(s0 * Math.min(1, u / 0.3))                 // grows out of the opening (never pokes through the bag)
       const spin = 6 * Math.pow(1 - u, 2)
@@ -525,18 +531,19 @@ export function mount(box, variant = '35') {
         b.obj.rotation.x += (bd.rx || 0) * beatAmt; b.obj.rotation.y += (bd.ry || 0) * beatAmt; b.obj.rotation.z += (bd.rz || 0) * beatAmt
         if (bd.sc) b.obj.scale.multiplyScalar(1 + (bd.sc - 1) * beatAmt)
       }
-      if (W && u >= 1) {
-        const k = Math.exp(-W.since * 6) * beatAmt
-        if (W.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick
-          b.obj.position.y += 0.32 * Math.sin(Math.min(1, W.since / 0.35) * Math.PI) * beatAmt
-          b.obj.scale.multiplyScalar(1 + 0.6 * k); b.obj.rotation.y += 2.2 * k * (W.n % 2 ? 1 : -1)
+      if (WD && u >= 1) {
+        const k = Math.exp(-WD.since * 6) * beatAmt
+        if (WD.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick
+          b.obj.position.y += 0.32 * Math.sin(Math.min(1, WD.since / 0.35) * Math.PI) * beatAmt
+          b.obj.scale.multiplyScalar(1 + 0.6 * k); b.obj.rotation.y += 2.2 * k * (WD.n % 2 ? 1 : -1)
         } else b.obj.position.y += 0.04 * k               // the rest bob along with every word
       }
-      if (u >= 1) {          // never inside the package
-        const hx = W / 2 + 0.22, hz = T + G + 0.28, lo = bag.position.y + BOT - 0.1, hi = bag.position.y + H / 2 + 0.15
-        const P = b.obj.position
-        if (Math.abs(P.x) < hx && Math.abs(P.z) < hz && P.y > lo && P.y < hi) {      // inside the bag: out to the nearest side
-          if (hx - Math.abs(P.x) < hz - Math.abs(P.z)) P.x = Math.sign(P.x || 1) * hx; else P.z = P.z < -0.05 ? -hz : hz
+      if (u >= 0.3) {        // never inside the package (once out of the opening)
+        // checked in the bag's own frame (it turns and tilts as it dances), with room for the bud's size
+        const L = bag.worldToLocal(b.obj.position.clone()), hx = W / 2 + 0.34, hz = T + G + 0.42
+        if (Math.abs(L.x) < hx && Math.abs(L.z) < hz && L.y > BOT - 0.2 && L.y < H / 2 + 0.25) {
+          if (hx - Math.abs(L.x) < hz - Math.abs(L.z)) L.x = Math.sign(L.x || 1) * hx; else L.z = L.z < -0.05 ? -hz : hz
+          b.obj.position.copy(bag.localToWorld(L))
         }
       }
     })
@@ -545,8 +552,17 @@ export function mount(box, variant = '35') {
     fill += (target - fill) * (1 - Math.pow(0.02, dt))
     wob *= Math.pow(0.02, dt)
     shape(fill, mouth, zipT, wob, t)
-    applyDance(THREE, dancer, lastDance, beatAmt, FLOOR_Y)
-    if (W) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-W.since * 8) * beatAmt)   // and the package pulses a touch on each word
+    if (WD) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-WD.since * 8) * beatAmt)   // and the package pulses a touch on each word
+    // last thing before drawing: no bud that's out of the opening may sit inside the bag, wherever the bag has moved to
+    dancer.updateMatrixWorld(true)
+    for (const b of buds) {
+      if (!b.obj.visible || !(b.u >= 0.3)) continue
+      const L = bag.worldToLocal(b.obj.position.clone()), hx = W / 2 + 0.34, hz = T + G + 0.42
+      if (Math.abs(L.x) < hx && Math.abs(L.z) < hz && L.y > BOT - 0.2 && L.y < H / 2 + 0.25) {
+        if (hx - Math.abs(L.x) < hz - Math.abs(L.z)) L.x = Math.sign(L.x || 1) * hx; else L.z = L.z < -0.05 ? -hz : hz
+        b.obj.position.copy(bag.localToWorld(L))
+      }
+    }
     renderer.render(scene, camera)
   }
   rafId = requestAnimationFrame(frame)
@@ -555,5 +571,5 @@ export function mount(box, variant = '35') {
     scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach((m) => { Object.values(m).forEach((v) => { if (v && v.isTexture) v.dispose() }); m.dispose() }) })
     scene.environment.dispose(); pm.dispose(); renderer.dispose(); renderer.domElement.remove()
   }
-  return { bag, collab: /^(35|28)$/.test(String(variant)) ? 'bag' : String(variant), variant: String(variant), destroy, toggle: () => { open = !open }, get open() { return open }, get torn() { return torn } }
+  return { bag, buds, collab: /^(35|28)$/.test(String(variant)) ? 'bag' : String(variant), variant: String(variant), destroy, toggle: () => { open = !open }, get open() { return open }, get torn() { return torn } }
 }

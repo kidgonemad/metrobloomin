@@ -482,6 +482,9 @@ export function mount(box, variant = '35') {
       const day = skyMat ? skyMat.uniforms.uDay.value : 1; hotAir.material.color.setScalar(0.35 + 0.65 * day)
     }
     if (skyMat) { skyMat.uniforms.uTime.value = t; skyMat.uniforms.uDay.value = 0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 40) }   // night -> day -> night
+    if (skyMat && V.scene === 'sky') {                          // anything behind the sky (a gap) is sky-coloured, never black
+      const d = skyMat.uniforms.uDay.value; scene.background.setRGB(0.03 + 0.55 * d, 0.04 + 0.68 * d, 0.11 + 0.8 * d)
+    }
     const fl = reduce ? 0 : 1
     // it stands on its bottom (no float): only the jolt when a bud lands
     bag.position.y = -0.02 - 0.015 * wob * fl

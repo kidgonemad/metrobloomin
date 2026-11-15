@@ -358,9 +358,12 @@ export function mount(box, collab = 'kencarson') {
       const spin = 7 * Math.pow(1 - u, 2)                  // fast while flying, calm when hovering
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
       // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
-      if (W && W.n % buds.length === i && u >= 1) {
-        const pop = Math.exp(-W.since * 7) * beatAmt
-        b.obj.position.y += 0.14 * pop; b.obj.scale.multiplyScalar(1 + 0.28 * pop); b.obj.rotation.z += 0.7 * pop * (W.n % 2 ? 1 : -1)
+      if (W && u >= 1) {
+        const k = Math.exp(-W.since * 6) * beatAmt
+        if (W.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick
+          b.obj.position.y += 0.32 * Math.sin(Math.min(1, W.since / 0.35) * Math.PI) * beatAmt
+          b.obj.scale.multiplyScalar(1 + 0.6 * k); b.obj.rotation.y += 2.2 * k * (W.n % 2 ? 1 : -1)
+        } else b.obj.position.y += 0.04 * k               // the rest bob along with every word
       }
     })
     jar.position.y -= 0.025 * Math.min(1, kick)

@@ -449,8 +449,8 @@ export function mount(box, variant = '35') {
     // turn: quarter turns with a beat to look (front, edge, back, edge); slows right down while open
     // the collab's own dance (dance.js) on its song's beat (index.html MBBeat: playback time on the song's beat grid);
     // it fades in when the song plays and out when it stops
-    const WD = !reduce && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // the word being said (lyrics timing)
-    const s = !reduce && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
+    const WD = !reduce && window.MBDance && window.MBBeat && window.MBBeat.word && window.MBBeat.word()   // no dance set (X41, QRÖME): no music moves at all   // the word being said (lyrics timing)
+    const s = !reduce && window.MBDance && window.MBBeat && window.MBBeat.get(), danceFn = DANCES[window.MBDance] || DANCES.wave
     if (s) lastDance = danceFn(s)
     beatAmt += ((s ? 1 : 0) - beatAmt) * (1 - Math.pow(0.02, dt))
     if (!dragging) {

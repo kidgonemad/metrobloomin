@@ -367,7 +367,7 @@ export function mount(box, variant = '35') {
     HOVER.push([side * (HW + far + (r % 3) * 0.04), 0.78 - r * (1.46 / Math.max(1, rows - 1)), 0.38 + 0.05 * (r % 3)])
   }
   const HWMAX = Math.max(HW + (NB > 6 ? 0.44 : 0.1), W / 2 + 1.3)   // room for the buds' routines round the bag
-  new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud_lo.glb?v=1', (g) => {
+  new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud.glb', (g) => {
     const src = g.scene, b = new THREE.Box3().setFromObject(src), sz = b.getSize(new THREE.Vector3())
     const k = (NB > 6 ? 0.38 : 0.44) / Math.max(sz.x, sz.y, sz.z)
     src.position.sub(b.getCenter(new THREE.Vector3()))

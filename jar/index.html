@@ -32,10 +32,10 @@ html,body{overflow:hidden}
 .snd > *{position:relative}
 .snd .play{width:18px;height:18px;margin-left:3px}
 .snd .bars{display:none;align-items:flex-end;gap:2.5px;height:18px}
-.snd .bars i{display:block;width:3.5px;background:currentColor;border-radius:2px;height:30%;animation:sndBar .9s ease-in-out infinite}
+.snd .bars i{display:block;width:3.5px;background:currentColor;border-radius:2px;height:100%;transform-origin:50% 100%;will-change:transform;animation:sndBar .9s ease-in-out infinite}
 .snd .bars i:nth-child(2){animation-delay:-.3s}.snd .bars i:nth-child(3){animation-delay:-.6s}.snd .bars i:nth-child(4){animation-delay:-.15s}
 .snd.playing .bars{display:flex}.snd.playing .play{display:none}
-@keyframes sndBar{0%,100%{height:25%}50%{height:100%}}
+@keyframes sndBar{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}   /* scale, not height: no page re-layout each frame over the 3D */
 /* collab switch (top centre): white wobbling blobs with a black outline like the menu; the chosen one is black */
 .pick{position:fixed;top:calc(22px + env(safe-area-inset-top));left:50%;z-index:3;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:min(560px,calc(100vw - 180px))}
 .pick button{position:relative;border:0;background:none;padding:9px 14px;font:600 11px/1 Arial,Helvetica,sans-serif;letter-spacing:.1em;
@@ -120,8 +120,8 @@ document.body.appendChild(MBNav.create({
 </script>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 <script type="module">
-import { mount } from './jar.js?v=54'
-import { mount as mountBag } from './bag.js?v=61'
+import { mount } from './jar.js?v=55'
+import { mount as mountBag } from './bag.js?v=62'
 // two collabs: Ken Carson and QRÖME. The switch (or #qrome in the link) swaps the jar, the name and the song.
 // QRÖME's name: the site's animated METRO BLOOMIN lettering (stacked-alpha video, colour on top, mask below, as on
 // the shop page), drawn into a canvas; plays each time QRÖME is picked; the still if the phone blocks the video

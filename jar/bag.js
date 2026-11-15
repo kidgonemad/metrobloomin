@@ -31,8 +31,9 @@ export const BAGS = {
     bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=3', bottomAt: [0.05, 0.3, 0.5],
     glow: ['rgba(180,120,255,0.45)', 'rgba(240,120,220,0.15)', 'rgba(60,20,90,0)'] },
   // NIGHTSHADE (Lil Baby): white snakeskin with the two snakes
-  ns: { front: 'ns_front.webp?v=2', back: 'ns_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6, scene: 'snakes',
-    bg: 'ns_bg.webp?v=1', bgColor: '#040404', bounce: '#e8e4dc', ground: '#1c1c1c', bottom: 'ns_front.webp?v=2', bottomAt: [0.05, 0.05, 0.45],
+  ns: { front: 'ns_front.webp?v=2', back: 'ns_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+    bg: 'ns_snakes.webp?v=1',   // the bag's own snakes, drifting
+    bgColor: '#040404', bounce: '#e8e4dc', ground: '#1c1c1c', bottom: 'ns_front.webp?v=2', bottomAt: [0.05, 0.05, 0.45],
     glow: ['rgba(235,230,220,0.35)', 'rgba(160,160,160,0.12)', 'rgba(30,30,30,0)'] },     // oval bottom's depth
 }
 const STRIP = 0.085, ZIP = 0.07, SEAM = 0.05
@@ -174,7 +175,7 @@ export function mount(box, variant = '35') {
         z *= 1 + wob * 0.08 * Math.sin(t * 22 + y * 4) * px
         // filled pouches pull their sides in and their bottom up a little
         const xs = x * (1 - 0.06 * f * pyz) * (1 - (1 - GK) * Math.pow(1 - THREE.MathUtils.clamp((y - BOT) / 0.35, 0, 1), 2)), ys = y
-        p.setXYZ(i, xs, ys, z)
+        p.setXYZ(i, xs, ys, z + 0.003)   // +0.003: front and back faces apart at the seams (no jagged flicker)
       }
       p.needsUpdate = true; F.geo.computeVertexNormals()
     }

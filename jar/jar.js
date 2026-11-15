@@ -8,7 +8,7 @@
 //   - tap it: the lid lifts off and floats, the buds (owner's model) fly out and each hovers in its own spot;
 //     tap again: they fly back in and the lid closes
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=8'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=9'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -244,7 +244,7 @@ export function mount(box, collab = 'kencarson') {
   function frameFit() {
     const vf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
     distClosed = Math.max(1.5 / vf, 0.75 / (vf * camera.aspect)) + 0.6
-    distOpen = Math.max(1.9 / vf, 1.25 / (vf * camera.aspect)) + 0.6    // room for the buds either side
+    distOpen = Math.max(1.9 / vf, 1.75 / (vf * camera.aspect)) + 0.6    // room for the buds' routines either side
     camTo.set(0, 0.55, distClosed)
   }
   frameFit(); const ro2 = new ResizeObserver(frameFit); ro2.observe(box)

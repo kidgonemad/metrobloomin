@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=8'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=9'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -299,6 +299,22 @@ export function mount(box, variant = '35') {
       fragmentShader: NOISE + SCENES[V.scene] })
     bg.material.dispose(); bg.material = skyMat; bg2.visible = false
   }
+  // SKYBOX: a hot-air balloon far off in the sky, drifting slowly across and bobbing
+  let hotAir = null
+  if (V.scene === 'sky') {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 360; const g = c.getContext('2d')
+    g.save(); g.beginPath(); g.moveTo(128, 300); g.bezierCurveTo(30, 230, 10, 120, 40, 70); g.bezierCurveTo(70, 10, 186, 10, 216, 70)
+    g.bezierCurveTo(246, 120, 226, 230, 128, 300); g.closePath(); g.clip()
+    const cols = ['#e2392b', '#f4d23c', '#2f7fd8', '#f4f1e8', '#e2392b', '#f4d23c', '#2f7fd8']
+    for (let k = 0; k < 7; k++) { g.fillStyle = cols[k]; g.fillRect(k * 256 / 7, 0, 256 / 7 + 1, 360) }
+    const sh = g.createLinearGradient(0, 0, 256, 0); sh.addColorStop(0, 'rgba(0,0,0,0.35)'); sh.addColorStop(0.45, 'rgba(255,255,255,0.15)'); sh.addColorStop(1, 'rgba(0,0,0,0.45)')
+    g.fillStyle = sh; g.fillRect(0, 0, 256, 360); g.restore()
+    g.strokeStyle = '#3a2a1a'; g.lineWidth = 3; [[96, 290], [160, 290]].forEach(([x, y]) => { g.beginPath(); g.moveTo(x, y); g.lineTo(x + (x < 128 ? 10 : -10), 330); g.stroke() })
+    g.fillStyle = '#7a4a22'; g.fillRect(104, 326, 48, 30); g.strokeStyle = '#3a2410'; g.strokeRect(104, 326, 48, 30)
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace
+    hotAir = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.77), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, toneMapped: false }))
+    hotAir.position.set(-3, 2.4, -5.6); scene.add(hotAir)
+  }
   // TSUNAMI: a wave puppet theatre between the background and the bag. Three rows of wave flats (cut-out waves that
   // slide side to side) and, behind each, Japanese-style wave puppets on wooden sticks that pop up from behind the row,
   // rock back and forth, then sink and disappear
@@ -365,7 +381,7 @@ export function mount(box, variant = '35') {
     const side = i % 2 ? 1 : -1, r = i >> 1, far = NB > 6 && r % 2 ? 0.36 : 0
     HOVER.push([side * (HW + far + (r % 3) * 0.04), 0.78 - r * (1.46 / Math.max(1, rows - 1)), 0.38 + 0.05 * (r % 3)])
   }
-  const HWMAX = HW + (NB > 6 ? 0.44 : 0.1)
+  const HWMAX = Math.max(HW + (NB > 6 ? 0.44 : 0.1), W / 2 + 1.3)   // room for the buds' routines round the bag
   new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud.glb', (g) => {
     const src = g.scene, b = new THREE.Box3().setFromObject(src), sz = b.getSize(new THREE.Vector3())
     const k = (NB > 6 ? 0.38 : 0.44) / Math.max(sz.x, sz.y, sz.z)
@@ -473,6 +489,10 @@ export function mount(box, variant = '35') {
       st.pup.position.x = st.x + 0.12 * Math.sin(t * 1.3 + st.off)
       st.pup.rotation.z = k > 0.02 ? 0.16 * Math.sin(t * 3.2 + st.off) * Math.min(1, k) : 0              // rocks on its stick
       st.pup.visible = k > 0.001
+    }
+    if (hotAir) {                                                  // drifts across over ~70 s, gently bobbing, dimmed at night
+      const f = (t / 70) % 1; hotAir.position.set(-3.6 + f * 7.2, 2.2 + 0.18 * Math.sin(t * 0.5), -5.6); hotAir.rotation.z = 0.04 * Math.sin(t * 0.7)
+      const day = skyMat ? skyMat.uniforms.uDay.value : 1; hotAir.material.color.setScalar(0.35 + 0.65 * day)
     }
     if (skyMat) { skyMat.uniforms.uTime.value = t; skyMat.uniforms.uDay.value = 0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 40) }   // night -> day -> night
     const fl = reduce ? 0 : 1

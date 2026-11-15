@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=6'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=7'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -230,22 +230,48 @@ export function mount(box, variant = '35') {
           gl_FragColor = vec4(col * 0.9, 1.0);
         }`,
     // TSUNAMI: rows of curling waves rolling sideways, orange sunset sea with teal depths and white foam crests
+    // TSUNAMI: an open sea to the horizon (own ocean shader): choppy waves rolling towards you, sky reflections,
+    // the sun's glint and foam on the crests, a warm sunset sky
     waves: `
-        void main(){
-          // only the middle of this big plane is on screen: rows of waves from far (high, small) to near (low, big),
-          // drawn back to front so each row shows above the one in front of it
-          vec2 uv = vUv; vec3 col = mix(vec3(0.6, 0.25, 0.06), vec3(0.15, 0.06, 0.02), smoothstep(0.55, 0.8, uv.y));
-          for (int k = 0; k < 9; k++) {
-            float fk = float(k), y0 = 0.74 - fk * 0.05, amp = 0.006 + fk * 0.0018, sp = 0.4 + fk * 0.08;
-            float x = uv.x * (60.0 - fk * 4.0) + uTime * sp * (mod(fk, 2.0) * 2.0 - 1.0) + fk * 1.7;
-            float crest = y0 + amp * (sin(x) + 0.5 * sin(x * 2.1 + uTime * 0.7)) + amp * (fbm(vec2(x * 0.3, fk)) - 0.5);
-            float below = smoothstep(crest + 0.0015, crest - 0.0015, uv.y);
-            vec3 water = mix(vec3(0.02, 0.32, 0.36), vec3(0.95, 0.5, 0.1), 0.5 + 0.5 * sin(fk * 1.7 + 0.4));
-            water *= 0.5 + 0.5 * smoothstep(crest - 0.04, crest, uv.y);                         // darker down in the trough
-            float foam = smoothstep(0.004, 0.0, abs(uv.y - crest + 0.001)) * (0.55 + 0.45 * n(vec2(x * 2.0, uTime)));
-            col = mix(col, water, below); col = mix(col, vec3(1.0, 0.97, 0.9), foam);
+        mat2 rot = mat2(1.6, 1.2, -1.2, 1.6);
+        float sea(vec2 p, float t) {
+          float h = 0.0, a = 0.95, f = 0.16;
+          for (int k = 0; k < 5; k++) {
+            vec2 q = p * f + vec2(0.0, t * (0.45 + float(k) * 0.12));
+            float w = 1.0 - abs(n(q) * 2.0 - 1.0);             // a sharp crest
+            h += a * pow(w, 2.6);
+            p = rot * p; a *= 0.45; f *= 1.0;
           }
-          gl_FragColor = vec4(col * 0.75, 1.0);
+          return h;
+        }
+        void main(){
+          vec2 sp = (vUv - 0.5) * 0.78;                       // the visible part of the plane, as a view direction
+          vec3 rd = normalize(vec3(sp.x, sp.y - 0.05, -1.0));
+          vec3 sun = normalize(vec3(0.15, 0.12, -1.0));
+          // sky: deep teal overhead to a warm orange horizon, the sun and its glow
+          float up = max(rd.y, 0.0);
+          vec3 sky = mix(vec3(1.0, 0.55, 0.22), vec3(0.06, 0.2, 0.3), pow(up * 3.0, 0.6));
+          float sd = max(dot(rd, sun), 0.0);
+          sky += vec3(1.0, 0.75, 0.4) * pow(sd, 400.0) * 2.0 + vec3(1.0, 0.45, 0.15) * pow(sd, 12.0) * 0.5;
+          vec3 col = sky;
+          if (rd.y < 0.0) {
+            vec3 ro = vec3(0.0, 2.2, uTime * -1.6);
+            float d = ro.y / -rd.y; vec3 p = ro + rd * d;
+            float e = 0.08 + d * 0.004;
+            float h = sea(p.xz, uTime), hx = sea(p.xz + vec2(e, 0.0), uTime), hz = sea(p.xz + vec2(0.0, e), uTime);
+            vec3 nrm = normalize(vec3(h - hx, e * mix(0.45, 5.0, clamp(d / 80.0, 0.0, 1.0)), h - hz));
+            float fres = pow(clamp(1.0 - dot(nrm, -rd), 0.0, 1.0), 3.0) * 0.65;
+            vec3 rr = reflect(rd, nrm); rr.y = abs(rr.y);
+            float ru = max(rr.y, 0.0);
+            vec3 refl = mix(vec3(1.0, 0.55, 0.22), vec3(0.06, 0.2, 0.3), pow(ru * 3.0, 0.6));
+            vec3 deep = vec3(0.0, 0.09, 0.13), body = vec3(0.04, 0.3, 0.32);
+            vec3 water = mix(deep, body, clamp(h * 0.9, 0.0, 1.0) * 0.6);
+            col = mix(water, refl, fres);
+            col += vec3(1.0, 0.7, 0.4) * pow(max(dot(rr, sun), 0.0), 60.0) * 1.4;        // the sun's glint
+            col = mix(col, vec3(0.95, 0.92, 0.85), smoothstep(0.82, 1.05, h) * 0.55 * (1.0 - clamp(d / 60.0, 0.0, 1.0)));   // foam on the crests
+            col = mix(col, sky, clamp(pow(d / 140.0, 1.4), 0.0, 1.0));                     // haze to the horizon
+          }
+          gl_FragColor = vec4(pow(col, vec3(0.9)) * 0.9, 1.0);
         }`,
     // NIGHTSHADE: dark, with pale snakeskin snakes slowly slithering across, a fine scale grid on each body
     snakes: `

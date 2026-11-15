@@ -8,7 +8,7 @@
 //   - tap it: the lid lifts off and floats, the buds (owner's model) fly out and each hovers in its own spot;
 //     tap again: they fly back in and the lid closes
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=6'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=7'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 

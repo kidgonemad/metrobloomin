@@ -8,7 +8,7 @@
 //   - tap it: the lid lifts off and floats, the buds (owner's model) fly out and each hovers in its own spot;
 //     tap again: they fly back in and the lid closes
 import * as THREE from 'three'
-import { DANCES, applyDance } from './dance.js?v=2'
+import { DANCES, BUD_DANCES, applyDance } from './dance.js?v=3'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -358,6 +358,13 @@ export function mount(box, collab = 'kencarson') {
       const spin = 7 * Math.pow(1 - u, 2)                  // fast while flying, calm when hovering
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
       // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
+      // each collab's own bud dance (dance.js BUD_DANCES), on the beat, once it's out
+      const bd = s && u >= 1 && BUD_DANCES[window.MBDance] ? BUD_DANCES[window.MBDance](s, i, buds.length) : null
+      if (bd) {
+        b.obj.position.x += (bd.dx || 0) * beatAmt; b.obj.position.y += (bd.dy || 0) * beatAmt; b.obj.position.z += (bd.dz || 0) * beatAmt
+        b.obj.rotation.x += (bd.rx || 0) * beatAmt; b.obj.rotation.y += (bd.ry || 0) * beatAmt; b.obj.rotation.z += (bd.rz || 0) * beatAmt
+        if (bd.sc) b.obj.scale.multiplyScalar(1 + (bd.sc - 1) * beatAmt)
+      }
       if (W && u >= 1) {
         const k = Math.exp(-W.since * 6) * beatAmt
         if (W.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick

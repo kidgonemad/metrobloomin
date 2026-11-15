@@ -34,3 +34,24 @@ export function applyDance(THREE, g, d, amt, pivotY) {
   const p = tmp.v.set(0, pivotY, 0).applyMatrix4(g.matrix)              // where the base went; put it back, plus the hop
   g.position.set(-p.x, pivotY - p.y + (d.hop || 0) * amt, -p.z)
 }
+
+// how the buds dance once they're out, per collab (on the same beat): returns an offset / turn / size change
+// for bud i of n
+export const BUD_DANCES = {
+  // X41: they headbang, all together, a hard nod on each beat
+  headbang: (s, i) => { const hit = Math.exp(-s.ph * 6); return { rx: 0.9 * hit, dy: -0.05 * hit } },
+  // QRÖME: they bounce on the beat, odd and even buds on alternate beats
+  hop: (s, i) => ({ dy: 0.18 * Math.sin(Math.PI * s.ph) * ((s.i + i) % 2 ? 1 : 0.25) }),
+  // JSPAAY: they sway side to side together, a lean every two beats
+  sway: (s) => { const q = ((s.i % 2) + s.ph) / 2, a = Math.sin(2 * Math.PI * q); return { dx: 0.12 * a, rz: 0.5 * a } },
+  // SKYBOX: they spin a full turn on the first beat of every bar
+  snap: (s) => ({ ry: s.bar === 0 ? Math.PI * 2 * (1 - Math.pow(1 - Math.min(1, s.ph * 1.5), 3)) : 0 }),
+  // TSUNAMI: a wave running through them, one after another
+  wave: (s, i, n) => { const a = 2 * Math.PI * (((s.i % 2) + s.ph) / 2 - i / n); return { dy: 0.13 * Math.sin(a), rz: 0.35 * Math.cos(a) } },
+  // GELATO 41: they pump in size twice a beat
+  bop: (s) => { const p2 = (s.ph * 2) % 1; return { sc: 1 + 0.35 * Math.exp(-p2 * 6) } },
+  // CONNECTED: they rock forward and back every two beats
+  rock: (s) => { const q = ((s.i % 2) + s.ph) / 2; return { dz: 0.14 * Math.sin(2 * Math.PI * q), rx: 0.5 * Math.sin(2 * Math.PI * q) } },
+  // NIGHTSHADE: they slither, weaving in an S, each a little behind the one before
+  slither: (s, i, n) => { const a = 2 * Math.PI * (((s.i % 4) + s.ph) / 4 - i / n); return { dx: 0.14 * Math.sin(a), dy: 0.07 * Math.sin(2 * a), ry: 0.8 * Math.cos(a) } },
+}

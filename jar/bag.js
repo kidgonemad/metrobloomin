@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, applyDance } from './dance.js?v=2'
+import { DANCES, BUD_DANCES, applyDance } from './dance.js?v=3'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -426,6 +426,13 @@ export function mount(box, variant = '35') {
       const spin = 6 * Math.pow(1 - u, 2)
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
       // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
+      // each collab's own bud dance (dance.js BUD_DANCES), on the beat, once it's out
+      const bd = s && u >= 1 && BUD_DANCES[window.MBDance] ? BUD_DANCES[window.MBDance](s, i, buds.length) : null
+      if (bd) {
+        b.obj.position.x += (bd.dx || 0) * beatAmt; b.obj.position.y += (bd.dy || 0) * beatAmt; b.obj.position.z += (bd.dz || 0) * beatAmt
+        b.obj.rotation.x += (bd.rx || 0) * beatAmt; b.obj.rotation.y += (bd.ry || 0) * beatAmt; b.obj.rotation.z += (bd.rz || 0) * beatAmt
+        if (bd.sc) b.obj.scale.multiplyScalar(1 + (bd.sc - 1) * beatAmt)
+      }
       if (W && u >= 1) {
         const k = Math.exp(-W.since * 6) * beatAmt
         if (W.n % buds.length === i) {                    // this word's bud: jumps, swells and spins a flick

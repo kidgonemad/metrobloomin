@@ -60,3 +60,17 @@ export const BUD_DANCES = {
 export const WORD_MOVES = {
   headbang: [[/roll/i, 'spin']],                     // X41 (Rock N Roll): it spins on every "roll"
 }
+
+// some buds don't stay at their spot: they fly a path round the package, one loop every 8 beats (in time with the
+// song), each starting at its own point along it. Returns where it is (scene units, the package at the middle).
+const loop = (s, i, n, beats = 8) => 2 * Math.PI * (((s.i % beats) + s.ph) / beats + i / n)
+const orbit = (a) => ({ x: Math.sin(a) * 1.15, y: 0.35 + 0.25 * Math.sin(a * 2), z: Math.cos(a) * 1.15 })        // round and round, passing behind
+const eight = (a) => ({ x: Math.sin(a) * 1.05, y: 0.4 + 0.45 * Math.sin(2 * a), z: 0.55 + 0.25 * Math.cos(a) })    // a figure 8 in front
+const swoop = (a) => ({ x: Math.sin(a) * 1.15, y: 0.35 + 0.75 * Math.cos(a), z: 0.45 + 0.35 * Math.sin(2 * a) })  // big loops over and under
+const snake = (a) => ({ x: Math.sin(a) * 1.1, y: 0.3 + 0.35 * Math.sin(3 * a), z: 0.5 * Math.cos(3 * a) })         // weaving in and out
+export const FLIGHTS = { headbang: orbit, rock: orbit, hop: eight, bop: eight, wave: eight, sway: swoop, snap: swoop, slither: snake }
+export function flyPos(dance, s, i, n) { const f = FLIGHTS[dance]; return f ? f(loop(s, i, n)) : null }
+export function flyAngle(dance, s, i, n) {                                  // which way it's heading (to face along the path)
+  const f = FLIGHTS[dance]; if (!f) return 0
+  const a = loop(s, i, n), p0 = f(a), p1 = f(a + 0.05); return Math.atan2(p1.x - p0.x, p1.z - p0.z)
+}

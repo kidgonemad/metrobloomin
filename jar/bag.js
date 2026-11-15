@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, applyDance } from './dance.js?v=4'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, flyPos, flyAngle } from './dance.js?v=5'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -408,6 +408,7 @@ export function mount(box, variant = '35') {
     bag.updateMatrixWorld()
     const mouthW = tmpB.set(0, BODY_TOP + 0.05, 0).applyMatrix4(bag.matrixWorld).clone()
     let outCount = 0
+    const PKG_Y = bag.position.y - 0.25                 // flight paths centre on the bag
     buds.forEach((b, i) => {
       const bp = THREE.MathUtils.clamp((clock - BUD_START - i * BUD_GAP) / BUD_S, 0, 1)
       const isIn = bp <= 0
@@ -426,6 +427,17 @@ export function mount(box, variant = '35') {
       const spin = 6 * Math.pow(1 - u, 2)
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
       // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
+      // every other bud leaves its spot and flies a path round the package, on the beat (dance.js FLIGHTS); it glides
+      // out onto the path as the music comes in and back to its spot when it stops
+      if (s && u >= 1 && i % 2 === 0) {
+        const fp = flyPos(window.MBDance, s, i / 2, Math.ceil(buds.length / 2))
+        if (fp) {
+          b.fly = Math.min(1, (b.fly || 0) + dt * 0.8)
+          const k = b.fly * b.fly * (3 - 2 * b.fly) * beatAmt, cy = PKG_Y
+          b.obj.position.lerp(new THREE.Vector3(fp.x, cy + fp.y, fp.z), k)
+          b.obj.rotation.y += flyAngle(window.MBDance, s, i / 2, Math.ceil(buds.length / 2)) * k
+        }
+      } else if (b.fly) b.fly = Math.max(0, b.fly - dt * 0.8)
       // each collab's own bud dance (dance.js BUD_DANCES), on the beat, once it's out
       const bd = s && u >= 1 && BUD_DANCES[window.MBDance] ? BUD_DANCES[window.MBDance](s, i, buds.length) : null
       if (bd) {

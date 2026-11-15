@@ -273,6 +273,38 @@ export function mount(box, variant = '35') {
       fragmentShader: NOISE + SCENES[V.scene] })
     bg.material.dispose(); bg.material = skyMat; bg2.visible = false
   }
+  // TSUNAMI: a wave puppet theatre between the background and the bag. Three rows of wave flats (cut-out waves that
+  // slide side to side) and, behind each, Japanese-style wave puppets on wooden sticks that pop up from behind the row,
+  // rock back and forth, then sink and disappear
+  const stage = []
+  if (V.scene === 'waves') {
+    const flatMat = (col, ph) => new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 } }, transparent: true, toneMapped: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `varying vec2 vUv; uniform float uTime;
+        void main(){
+          float x = vUv.x * 30.0 + uTime * 0.8 + ${ph.toFixed(1)};
+          float crest = 0.9 + 0.035 * sin(x) + 0.015 * sin(x * 2.7 + uTime);
+          if (vUv.y > crest) discard;
+          vec3 c = mix(vec3(${col.map((v) => (v * 0.45).toFixed(3)).join(',')}), vec3(${col.map((v) => v.toFixed(3)).join(',')}), smoothstep(0.3, crest, vUv.y));
+          float foam = smoothstep(0.02, 0.0, crest - vUv.y);
+          float edge = smoothstep(0.035, 0.022, crest - vUv.y) - foam;
+          c = mix(c, vec3(0.97, 0.95, 0.9), foam); c = mix(c, vec3(0.04, 0.1, 0.14), edge * 0.8);
+          gl_FragColor = vec4(c * 0.8, 1.0);
+        }` })
+    const pupTex = [tex('tsu_puppet0.png?v=1'), tex('tsu_puppet1.png?v=1')]
+    const ROWS = [{ z: -3.4, crest: 1.0, col: [0.12, 0.42, 0.55], w: 10 }, { z: -2.5, crest: 0.4, col: [0.92, 0.48, 0.12], w: 9 }, { z: -1.6, crest: -0.2, col: [0.06, 0.32, 0.4], w: 8 }]
+    ROWS.forEach((r, k) => {
+      const H2 = 3, flat = new THREE.Mesh(new THREE.PlaneGeometry(r.w, H2), flatMat(r.col, k * 2.3))
+      flat.position.set(0, r.crest - H2 * 0.9 + H2 / 2, r.z); scene.add(flat)
+      stage.push({ flat, row: r, k })
+      for (let j = 0; j < 2; j++) {                                   // two puppets behind each row
+        const pw = 1.15 - k * 0.12, geo = new THREE.PlaneGeometry(pw, pw * 1.25); geo.translate(0, pw * 1.25 / 2, 0)
+        const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: pupTex[(j + k) % 2], transparent: true, alphaTest: 0.4, toneMapped: false }))
+        m.position.z = r.z - 0.12; scene.add(m)
+        stage.push({ pup: m, row: r, size: pw, x: (j ? 1 : -1) * (0.62 + 0.18 * ((k * 7 + j * 3) % 5) / 4) * (1 + 0.15 * (2 - k)), period: 7 + k * 1.7 + j * 2.3, off: (k * 2.9 + j * 4.1) })
+      }
+    })
+  }
   const glow = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256
     const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128)
@@ -392,6 +424,20 @@ export function mount(box, variant = '35') {
     }
     if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = skyMat ? 0 : 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
+    // the wave theatre: flats slide; puppets pop up from behind their row, rock, sink and are gone
+    for (const st of stage) {
+      if (st.flat) { st.flat.material.uniforms.uTime.value = t; st.flat.position.x = 0.25 * Math.sin(t * 0.5 + st.k * 1.9) * (st.k % 2 ? -1 : 1); continue }
+      const ph = ((t + st.off) % st.period) / st.period, sz = st.size * 1.25
+      const low = st.row.crest - sz - 0.05, high = st.row.crest - sz * 0.38             // hidden below the crest .. wave up above it
+      let k = 0
+      if (ph < 0.1) { const x = ph / 0.1, c = 1.7; k = 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2) }   // pops up (overshoot)
+      else if (ph < 0.55) k = 1
+      else if (ph < 0.68) { const x = (ph - 0.55) / 0.13; k = 1 - x * x }                                        // sinks
+      st.pup.position.y = low + (high - low) * k
+      st.pup.position.x = st.x + 0.12 * Math.sin(t * 1.3 + st.off)
+      st.pup.rotation.z = k > 0.02 ? 0.16 * Math.sin(t * 3.2 + st.off) * Math.min(1, k) : 0              // rocks on its stick
+      st.pup.visible = k > 0.001
+    }
     if (skyMat) { skyMat.uniforms.uTime.value = t; skyMat.uniforms.uDay.value = 0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 40) }   // night -> day -> night
     const fl = reduce ? 0 : 1
     // it stands on its bottom (no float): only the jolt when a bud lands

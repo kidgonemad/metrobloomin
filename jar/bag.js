@@ -88,13 +88,25 @@ export function mount(box, variant = '35') {
 
   // the tear strip: both faces' top band, sealed flat; peels off from the notch (left) and flies away
   const strip = new THREE.Group(); strip.position.y = BODY_TOP; bag.add(strip)
+  // a mask for the strip: white, with the two V notches (one each side, halfway up the strip) black = cut away
+  const notchMask = (() => {
+    // (in the bag art's own uv: the strip shows the top STRIP / H of it)
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 2048; const g = c.getContext('2d')
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 1024, 2048); g.fillStyle = '#000'
+    const d = 0.05 / W * 1024, hh = 0.026 / H * 2048, cy = 0.55 * STRIP / H * 2048
+    for (const [x0, sx] of [[0, 1], [1024, -1]]) { g.beginPath(); g.moveTo(x0, cy - hh); g.lineTo(x0 + sx * d, cy); g.lineTo(x0, cy + hh); g.closePath(); g.fill() }
+    const t = new THREE.CanvasTexture(c); return t
+  })()
   const strips = []
   for (const [map, back] of [[frontTex, false], [backTex, true]]) {
     const geo = new THREE.PlaneGeometry(W, STRIP, 30, 3); geo.translate(0, STRIP / 2, 0)
     const uv = geo.attributes.uv, k0 = (BODY_TOP - BOT) / H
     for (let i = 0; i < uv.count; i++) uv.setY(i, k0 + uv.getY(i) * (1 - k0))
     const g = new THREE.Group(); if (back) g.rotation.y = Math.PI
-    g.add(new THREE.Mesh(geo, print(map)), new THREE.Mesh(geo, inner)); strip.add(g)
+    // the tear notches are cut out of the strip (see-through), not printed on
+    const pm = print(map); pm.alphaMap = notchMask; pm.alphaTest = 0.5
+    const im = inner.clone(); im.alphaMap = notchMask; im.alphaTest = 0.5
+    g.add(new THREE.Mesh(geo, pm), new THREE.Mesh(geo, im)); strip.add(g)
     const p = geo.attributes.position, b = new Float32Array(p.count * 2)
     for (let i = 0; i < p.count; i++) { b[i * 2] = p.getX(i); b[i * 2 + 1] = p.getY(i) }
     strips.push({ geo, base: b, back })
@@ -177,7 +189,7 @@ export function mount(box, variant = '35') {
         const pr = THREE.MathUtils.clamp((front - xw) / 0.5, 0, 1)
         const rag = y < 0.002 ? 0.008 * Math.sin(x * 97) * pr : 0          // the torn bottom edge, ragged
         const lift = pr * (0.05 + 0.1 * pr) + rag
-        p.setXYZ(i, x, y + lift, -sg * 0.04 * pr * pr * (y / STRIP + 0.3))
+        p.setXYZ(i, x, y + lift, 0.004 - sg * 0.04 * pr * pr * (y / STRIP + 0.3))   // 0.004: front and back strips apart (no flicker)
       }
       p.needsUpdate = true; S.geo.computeVertexNormals()
     }

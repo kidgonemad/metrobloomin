@@ -5,7 +5,7 @@ const easeOut = (x) => 1 - Math.pow(1 - x, 3)
 const back = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2) }   // overshoot
 export const DANCES = {
   // X41 (Rock N Roll): headbang, nodding forward hard on every beat, harder on the bar's first
-  headbang: (s) => { const hit = Math.exp(-s.ph * 6), d = s.bar === 0 ? 1.35 : 1; return { rx: 0.2 * hit * d, ry: 0.04 * (s.i % 2 ? 1 : -1) * hit } },
+  headbang: (s) => { const hit = Math.exp(-s.ph * 6), d = s.bar === 0 ? 1.35 : 1; return { rx: 0.08 * hit * d, ry: 0.02 * (s.i % 2 ? 1 : -1) * hit } },   // a calm nod
   // QRÖME (Wow Wow): hop, a jump on every beat, landing on the next with a squash
   hop: (s) => { const up = Math.sin(Math.PI * s.ph), land = Math.exp(-s.ph * 9); return { hop: 0.16 * up * (s.bar === 0 ? 1.3 : 1), sy: 1 - 0.09 * land, sx: 1 + 0.06 * land } },
   // JSPAAY (Keep Goin): sway, a lazy lean side to side, one lean every two beats
@@ -39,7 +39,7 @@ export function applyDance(THREE, g, d, amt, pivotY) {
 // for bud i of n
 export const BUD_DANCES = {
   // X41: they headbang, all together, a hard nod on each beat
-  headbang: (s, i) => { const hit = Math.exp(-s.ph * 6); return { rx: 0.9 * hit, dy: -0.05 * hit } },
+  headbang: (s, i) => { const hit = Math.exp(-s.ph * 6); return { rx: 0.4 * hit, dy: -0.025 * hit } },
   // QRÖME: they bounce on the beat, odd and even buds on alternate beats
   hop: (s, i) => ({ dy: 0.18 * Math.sin(Math.PI * s.ph) * ((s.i + i) % 2 ? 1 : 0.25) }),
   // JSPAAY: they sway side to side together, a lean every two beats
@@ -54,4 +54,9 @@ export const BUD_DANCES = {
   rock: (s) => { const q = ((s.i % 2) + s.ph) / 2; return { dz: 0.14 * Math.sin(2 * Math.PI * q), rx: 0.5 * Math.sin(2 * Math.PI * q) } },
   // NIGHTSHADE: they slither, weaving in an S, each a little behind the one before
   slither: (s, i, n) => { const a = 2 * Math.PI * (((s.i % 4) + s.ph) / 4 - i / n); return { dx: 0.14 * Math.sin(a), dy: 0.07 * Math.sin(2 * a), ry: 0.8 * Math.cos(a) } },
+}
+
+// words that set off a move of their own, per collab: [pattern, move]. 'spin' = a full turn of the package
+export const WORD_MOVES = {
+  headbang: [[/roll/i, 'spin']],                     // X41 (Rock N Roll): it spins on every "roll"
 }

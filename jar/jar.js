@@ -8,7 +8,7 @@
 //   - tap it: the lid lifts off and floats, the buds (owner's model) fly out and each hovers in its own spot;
 //     tap again: they fly back in and the lid closes
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, applyDance } from './dance.js?v=3'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance } from './dance.js?v=4'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -253,7 +253,7 @@ export function mount(box, collab = 'kencarson') {
   let t = 0, last = performance.now(), visible = true
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting }); io.observe(box)
   let rafId = 0, dead = false
-  let beatAmt = 0, lastDance = null
+  let beatAmt = 0, lastDance = null, lastWord = -1, wordSpin = 1
   function frame(now) {
     if (dead) return
     rafId = requestAnimationFrame(frame)
@@ -375,6 +375,12 @@ export function mount(box, collab = 'kencarson') {
     })
     jar.position.y -= 0.025 * Math.min(1, kick)
     applyDance(THREE, dancer, lastDance, beatAmt, floor.position.y)
+    // a word that sets off its own move (dance.js WORD_MOVES): "roll" spins X41 a full turn
+    if (W && W.n !== lastWord) {
+      lastWord = W.n
+      for (const [re, mv] of (WORD_MOVES[window.MBDance] || [])) if (mv === 'spin' && re.test(W.text) && wordSpin >= 1) wordSpin = 0
+    }
+    if (wordSpin < 1) { wordSpin = Math.min(1, wordSpin + dt / 0.9); dancer.rotation.y += Math.PI * 2 * (1 - Math.pow(1 - wordSpin, 3)) }
     if (W) dancer.scale.multiplyScalar(1 + 0.025 * Math.exp(-W.since * 8) * beatAmt)   // and the package pulses a touch on each word
     renderer.render(scene, camera)
   }

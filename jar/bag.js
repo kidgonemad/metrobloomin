@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, applyDance } from './dance.js?v=3'
+import { DANCES, BUD_DANCES, applyDance } from './dance.js?v=4'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 

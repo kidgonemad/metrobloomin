@@ -18,11 +18,11 @@ export const BAGS = {
   35: { front: 'bag35_front.webp?v=1', back: 'bag35_back.webp?v=3', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6 },   // G: half the
   28: { front: 'bag28_front.webp?v=1', back: 'bag28_back.webp?v=1', W: 1.6, H: 1.21, T: 0.12, G: 0.24, buds: 12 },
   // SKYBOX: the blue / purple "Premium Cannabis" bag from the owner's video (printed the same both sides)
-  sky: { front: 'sky_front.webp?v=1', back: 'sky_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+  sky: { front: 'sky_front.webp?v=1', back: 'sky_back.webp?v=1', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6, scene: 'sky',
     bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
     glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },
   // TSUNAMI (Wheezy): the orange / yellow wave bag, a squarer pouch
-  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8,
+  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8, scene: 'waves',
     bg: 'tsu_bg.webp?v=2', bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=3', bottomAt: [0.04, 0.12, 0.4],
     glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
   // GELATO 41: the purple "Premium Cannabis" bag
@@ -30,7 +30,7 @@ export const BAGS = {
     bg: 'gel_bg.webp?v=1', bgColor: '#06030a', bounce: '#b07cff', ground: '#24123a', bottom: 'gel_front.webp?v=3', bottomAt: [0.05, 0.3, 0.5],
     glow: ['rgba(180,120,255,0.45)', 'rgba(240,120,220,0.15)', 'rgba(60,20,90,0)'] },
   // NIGHTSHADE (Lil Baby): white snakeskin with the two snakes
-  ns: { front: 'ns_front.webp?v=2', back: 'ns_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6,
+  ns: { front: 'ns_front.webp?v=2', back: 'ns_back.webp?v=2', W: 1.21, H: 1.62, T: 0.13, G: 0.27, buds: 6, scene: 'snakes',
     bg: 'ns_bg.webp?v=1', bgColor: '#040404', bounce: '#e8e4dc', ground: '#1c1c1c', bottom: 'ns_front.webp?v=2', bottomAt: [0.05, 0.05, 0.45],
     glow: ['rgba(235,230,220,0.35)', 'rgba(160,160,160,0.12)', 'rgba(30,30,30,0)'] },     // oval bottom's depth
 }
@@ -191,6 +191,74 @@ export function mount(box, variant = '35') {
   bgTex2.repeat.set(2, 2); bgTex2.needsUpdate = true
   const bg2 = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({ map: bgTex2, color: new THREE.Color(0.25, 0.25, 0.25), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }))
   bg2.position.set(0, 0.4, -4.5); scene.add(bg2)
+  // a living backdrop per bag: SKYBOX night -> day sky with clouds, TSUNAMI rolling waves, NIGHTSHADE slithering snakes
+  const NOISE = `
+        varying vec2 vUv; uniform float uTime, uDay;
+        float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+        float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int k = 0; k < 5; k++) { v += a * n(p); p = p * 2.03 + 17.1; a *= 0.5; } return v; }`
+  const SCENES = {
+    sky: `
+        void main(){
+          vec2 uv = vUv; float y = uv.y;
+          vec3 night = mix(vec3(0.01, 0.015, 0.05), vec3(0.03, 0.04, 0.12), y);
+          vec3 day = mix(vec3(0.62, 0.8, 0.97), vec3(0.16, 0.45, 0.9), smoothstep(0.25, 1.0, y));
+          float d = uDay; vec3 col = mix(night, day, d);
+          col += vec3(0.5, 0.22, 0.32) * (1.0 - abs(d * 2.0 - 1.0)) * (1.0 - y) * 0.35;
+          vec2 sp = uv * 900.0; vec2 cell = floor(sp), fp = fract(sp) - 0.5;
+          float on = step(0.985, h(cell)), r = length(fp);
+          float st = on * smoothstep(0.45, 0.0, r) * (0.55 + 0.45 * sin(uTime * 2.5 + h(cell + 3.0) * 40.0));
+          col += vec3(st) * (1.0 - d) * smoothstep(0.2, 0.6, y);
+          vec2 cp = uv * vec2(3.0, 5.0) + vec2(uTime * 0.025, 0.0);
+          float c = smoothstep(0.5, 0.78, fbm(cp) * 0.85 + fbm(cp * 2.3 + 4.0) * 0.3) * smoothstep(0.08, 0.5, y);
+          col = mix(col, mix(vec3(0.12, 0.14, 0.24), vec3(1.0), d), c * mix(0.35, 0.92, d));
+          gl_FragColor = vec4(col * 0.9, 1.0);
+        }`,
+    // TSUNAMI: rows of curling waves rolling sideways, orange sunset sea with teal depths and white foam crests
+    waves: `
+        void main(){
+          // only the middle of this big plane is on screen: rows of waves from far (high, small) to near (low, big),
+          // drawn back to front so each row shows above the one in front of it
+          vec2 uv = vUv; vec3 col = mix(vec3(0.6, 0.25, 0.06), vec3(0.15, 0.06, 0.02), smoothstep(0.55, 0.8, uv.y));
+          for (int k = 0; k < 9; k++) {
+            float fk = float(k), y0 = 0.74 - fk * 0.05, amp = 0.006 + fk * 0.0018, sp = 0.4 + fk * 0.08;
+            float x = uv.x * (60.0 - fk * 4.0) + uTime * sp * (mod(fk, 2.0) * 2.0 - 1.0) + fk * 1.7;
+            float crest = y0 + amp * (sin(x) + 0.5 * sin(x * 2.1 + uTime * 0.7)) + amp * (fbm(vec2(x * 0.3, fk)) - 0.5);
+            float below = smoothstep(crest + 0.0015, crest - 0.0015, uv.y);
+            vec3 water = mix(vec3(0.02, 0.32, 0.36), vec3(0.95, 0.5, 0.1), 0.5 + 0.5 * sin(fk * 1.7 + 0.4));
+            water *= 0.5 + 0.5 * smoothstep(crest - 0.04, crest, uv.y);                         // darker down in the trough
+            float foam = smoothstep(0.004, 0.0, abs(uv.y - crest + 0.001)) * (0.55 + 0.45 * n(vec2(x * 2.0, uTime)));
+            col = mix(col, water, below); col = mix(col, vec3(1.0, 0.97, 0.9), foam);
+          }
+          gl_FragColor = vec4(col * 0.75, 1.0);
+        }`,
+    // NIGHTSHADE: dark, with pale snakeskin snakes slowly slithering across, a fine scale grid on each body
+    snakes: `
+        void main(){
+          vec2 uv = vUv; vec3 col = vec3(0.025);
+          for (int k = 0; k < 5; k++) {
+            float fk = float(k), dir = mod(fk, 2.0) * 2.0 - 1.0;
+            float x = uv.x * 2.4 + uTime * 0.06 * dir + fk * 2.1;
+            float cy = 0.12 + fk * 0.19 + 0.06 * sin(x * 3.0 + fk);
+            float w = 0.028 + 0.008 * sin(x * 1.3 + fk), d = abs(uv.y - cy);
+            float body = smoothstep(w, w - 0.006, d);
+            float mesh = smoothstep(0.06, 0.12, abs(fract(x * 22.0 + (uv.y - cy) * 70.0) - 0.5)) * smoothstep(0.06, 0.12, abs(fract(x * 22.0 - (uv.y - cy) * 70.0) - 0.5));
+            float shade = 1.0 - pow(d / w, 2.0) * 0.6;
+            vec3 skin = mix(vec3(0.12), vec3(0.78, 0.76, 0.72), mesh) * shade;
+            float edge = smoothstep(w + 0.004, w, d) - body;
+            col = mix(col, skin, body); col += vec3(0.5) * edge * 0.5;
+          }
+          gl_FragColor = vec4(col * 0.6, 1.0);
+        }`,
+  }
+  let skyMat = null
+  if (V.scene && SCENES[V.scene]) {
+    skyMat = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uDay: { value: 0 } }, toneMapped: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: NOISE + SCENES[V.scene] })
+    bg.material.dispose(); bg.material = skyMat; bg2.visible = false
+  }
   const glow = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256
     const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128)
@@ -309,7 +377,8 @@ export function mount(box, variant = '35') {
       bag.rotation.y += (tgt - bag.rotation.y) * (1 - Math.pow(0.05, dt)) + spinV * dt
     }
     if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
-      bg.rotation.z = 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
+      bg.rotation.z = skyMat ? 0 : 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
+    if (skyMat) { skyMat.uniforms.uTime.value = t; skyMat.uniforms.uDay.value = 0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 40) }   // night -> day -> night
     const fl = reduce ? 0 : 1
     // it stands on its bottom (no float): only the jolt when a bud lands
     bag.position.y = -0.02 - 0.015 * wob * fl

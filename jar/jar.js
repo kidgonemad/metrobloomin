@@ -46,7 +46,7 @@ export function mount(box, collab = 'kencarson') {
   const C = COLLABS[collab] || COLLABS.kencarson
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5))   // phones: 1.5x is near-identical and far cheaper to draw
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.outputColorSpace = THREE.SRGBColorSpace
   box.appendChild(renderer.domElement)
@@ -181,7 +181,7 @@ export function mount(box, collab = 'kencarson') {
   const draco = new DRACOLoader().setDecoderPath(BASE + 'draco/')
   const buds = []                               // { obj, home: Vector3 (spot in the jar), hover: Vector3, rot: Vector3, ph }
   const HOVER = [[-0.62, 1.12, 0.62], [0.66, 1.02, 0.6], [-1.0, 0.55, 0.35], [1.02, 0.35, 0.3], [-0.95, -0.2, 0.45], [0.98, -0.35, 0.4]]   // around the front; the lid floats up and behind
-  new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud.glb', (g) => {
+  new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud_lo.glb?v=1', (g) => {
     const src = g.scene, b = new THREE.Box3().setFromObject(src), sz = b.getSize(new THREE.Vector3())
     const k = 0.52 / Math.max(sz.x, sz.y, sz.z)          // each bud about half the jar's width
     src.position.sub(b.getCenter(new THREE.Vector3()))

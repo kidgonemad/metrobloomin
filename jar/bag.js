@@ -44,7 +44,7 @@ export function mount(box, variant = '35') {
     glow: ['rgba(120,230,60,0.45)', 'rgba(70,170,30,0.16)', 'rgba(20,80,0,0)'] }, V0)
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5))   // phones: 1.5x is near-identical and far cheaper to draw
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.outputColorSpace = THREE.SRGBColorSpace
   box.appendChild(renderer.domElement)
@@ -367,7 +367,7 @@ export function mount(box, variant = '35') {
     HOVER.push([side * (HW + far + (r % 3) * 0.04), 0.78 - r * (1.46 / Math.max(1, rows - 1)), 0.38 + 0.05 * (r % 3)])
   }
   const HWMAX = Math.max(HW + (NB > 6 ? 0.44 : 0.1), W / 2 + 1.3)   // room for the buds' routines round the bag
-  new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud.glb', (g) => {
+  new GLTFLoader().setDRACOLoader(draco).load(BASE + 'bud_lo.glb?v=1', (g) => {
     const src = g.scene, b = new THREE.Box3().setFromObject(src), sz = b.getSize(new THREE.Vector3())
     const k = (NB > 6 ? 0.38 : 0.44) / Math.max(sz.x, sz.y, sz.z)
     src.position.sub(b.getCenter(new THREE.Vector3()))

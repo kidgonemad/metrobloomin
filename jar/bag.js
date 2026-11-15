@@ -215,7 +215,7 @@ export function mount(box, variant = '35') {
   const SCENES = {
     sky: `
         void main(){
-          vec2 uv = vUv; float y = uv.y;
+          vec2 uv = vUv; float y = clamp(uv.y, 0.0, 1.0);                 // below the picture: the horizon colour carries on
           vec3 night = mix(vec3(0.01, 0.015, 0.05), vec3(0.03, 0.04, 0.12), y);
           vec3 day = mix(vec3(0.62, 0.8, 0.97), vec3(0.16, 0.45, 0.9), smoothstep(0.25, 1.0, y));
           float d = uDay; vec3 col = mix(night, day, d);
@@ -295,9 +295,11 @@ export function mount(box, variant = '35') {
   let skyMat = null
   if (V.scene && SCENES[V.scene]) {
     skyMat = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uDay: { value: 0 } }, toneMapped: false, depthWrite: false,
-      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      // the plane is made 4x bigger (it reaches past every edge of the screen, even with the camera pulled back), and
+      // its uv stretched to match, so the scene looks the same in the middle and simply carries on outside it
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = (uv - 0.5) * 4.0 + 0.5; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader: NOISE + SCENES[V.scene] })
-    bg.material.dispose(); bg.material = skyMat; bg2.visible = false
+    bg.material.dispose(); bg.material = skyMat; bg2.visible = false; bg.scale.set(4, 4, 1)
   }
   let hotAir = null
   // TSUNAMI: a wave puppet theatre between the background and the bag. Three rows of wave flats (cut-out waves that

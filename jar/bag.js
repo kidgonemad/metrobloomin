@@ -22,7 +22,7 @@ export const BAGS = {
     bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
     glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },
   // TSUNAMI (Wheezy): the orange / yellow wave bag, a squarer pouch
-  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8, scene: 'waves',
+  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8, scene: 'stage',
     bg: 'tsu_waves.webp?v=2',   // the bag's own curly waves, drifting
     bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=3', bottomAt: [0.04, 0.12, 0.4],
     glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
@@ -277,7 +277,12 @@ export function mount(box, variant = '35') {
   // slide side to side) and, behind each, Japanese-style wave puppets on wooden sticks that pop up from behind the row,
   // rock back and forth, then sink and disappear
   const stage = []
-  if (V.scene === 'waves') {
+  let stageSky = null
+  if (V.scene === 'stage') {
+    // the sky: one woodblock print (paper, red sun, cloud band, Fuji), not tiled, not drifting
+    stageSky = tex('tsu_sky.webp?v=1'); bg.material.map = stageSky; bg.material.color.setRGB(0.8, 0.8, 0.8); bg.material.needsUpdate = true; bg2.visible = false
+    bg.scale.set(0.62, 0.62, 1); bg.position.y = 0.7
+    const rowTex = tex('tsu_row.webp?v=2'); rowTex.wrapS = THREE.RepeatWrapping
     const flatMat = (col, ph) => new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 } }, transparent: true, toneMapped: false,
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader: `varying vec2 vUv; uniform float uTime;
@@ -294,8 +299,13 @@ export function mount(box, variant = '35') {
     const pupTex = [tex('tsu_puppet0.png?v=1'), tex('tsu_puppet1.png?v=1')]
     const ROWS = [{ z: -3.4, crest: 1.0, col: [0.12, 0.42, 0.55], w: 10 }, { z: -2.5, crest: 0.4, col: [0.92, 0.48, 0.12], w: 9 }, { z: -1.6, crest: -0.2, col: [0.06, 0.32, 0.4], w: 8 }]
     ROWS.forEach((r, k) => {
-      const H2 = 3, flat = new THREE.Mesh(new THREE.PlaneGeometry(r.w, H2), flatMat(r.col, k * 2.3))
-      flat.position.set(0, r.crest - H2 * 0.9 + H2 / 2, r.z); scene.add(flat)
+      // a row of curling waves (own woodblock-style art), repeating sideways; its crest line on r.crest
+      const H2 = 1.5, rt = rowTex.clone(); rt.needsUpdate = true; rt.repeat.set(r.w / 2.2, 1)
+      const flat = new THREE.Mesh(new THREE.PlaneGeometry(r.w, H2), new THREE.MeshBasicMaterial({ map: rt, transparent: true, alphaTest: 0.5, toneMapped: false, color: new THREE.Color().setScalar(0.62 + 0.15 * k) }))
+      flat.position.set(0, r.crest - (H2 * 0.72 - H2 / 2), r.z); scene.add(flat)
+      // under each row: plain deep sea down past the bottom of the screen (no paper sky showing through)
+      const sea = new THREE.Mesh(new THREE.PlaneGeometry(r.w, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x0f2748).multiplyScalar(0.62 + 0.15 * k), toneMapped: false }))
+      sea.position.set(0, flat.position.y - H2 / 2 - 2 + 0.01, r.z); scene.add(sea)
       stage.push({ flat, row: r, k })
       for (let j = 0; j < 2; j++) {                                   // two puppets behind each row
         const pw = 1.15 - k * 0.12, geo = new THREE.PlaneGeometry(pw, pw * 1.25); geo.translate(0, pw * 1.25 / 2, 0)
@@ -422,11 +432,11 @@ export function mount(box, variant = '35') {
       const tgt = Math.round(bag.rotation.y / Math.PI) * Math.PI
       bag.rotation.y += (tgt - bag.rotation.y) * (1 - Math.pow(0.05, dt)) + spinV * dt
     }
-    if (!reduce) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
+    if (!reduce && !stageSky) { bgTex.offset.x += dt * 0.012; bgTex.offset.y += dt * 0.006; bgTex2.offset.x -= dt * 0.02; bgTex2.offset.y += dt * 0.01
       bg.rotation.z = skyMat ? 0 : 0.05 * Math.sin(t * 0.15); bg2.rotation.z = -0.06 * Math.sin(t * 0.12 + 1) }
     // the wave theatre: flats slide; puppets pop up from behind their row, rock, sink and are gone
     for (const st of stage) {
-      if (st.flat) { st.flat.material.uniforms.uTime.value = t; st.flat.position.x = 0.25 * Math.sin(t * 0.5 + st.k * 1.9) * (st.k % 2 ? -1 : 1); continue }
+      if (st.flat) { st.flat.material.map.offset.x = t * 0.03 * (st.k % 2 ? -1 : 1) + 0.25 * st.k; st.flat.position.x = 0.12 * Math.sin(t * 0.5 + st.k * 1.9); continue }
       const ph = ((t + st.off) % st.period) / st.period, sz = st.size * 1.25
       const low = st.row.crest - sz - 0.05, high = st.row.crest - sz * 0.38             // hidden below the crest .. wave up above it
       let k = 0

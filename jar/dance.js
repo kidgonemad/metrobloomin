@@ -41,7 +41,7 @@ export const BUD_DANCES = {
   // X41: they headbang, all together, a hard nod on each beat
   headbang: (s, i) => { const hit = Math.exp(-s.ph * 6); return { rx: 0.4 * hit, dy: -0.025 * hit } },
   // QRÖME: they bounce on the beat, odd and even buds on alternate beats
-  hop: (s, i) => ({ dy: 0.18 * Math.sin(Math.PI * s.ph) * ((s.i + i) % 2 ? 1 : 0.25) }),
+  hop: (s, i) => ({ dy: 0.42 * Math.sin(Math.PI * s.ph) * ((s.i + i) % 2 ? 1 : 0.15), rz: ((s.i + i) % 2 ? 1 : 0) * 1.4 * s.ph }),
   // JSPAAY: they sway side to side together, a lean every two beats
   sway: (s) => { const q = ((s.i % 2) + s.ph) / 2, a = Math.sin(2 * Math.PI * q); return { dx: 0.12 * a, rz: 0.5 * a } },
   // SKYBOX: they spin a full turn on the first beat of every bar
@@ -61,16 +61,29 @@ export const WORD_MOVES = {
   headbang: [[/roll/i, 'spin']],                     // X41 (Rock N Roll): it spins on every "roll"
 }
 
-// some buds don't stay at their spot: they fly a path round the package, one loop every 8 beats (in time with the
-// song), each starting at its own point along it. Returns where it is (scene units, the package at the middle).
-const loop = (s, i, n, beats = 8) => 2 * Math.PI * (((s.i % beats) + s.ph) / beats + i / n)
-const orbit = (a) => ({ x: Math.sin(a) * 1.15, y: 0.35 + 0.25 * Math.sin(a * 2), z: Math.cos(a) * 1.15 })        // round and round, passing behind
-const eight = (a) => ({ x: Math.sin(a) * 1.05, y: 0.4 + 0.45 * Math.sin(2 * a), z: 0.55 + 0.25 * Math.cos(a) })    // a figure 8 in front
-const swoop = (a) => ({ x: Math.sin(a) * 1.15, y: 0.35 + 0.75 * Math.cos(a), z: 0.45 + 0.35 * Math.sin(2 * a) })  // big loops over and under
-const snake = (a) => ({ x: Math.sin(a) * 1.1, y: 0.3 + 0.35 * Math.sin(3 * a), z: 0.5 * Math.cos(3 * a) })         // weaving in and out
-export const FLIGHTS = { headbang: orbit, rock: orbit, hop: eight, bop: eight, wave: eight, sway: swoop, snap: swoop, slither: snake }
-export function flyPos(dance, s, i, n) { const f = FLIGHTS[dance]; return f ? f(loop(s, i, n)) : null }
-export function flyAngle(dance, s, i, n) {                                  // which way it's heading (to face along the path)
-  const f = FLIGHTS[dance]; if (!f) return 0
-  const a = loop(s, i, n), p0 = f(a), p1 = f(a + 0.05); return Math.atan2(p1.x - p0.x, p1.z - p0.z)
+// each collab's buds have their own routine once they're out. Simple ones (null) keep their hover spot and just dance
+// there (BUD_DANCES); creative ones move every bud along a shared path round the package, on the song's beat.
+// hw = half the package's width; every path keeps clear of the package. Returns { x, y, z, sc } (sc: size, 0..1).
+const TAU = Math.PI * 2
+export const ROUTINES = {
+  headbang: null,                                                    // X41: simple, they nod where they float
+  sway: null,                                                        // JSPAAY: simple, they sway together
+  hop: null,                                                         // QRÖME: simple, popcorn hops in place
+  // SKYBOX: balloons, rising slowly up past the package in front, drifting, then fading out at the top and coming
+  // back from the bottom
+  snap: (B, i, n, hw) => { const f = (B * 0.06 + i / n) % 1, side = (i % 2 ? 1 : -1) * (hw + 0.35 + 0.25 * ((i * 5) % 3) / 2)
+    return { x: side + 0.12 * Math.sin(B * 0.8 + i), y: -1.0 + f * 2.8, z: 0.55 + 0.25 * Math.sin(i * 2.1), sc: Math.min(1, f * 6, (1 - f) * 6) } },
+  // TSUNAMI: surfing, a line of buds riding a travelling wave across the front, left to right, again and again
+  wave: (B, i, n, hw) => { const f = (B * 0.07 + i / n) % 1, x = -2.1 + f * 4.2
+    return { x, y: 0.15 + 0.38 * Math.sin(x * 2.4 - B * Math.PI / 2), z: 0.85, sc: Math.min(1, f * 7, (1 - f) * 7) } },
+  // GELATO 41: carousel, a level ring round the package turning slowly, buds rising and falling on alternate beats
+  bop: (B, i, n, hw) => { const a = B * TAU / 32 + i / n * TAU, r = hw + 0.6
+    return { x: Math.sin(a) * r, y: 0.35 + 0.16 * Math.sin(B * Math.PI + (i % 2) * Math.PI), z: Math.cos(a) * r, sc: 1 } },
+  // CONNECTED: a ferris wheel in front of the package, turning, every bud linked on one ring
+  rock: (B, i, n, hw) => { const a = B * TAU / 32 + i / n * TAU
+    return { x: Math.sin(a) * (hw + 0.55), y: 0.3 + Math.cos(a) * 1.0, z: 0.75, sc: 1 } },
+  // NIGHTSHADE: a snake, every bud following the one in front along a weaving loop round the package
+  slither: (B, i, n, hw) => { const p = B * TAU / 24 - i * 0.32, rx = hw + 0.5, rz = 0.95
+    return { x: Math.sin(p) * rx, y: 0.25 + 0.28 * Math.sin(2 * p), z: Math.cos(p) * rz, sc: 1 - i / (n * 2.2) } },
 }
+export function routine(dance, s, i, n, hw) { const f = ROUTINES[dance]; return f ? f(s.i + s.ph, i, n, hw) : null }

@@ -8,7 +8,7 @@
 //     opens, the buds float up out of it and hover while the bag goes slack. Tap again: the buds drop back in one
 //     by one, each one puffing the bag back up, and the zip presses shut. (The strip stays off: it's been opened.)
 import * as THREE from 'three'
-import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, flyPos, flyAngle } from './dance.js?v=5'
+import { DANCES, BUD_DANCES, WORD_MOVES, applyDance, routine } from './dance.js?v=6'
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from './vendor/jsm/loaders/DRACOLoader.js'
 
@@ -22,7 +22,7 @@ export const BAGS = {
     bg: 'sky_bg.webp?v=1', bgColor: '#02030a', bounce: '#5a7dff', ground: '#101a3a', bottom: 'sky_front.webp?v=1', bottomAt: [0.6, 0.05, 0.38],
     glow: ['rgba(90,130,255,0.45)', 'rgba(110,70,200,0.16)', 'rgba(30,10,90,0)'] },
   // TSUNAMI (Wheezy): the orange / yellow wave bag, a squarer pouch
-  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8, scene: 'stage',
+  tsu: { front: 'tsu_front.webp?v=3', back: 'tsu_back.webp?v=3', W: 1.4, H: 1.4, T: 0.13, G: 0.26, buds: 8, scene: 'waves',
     bg: 'tsu_waves.webp?v=2',   // the bag's own curly waves, drifting
     bgColor: '#0a0502', bounce: '#ffa030', ground: '#3a1a04', bottom: 'tsu_front.webp?v=3', bottomAt: [0.04, 0.12, 0.4],
     glow: ['rgba(255,170,40,0.45)', 'rgba(255,90,20,0.16)', 'rgba(90,30,0,0)'] },
@@ -483,17 +483,15 @@ export function mount(box, variant = '35') {
       const spin = 6 * Math.pow(1 - u, 2)
       b.obj.rotation.set(b.rot.x + t * 0.3 + spin, b.rot.y + t * 0.45 + spin * 1.3, b.rot.z + spin * 0.5)
       // the lyrics: each word the rapper says pops the next bud (up, bigger, a flick), round the buds in turn
-      // every other bud leaves its spot and flies a path round the package, on the beat (dance.js FLIGHTS); it glides
-      // out onto the path as the music comes in and back to its spot when it stops
-      if (s && u >= 1 && i % 2 === 0) {
-        const fp = flyPos(window.MBDance, s, i / 2, Math.ceil(buds.length / 2))
-        if (fp) {
-          b.fly = Math.min(1, (b.fly || 0) + dt * 0.8)
-          const k = b.fly * b.fly * (3 - 2 * b.fly) * beatAmt, cy = PKG_Y
-          b.obj.position.lerp(new THREE.Vector3(fp.x, cy + fp.y, fp.z), k)
-          b.obj.rotation.y += flyAngle(window.MBDance, s, i / 2, Math.ceil(buds.length / 2)) * k
-        }
-      } else if (b.fly) b.fly = Math.max(0, b.fly - dt * 0.8)
+      // creative collabs: every bud joins the collab's routine round the package (dance.js ROUTINES), gliding onto it as
+      // the music comes in and back to its spot when it stops; simple collabs keep their spots
+      const rt = s && u >= 1 ? routine(window.MBDance, s, i, buds.length, W / 2) : null
+      b.fly = rt ? Math.min(1, (b.fly || 0) + dt * 0.7) : Math.max(0, (b.fly || 0) - dt * 0.7)
+      if (rt && b.fly > 0) {
+        const k = b.fly * b.fly * (3 - 2 * b.fly) * beatAmt
+        b.obj.position.lerp(new THREE.Vector3(rt.x, PKG_Y + rt.y, rt.z), k)
+        b.obj.scale.multiplyScalar(1 - (1 - rt.sc) * k)
+      }
       // each collab's own bud dance (dance.js BUD_DANCES), on the beat, once it's out
       const bd = s && u >= 1 && BUD_DANCES[window.MBDance] ? BUD_DANCES[window.MBDance](s, i, buds.length) : null
       if (bd) {
@@ -507,6 +505,13 @@ export function mount(box, variant = '35') {
           b.obj.position.y += 0.32 * Math.sin(Math.min(1, W.since / 0.35) * Math.PI) * beatAmt
           b.obj.scale.multiplyScalar(1 + 0.6 * k); b.obj.rotation.y += 2.2 * k * (W.n % 2 ? 1 : -1)
         } else b.obj.position.y += 0.04 * k               // the rest bob along with every word
+      }
+      if (u >= 1) {          // never inside the package
+        const hx = W / 2 + 0.22, hz = T + G + 0.28, lo = bag.position.y + BOT - 0.1, hi = bag.position.y + H / 2 + 0.15
+        const P = b.obj.position
+        if (Math.abs(P.x) < hx && Math.abs(P.z) < hz && P.y > lo && P.y < hi) {      // inside the bag: out to the nearest side
+          if (hx - Math.abs(P.x) < hz - Math.abs(P.z)) P.x = Math.sign(P.x || 1) * hx; else P.z = P.z < -0.05 ? -hz : hz
+        }
       }
     })
     // how full: every bud inside = full; empty = slack (the jolt eases off)
